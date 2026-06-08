@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Master — Editor Landing Page</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #1a1a2e; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; z-index: 50; overflow-y: auto; }
+.sidebar .logo { color: var(--gold, #c9a84c); font-size: 18px; font-weight: 700; margin-bottom: 20px; padding: 0 8px; }
+.sidebar a { color: #aaa; text-decoration: none; padding: 9px 12px; border-radius: 8px; font-size: 13px; display: flex; align-items: center; gap: 8px; transition: background .15s; }
+.sidebar a:hover, .sidebar a.activ { background: #6c47ff; color: #fff; }
+.sidebar .logout { margin-top: auto; }
+.main { margin-left: 220px; padding: 28px; max-width: 1100px; }
+.main h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.main p.sub { color: #888; font-size: 14px; margin-bottom: 28px; }
+
+.toast-bar { background: #10b981; color: #fff; padding: 12px 20px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.error-bar { background: #e53e3e; }
+
+.sectiune { background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
+.sectiune-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer; user-select: none; }
+.sectiune-header h2 { font-size: 16px; font-weight: 700; flex: 1; }
+.sectiune-header .toggle { color: #888; font-size: 18px; transition: transform .2s; }
+.sectiune-header.collapsed .toggle { transform: rotate(-90deg); }
+.sectiune-body { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.sectiune-body.single { grid-template-columns: 1fr; }
+.sectiune-body.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: .4px; }
+.field input[type="text"],
+.field input[type="email"],
+.field input[type="url"],
+.field input[type="color"],
+.field textarea { width: 100%; padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; outline: none; font-family: inherit; transition: border-color .2s; }
+.field input:focus, .field textarea:focus { border-color: #6c47ff; }
+.field textarea { resize: vertical; min-height: 80px; }
+.field small { font-size: 11px; color: #aaa; }
+.field input[type="color"] { height: 38px; padding: 3px 6px; cursor: pointer; }
+
+.upload-zone { border: 2px dashed #ddd; border-radius: 10px; padding: 20px; text-align: center; cursor: pointer; position: relative; transition: border-color .2s; }
+.upload-zone:hover { border-color: #6c47ff; background: #f5f3ff; }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.upload-zone p { font-size: 13px; color: #888; margin-top: 6px; }
+.upload-preview { margin-top: 10px; max-height: 120px; border-radius: 8px; object-fit: cover; max-width: 100%; }
+
+.separator { grid-column: 1 / -1; border: none; border-top: 1px solid #f0f0f0; margin: 4px 0; }
+.grup-label { grid-column: 1 / -1; font-size: 12px; font-weight: 700; color: #6c47ff; text-transform: uppercase; letter-spacing: .5px; padding-top: 4px; }
+
+.btn-save { position: fixed; bottom: 28px; right: 28px; background: #6c47ff; color: #fff; border: none; border-radius: 12px; padding: 14px 32px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px rgba(108,71,255,0.4); z-index: 100; display: flex; align-items: center; gap: 8px; transition: background .2s; }
+.btn-save:hover { background: #5535e0; }
+.btn-preview { background: #fff; color: #6c47ff; border: 2px solid #6c47ff; border-radius: 10px; padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 20px; }
+
+@media (max-width: 768px) {
+    .main { margin-left: 0; padding: 14px 12px 80px; }
+    .sectiune-body, .sectiune-body.triple { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="logo">⚡ Master</div>
+    <a href="/master/index.html">🏢 Restaurante</a>
+    <a href="/master/cereri.html">📋 Cereri înregistrare</a>
+    <a href="/master/landing.html" class="activ">🌐 Landing Page</a>
+    <a href="#" class="logout" onclick="logout(event)">🚪 Ieșire</a>
+</div>
+
+<div class="main">
+    <h1>🌐 Editor Landing Page</h1>
+    <p class="sub">Modifică toate textele, imaginile, culorile și prețurile paginii de prezentare.</p>
+
+    <a href="/" target="_blank" class="btn-preview">👁️ Previzualizează landing page →</a>
+
+    <div class="toast-bar" id="toastBar" style="display:none">✅ Modificările au fost salvate cu succes!</div>
+
+    <form id="landingForm">
+
+    <!-- ══ HERO ══ -->
+    <div class="sectiune">
+        <div class="sectiune-header" onclick="toggleSect(this)">
+            <h2>🦸 Hero — Secțiunea principală</h2>
+            <span class="toggle">▾</span>
+        </div>
+        <div class="sectiune-body">
+            <div class="field">
+                <label>Eyebrow 🇷🇴</label>
+                <input type="text" name="hero_eyebrow_ro">
+            </div>
+            <div class="field">
+                <label>Eyebrow 🇬🇧</label>
+                <input type="text" name="hero_eyebrow_en">
+            </div>
+            <div class="field">
+                <label>Titlu principal 🇷🇴 <small>(HTML permis: &lt;em&gt;, &lt;br&gt;)</small></label>
+                <textarea name="hero_title_ro"></textarea>
+            </div>
+            <div class="field">
+                <label>Titlu principal 🇬🇧</label>
+                <textarea name="hero_title_en"></textarea>
+            </div>
+            <div class="field">
+                <label>Descriere 🇷🇴</label>
+                <textarea name="hero_desc_ro"></textarea>
+            </div>
+            <div class="field">
+                <label>Descriere 🇬🇧</label>
+                <textarea name="hero_desc_en"></textarea>
+            </div>
+            <div class="field">
+                <label>Buton principal 🇷🇴</label>
+                <input type="text" name="hero_btn_ro">
+            </div>
+            <div class="field">
+                <label>Buton principal 🇬🇧</label>
+                <input type="text" name="hero_btn_en">
+            </div>
+            <div class="field">
+                <label>Buton secundar 🇷🇴</label>
+                <input type="text" name="hero_btn2_ro">
+            </div>
+            <div class="field">
+                <label>Buton secundar 🇬🇧</label>
+                <input type="text" name="hero_btn2_en">
+            </div>
+            <div class="field">
+                <label>Preț abonament</label>
+                <input type="text" name="hero_price">
+                <small>Ex: €100</small>
+            </div>
+            <div class="field">
+                <label>Perioadă 🇷🇴</label>
+                <input type="text" name="hero_price_period_ro">
+            </div>
+            <div class="field">
+                <label>Email contact (butoane)</label>
+                <input type="email" name="contact_email">
+            </div>
+            <div class="field">
+                <label>Imagine fundal hero (stânga)</label>
+                <div class="upload-zone">
+                    <input type="file" name="hero_bg_img" accept="image/*">
+                    <div>📁</div>
+                    <p>Click pentru a schimba imaginea de fundal<br><small>JPG, PNG, WEBP · max 5MB</small></p>
+                    <img src="/uploads/landing-hero-bg.jpg" class="upload-preview" onerror="this.style.display='none'">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ STATS ══ -->
+    <div class="sectiune">
+        <div class="sectiune-header" onclick="toggleSect(this)">
+            <h2>📊 Stats Bar — 4 statistici</h2>
+            <span class="toggle">▾</span>
+        </div>
+        <div class="sectiune-body triple">
+            <div class="grup-label" style="grid-column:1/-1">Stat #1</div>
+            <div class="field">
+                <label>Număr / Simbol</label>
+                <input type="text" name="stat1_num">
+            </div>
+            <div class="field">
+                <label>Eticheta 🇷🇴</label>
+                <input type="text" name="stat1_ro">
+            </div>
+            <div class="field">
+                <label>Eticheta 🇬🇧</label>
+                <input type="text" name="stat1_en">
+            </div>
+            <div class="grup-label" style="grid-column:1/-1">Stat #2</div>
+            <div class="field">
+                <label>Număr / Simbol</label>
+                <input type="text" name="stat2_num">
+            </div>
+            <div class="field">
+                <label>Eticheta 🇷🇴</label>
+                <input type="text" name="stat2_ro">
+            </div>
+            <div class="field">
+                <label>Eticheta 🇬🇧</label>
+                <input type="text" name="stat2_en">
+            </div>
+            <div class="grup-label" style="grid-column:1/-1">Stat #3</div>
+            <div class="field">
+                <label>Număr / Simbol</label>
+                <input type="text" name="stat3_num">
+            </div>
+            <div class="field">
+                <label>Eticheta 🇷🇴</label>
+                <input type="text" name="stat3_ro">
+            </div>
+            <div class="field">
+                <label>Eticheta 🇬🇧</label>
+                <input type="text" name="stat3_en">
+            </div>
+            <div class="grup-label" style="grid-column:1/-1">Stat #4</div>
+            <div class="field">
+                <label>Număr / Simbol</label>
+                <input type="text" name="stat4_num">
+            </div>
+            <div class="field">
+                <label>Eticheta 🇷🇴</label>
+                <input type="text" name="stat4_ro">
+            </div>
+            <div class="field">
+                <label>Eticheta 🇬🇧</label>
+                <input type="text" name="stat4_en">
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ FEATURES ══ -->
+    <div class="sectiune">
+        <div class="sectiune-header" onclick="toggleSect(this)">
+            <h2>✨ Features — 6 funcționalități</h2>
+            <span class="toggle">▾</span>
+        </div>
+        <div class="sectiune-body">
+            <div class="field">
+                <label>Eyebrow 🇷🇴</label>
+                <input type="text" name="features_eyebrow_ro">
+            </div>
+            <div class="field">
+                <label>Eyebrow 🇬🇧</label>
+                <input type="text" name="features_eyebrow_en">
+            </div>
+            <div class="field">
+                <label>Titlu secțiune 🇷🇴</label>
+                <textarea name="features_title_ro" style="min-height:60px"></textarea>
+            </div>
+            <div class="field">
+                <label>Titlu secțiune 🇬🇧</label>
+                <textarea name="features_title_en" style="min-height:60px"></textarea>
+            </div>
+            <hr class="separator">
+            <div class="grup-label">Feature #1</div>
+            <div class="field">
+                <label>Titlu 🇷🇴</label>
+                <input type="text" name="f1_title_ro">
+            </div>
+            <div class="field">
+                <label>Titlu 🇬🇧</label>
+                <input type="text" name="f1_title_en">
+            </div>
+            <div class="field">
+                <label>Descriere 🇷🇴</label>
+                <textarea name="f1_desc_ro" style="min-height:70px"></textarea>
+            </div>
+            <div class="field">
+                <label>Descriere 🇬🇧</label>
+                <textarea name="f1_desc_en" style="min-height:70px"></textarea>
+            </div>
+            <hr class="separator">
+            <div class="grup-label">Feature #2</div>
+            <div class="field">
+                <label>Titlu 🇷🇴</label>
+                <input type="text" name="f2_title_ro">
+            </div>
+            <div class="field">
+                <label>Titlu 🇬🇧</label>
+                <input type="text" name="f2_title_en">
+            </div>
+            <div class="field">
+                <label>Descriere 🇷🇴</label>
+                <textarea name="f2_desc_ro" style="min-height:70px"></textarea>
+            </div>
+            <div class="field">
+                <label>Descriere 🇬🇧</label>
+                <textarea name="f2_desc_en" style="min-height:70px"></textarea>
+            </div>
+            <hr class="separator">
+            <div class="grup-label">Feature #3</div>
+            <div class="field">
+                <label>Titlu 🇷🇴</label>
+                <input type="text" name="f3_title_ro">
+            </div>
+            <div class="field">
+                <label>Titlu 🇬🇧</label>
+                <input type="text" name="f3_title_en">
+            </div>
+            <div class="field">
+                <label>Descriere 🇷🇴</label>
+                <textarea name="f3_desc_ro" style="min-height:70px"></textarea>
+            </div>
+            <div class="field">
+                <label>Descriere 🇬🇧</label>
+                <textarea name="f3_desc_en" style="min-height:70px"></textarea>
+            </div>
+            <hr class="separator">
+            <div class="grup-label">Feature #4</div>
+            <div class="field">
+                <label>Titlu 🇷🇴</label>
+                <input type="text" name="f4_title_ro">
+            </div>
+            <div class="field">
+                <label>Titlu 🇬🇧</label>
+                <input type="text" name="f4_title_en">
+            </div>
+            <div class="field">
+                <label>Descriere 🇷🇴</label>
+                <textarea name="f4_desc_ro" style="min-height:70px"></textarea>
+            </div>
+            <div class="field">
+                <label>Descriere 🇬🇧</label>
+                <textarea name="f4_desc_en" style="min-height:70px"></textarea>
+            </div>
+            <hr class="separator">
+            <div class="grup-label">Feature #5</div>
+            <div class="field">
+                <label>Titlu 🇷🇴</label>
+                <input type="text" name="f5_title_ro">
+            </div>
+            <div class="field">
+                <label>Titlu 🇬🇧</label>
+                <input type="text" name="f5_title_en">
+            </div>
+            <div class="field">
+                <label>Descriere 🇷🇴</label>
+                <textarea name="f5_desc_ro" style="min-height:70px"></textarea>
+            </div>
+            <div class="field">
+                <label>Descriere 🇬🇧</label>
+                <textarea name="f5_desc_en" style="min-height:70px"></textarea>
+            </div>
+            <hr class="separator">
+            <div class="grup-label">Feature #6</div>
+            <div class="field">
+                <label>Titlu 🇷🇴</label>
+                <input type="text" name="f6_title_ro">
+            </div>
+            <div class="field">
+                <label>Titlu 🇬🇧</label>
+                <input type="text" name="f6_title_en">
+            </div>
+            <div class="field">
+                <label>Descriere 🇷🇴</label>
+                <textarea name="f6_desc_ro" style="min-height:70px"></textarea>
+            </div>
+            <div class="field">
+                <label>Descriere 🇬🇧</label>
+                <textarea name="f6_desc_en" style="min-height:70px"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ HOW IT WORKS ══ -->
+    <div class="sectiune">
+        <div class="sectiune-header" onclick="toggleSect(this)">
+            <h2>🔢 Cum funcționează — 4 pași</h2>
+            <span class="toggle">▾</span>
+        </div>
+        <div class="sectiune-body">
+            <div class="field">
+                <label>Eyebrow 🇷🇴</label>
+                <input type="text" name="how_eyebrow_ro">
+            </div>
+            <div class="field">
+                <label>Eyebrow 🇬🇧</label>
+                <input type="text" name="how_eyebrow_en">
+            </div>
+            <div class="field">
+                <label>Titlu 🇷🇴</label>
+                <input type="text" name="how_title_ro">
+            </div>
+            <div class="field">
+                <label>Titlu 🇬🇧</label>
+                <input type="text" name="how_title_en">
+            </div>
+            <hr class="separator">
+            <div class="grup-label">Pasul #1</div>
+            <div class="field">
+                <label>Titlu 🇷🇴</label>
+                <input type="text" name="step1_title_ro">
+            </div>
+            <div class="field">
+                <label>Titlu 🇬🇧</label>
+                <input type="text" name="step1_title_en">
+            </div>
+            <div class="field">
+                <label>Descriere 🇷🇴</label>
+                <textarea name="step1_desc_ro" style="min-height:70px"></textarea>
+            </div>
+            <div class="field">
+                <label>Descriere 🇬🇧</label>
+                <textarea name="step1_desc_en" style="min-height:70px"></textarea>
+            </div>
+            <hr class="separator">
+            <div class="grup-label">Pasul #2</div>
+            <div class="field">
+                <label>Titlu 🇷🇴</label>
+                <input type="text" name="step2_title_ro">
+            </div>
+            <div class="field">
+                <label>Titlu 🇬🇧</label>
+                <input type="text" name="step2_title_en">
+            </div>
+            <div class="field">
+                <label>Descriere 🇷🇴</label>
+                <textarea name="step2_desc_ro" style="min-height:70px"></textarea>
+            </div>
+            <div class="field">
+                <label>Descriere 🇬🇧</label>
+                <textarea name="step2_desc_en" style="min-height:70px"></textarea>
+            </div>
+            <hr class="separator">
+            <div class="grup-label">Pasul #3</div>
+            <div class="field">
+                <label>Titlu 🇷🇴</label>
+                <input type="text" name="step3_title_ro">
+            </div>
+            <div class="field">
+                <label>Titlu 🇬🇧</label>
+                <input type="text" name="step3_title_en">
+            </div>
+            <div class="field">
+                <label>Descriere 🇷🇴</label>
+                <textarea name="step3_desc_ro" style="min-height:70px"></textarea>
+            </div>
+            <div class="field">
+                <label>Descriere 🇬🇧</label>
+                <textarea name="step3_desc_en" style="min-height:70px"></textarea>
+            </div>
+            <hr class="separator">
+            <div class="grup-label">Pasul #4</div>
+            <div class="field">
+                <label>Titlu 🇷🇴</label>
+                <input type="text" name="step4_title_ro">
+            </div>
+            <div class="field">
+                <label>Titlu 🇬🇧</label>
+                <input type="text" name="step4_title_en">
+            </div>
+            <div class="field">
+                <label>Descriere 🇷🇴</label>
+                <textarea name="step4_desc_ro" style="min-height:70px"></textarea>
+            </div>
+            <div class="field">
+                <label>Descriere 🇬🇧</label>
+                <textarea name="step4_desc_en" style="min-height:70px"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ GALERIE ══ -->
+    <div class="sectiune">
+        <div class="sectiune-header" onclick="toggleSect(this)">
+            <h2>🖼️ Galerie — 3 imagini</h2>
+            <span class="toggle">▾</span>
+        </div>
+        <div class="sectiune-body triple">
+            <div class="field">
+                <label>Imagine 1 (stânga)</label>
+                <div class="upload-zone">
+                    <input type="file" name="galerie_img2" accept="image/*">
+                    <div>📁</div>
+                    <p><small>Click pentru a schimba</small></p>
+                    <img src="/uploads/landing-img1.jpg" class="upload-preview" onerror="this.style.display='none'">
+                </div>
+            </div>
+            <div class="field">
+                <label>Imagine 2 (centru)</label>
+                <div class="upload-zone">
+                    <input type="file" name="galerie_img1" accept="image/*">
+                    <div>📁</div>
+                    <p><small>Click pentru a schimba</small></p>
+                    <img src="/uploads/landing-img2.jpg" class="upload-preview" onerror="this.style.display='none'">
+                </div>
+            </div>
+            <div class="field">
+                <label>Imagine 3 (dreapta)</label>
+                <div class="upload-zone">
+                    <input type="file" name="galerie_img3" accept="image/*">
+                    <div>📁</div>
+                    <p><small>Click pentru a schimba</small></p>
+                    <img src="/uploads/landing-img3.jpg" class="upload-preview" onerror="this.style.display='none'">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ TESTIMONIAL ══ -->
+    <div class="sectiune">
+        <div class="sectiune-header" onclick="toggleSect(this)">
+            <h2>💬 Testimonial</h2>
+            <span class="toggle">▾</span>
+        </div>
+        <div class="sectiune-body">
+            <div class="field">
+                <label>Citat 🇷🇴</label>
+                <textarea name="testimonial_text_ro"></textarea>
+            </div>
+            <div class="field">
+                <label>Citat 🇬🇧</label>
+                <textarea name="testimonial_text_en"></textarea>
+            </div>
+            <div class="field">
+                <label>Autor 🇷🇴</label>
+                <input type="text" name="testimonial_author_ro">
+            </div>
+            <div class="field">
+                <label>Autor 🇬🇧</label>
+                <input type="text" name="testimonial_author_en">
+            </div>
+            <div class="field">
+                <label>Subtitlu 🇷🇴</label>
+                <input type="text" name="testimonial_sub_ro">
+            </div>
+            <div class="field">
+                <label>Subtitlu 🇬🇧</label>
+                <input type="text" name="testimonial_sub_en">
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ CTA ══ -->
+    <div class="sectiune">
+        <div class="sectiune-header" onclick="toggleSect(this)">
+            <h2>🎯 CTA — Call to action</h2>
+            <span class="toggle">▾</span>
+        </div>
+        <div class="sectiune-body">
+            <div class="field">
+                <label>Titlu 🇷🇴 <small>(HTML permis)</small></label>
+                <textarea name="cta_title_ro"></textarea>
+            </div>
+            <div class="field">
+                <label>Titlu 🇬🇧</label>
+                <textarea name="cta_title_en"></textarea>
+            </div>
+            <div class="field">
+                <label>Descriere 🇷🇴</label>
+                <textarea name="cta_desc_ro"></textarea>
+            </div>
+            <div class="field">
+                <label>Descriere 🇬🇧</label>
+                <textarea name="cta_desc_en"></textarea>
+            </div>
+            <div class="field">
+                <label>Buton principal 🇷🇴</label>
+                <input type="text" name="cta_btn_ro">
+            </div>
+            <div class="field">
+                <label>Buton principal 🇬🇧</label>
+                <input type="text" name="cta_btn_en">
+            </div>
+            <div class="field">
+                <label>Buton secundar 🇷🇴</label>
+                <input type="text" name="cta_btn2_ro">
+            </div>
+            <div class="field">
+                <label>Buton secundar 🇬🇧</label>
+                <input type="text" name="cta_btn2_en">
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SOCIAL MEDIA ══ -->
+    <div class="sectiune">
+        <div class="sectiune-header" onclick="toggleSect(this)">
+            <h2>📱 Social Media — Footer landing page</h2>
+            <span class="toggle">▾</span>
+        </div>
+        <div class="sectiune-body">
+            <div class="field">
+                <label>🔵 Facebook URL</label>
+                <input type="url" name="social_facebook" placeholder="https://facebook.com/pagina-ta">
+                <small>Lasă gol pentru a ascunde butonul</small>
+            </div>
+            <div class="field">
+                <label>📸 Instagram URL</label>
+                <input type="url" name="social_instagram" placeholder="https://instagram.com/contul-tau">
+                <small>Lasă gol pentru a ascunde butonul</small>
+            </div>
+            <div class="field">
+                <label>🎵 TikTok URL</label>
+                <input type="url" name="social_tiktok" placeholder="https://tiktok.com/@contul-tau">
+                <small>Lasă gol pentru a ascunde butonul</small>
+            </div>
+            <div class="field">
+                <label>💬 WhatsApp (număr internațional)</label>
+                <input type="text" name="social_whatsapp" placeholder="40712345678">
+                <small>Format: 40XXXXXXXXX — fără + sau spații</small>
+            </div>
+            <div class="field">
+                <label>▶️ YouTube URL</label>
+                <input type="url" name="social_youtube" placeholder="https://youtube.com/@canalul-tau">
+                <small>Lasă gol pentru a ascunde butonul</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ CULORI ══ -->
+    <div class="sectiune">
+        <div class="sectiune-header" onclick="toggleSect(this)">
+            <h2>🎨 Culori principale</h2>
+            <span class="toggle">▾</span>
+        </div>
+        <div class="sectiune-body triple">
+            <div class="field">
+                <label>Auriu (gold)</label>
+                <input type="color" name="culoare_gold">
+                <small>Titluri italic, accente</small>
+            </div>
+            <div class="field">
+                <label>Navy (fundal dark)</label>
+                <input type="color" name="culoare_navy">
+                <small>Hero stânga, navbar, CTA</small>
+            </div>
+            <div class="field">
+                <label>Cream (fundal light)</label>
+                <input type="color" name="culoare_cream">
+                <small>Fundal general, hero dreapta</small>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn-save">💾 Salvează toate modificările</button>
+
+    </form>
+</div>
+
+<script>
+function logout(e) {
+    if (e) e.preventDefault();
+    fetch('/api/master/logout', { method: 'POST' }).finally(function () {
+        location.href = '/master/login.html';
+    });
+}
+
+const IMAGE_FIELDS = ['hero_bg_img', 'galerie_img1', 'galerie_img2', 'galerie_img3'];
+
+function toggleSect(header) {
+    header.classList.toggle('collapsed');
+    const body = header.nextElementSibling;
+    body.style.display = body.style.display === 'none' ? '' : 'none';
+}
+
+function showSaved() {
+    const bar = document.getElementById('toastBar');
+    bar.style.display = '';
+    setTimeout(() => { bar.style.display = 'none'; }, 4000);
+}
+
+function populate(settings) {
+    Object.keys(settings).forEach(key => {
+        const el = document.querySelector(`#landingForm [name="${key}"]`);
+        if (el && el.type !== 'file') el.value = settings[key] == null ? '' : settings[key];
+    });
+}
+
+async function uploadImage(input) {
+    if (!input.files.length) return;
+    const fd = new FormData();
+    fd.append('camp', input.name);
+    fd.append('imagine', input.files[0]);
+    await fetch('/api/master/landing_image', { method: 'POST', body: fd });
+}
+
+async function salveaza(e) {
+    if (e) e.preventDefault();
+    // Collect text/textarea/color/url inputs with a name (skip file inputs).
+    const settings = {};
+    document.querySelectorAll('#landingForm [name]').forEach(el => {
+        if (el.type === 'file') return;
+        settings[el.name] = el.value;
+    });
+    // Upload any selected images
+    for (const name of IMAGE_FIELDS) {
+        const input = document.querySelector(`#landingForm [name="${name}"]`);
+        if (input && input.files && input.files.length) {
+            await uploadImage(input);
+        }
+    }
+    const r = await fetch('/api/master/landing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings })
+    });
+    const d = await r.json();
+    if (d.ok) showSaved();
+}
+
+// Preview imagini la upload + upload imediat
+document.querySelectorAll('.upload-zone input[type="file"]').forEach(input => {
+    input.addEventListener('change', function() {
+        if (!this.files.length) return;
+        const preview = this.closest('.upload-zone').querySelector('.upload-preview');
+        const url = URL.createObjectURL(this.files[0]);
+        if (preview) { preview.src = url; preview.style.display = 'block'; }
+        else {
+            const img = document.createElement('img');
+            img.src = url; img.className = 'upload-preview';
+            this.closest('.upload-zone').appendChild(img);
+        }
+        uploadImage(this);
+    });
+});
+
+document.getElementById('landingForm').addEventListener('submit', salveaza);
+
+fetch('/api/master/me').then(function (r) {
+    if (!r.ok) { location.href = '/master/login.html'; return; }
+    return fetch('/api/master/landing');
+}).then(function (r) {
+    if (!r) return null;
+    return r.json();
+}).then(function (d) {
+    if (d && d.ok && d.settings) populate(d.settings);
+});
+</script>
+</body>
+</html>
