@@ -31,3 +31,5 @@ database_id = "3cc0b84d-ada3-4a08-9d8f-9863f7ab320f"
 # [[r2_buckets]]
 # binding = "UPLOADS"
 # bucket_name = "tablerino-uploads"
+
+# deploy trigger: secrets configured
