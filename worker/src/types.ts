@@ -4,8 +4,9 @@ import type { Context } from 'hono';
 export interface Env {
   /** D1 database (binding `DB`). */
   DB: D1Database;
-  /** R2 bucket for uploaded images (binding `UPLOADS`). */
-  UPLOADS: R2Bucket;
+  /** R2 bucket for uploaded images (binding `UPLOADS`). Optional — when the
+   *  bucket isn't configured, image upload/serve features are disabled. */
+  UPLOADS?: R2Bucket;
   /** Static assets (binding `ASSETS`) — the frontend in ./public. */
   ASSETS: Fetcher;
 

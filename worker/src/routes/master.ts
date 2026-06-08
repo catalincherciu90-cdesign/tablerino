@@ -221,6 +221,7 @@ master.post('/landing_image', async (c) => {
   const camp = String(form.get('camp') ?? '');
   const target = LANDING_IMAGES[camp];
   if (!target) return c.json({ ok: false, msg: 'Câmp invalid' }, 400);
+  if (!c.env.UPLOADS) return c.json({ ok: false, msg: 'Încărcarea de imagini este indisponibilă (R2 neconfigurat).' }, 503);
   const file: unknown = form.get('imagine');
   if (!(file instanceof File) || file.size === 0) return c.json({ ok: false, msg: 'Fișier invalid' }, 400);
   const ext = fileExt(file.name);

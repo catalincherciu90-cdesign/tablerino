@@ -411,7 +411,7 @@ admin.post('/sterge_imagine', async (c) => {
   const tip = body.tip ?? '';
   if (tip !== 'logo' && tip !== 'bg_imagine') return c.json({ ok: false }, 400);
   const r = await one<Record<string, string | null>>(c.env.DB, `SELECT ${tip} AS val FROM restaurante WHERE id = ?`, rid(c));
-  if (r?.val) await deleteUpload(c.env.UPLOADS, r.val);
+  if (r?.val && c.env.UPLOADS) await deleteUpload(c.env.UPLOADS, r.val);
   await run(c.env.DB, `UPDATE restaurante SET ${tip} = NULL WHERE id = ?`, rid(c));
   return c.json({ ok: true });
 });
@@ -468,7 +468,7 @@ admin.post('/sterge_reclama', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.reclama_id ?? body.id ?? 0);
   const r = await one<{ imagine: string | null }>(c.env.DB, 'SELECT imagine FROM reclame WHERE id = ? AND restaurant_id = ?', id, rid(c));
-  if (r?.imagine) await deleteUpload(c.env.UPLOADS, r.imagine);
+  if (r?.imagine && c.env.UPLOADS) await deleteUpload(c.env.UPLOADS, r.imagine);
   await run(c.env.DB, 'DELETE FROM reclame WHERE id = ? AND restaurant_id = ?', id, rid(c));
   return c.json({ ok: true });
 });

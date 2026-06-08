@@ -25,7 +25,9 @@ database_name = "tablerino"
 database_id = "REPLACE_WITH_D1_DATABASE_ID"
 
 # R2 bucket for uploads (logos, product photos, ad images).
-# Create with: wrangler r2 bucket create tablerino-uploads
-[[r2_buckets]]
-binding = "UPLOADS"
-bucket_name = "tablerino-uploads"
+# DISABLED for now — image uploads are off until R2 is enabled. To turn images
+# on: create the bucket (`wrangler r2 bucket create tablerino-uploads`), then
+# uncomment the three lines below and redeploy.
+# [[r2_buckets]]
+# binding = "UPLOADS"
+# bucket_name = "tablerino-uploads"

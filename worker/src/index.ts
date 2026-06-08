@@ -23,11 +23,14 @@ app.get('/api/landing', async (c) => {
   return c.json({ ok: true, settings });
 });
 
-// ── Uploaded images: R2 first (user uploads), then static assets (app icons,
-//    landing images shipped in public/uploads/) ──
+// ── Uploaded images: R2 first (user uploads) when configured, then static
+//    assets (app icons, landing images shipped in public/uploads/) ──
 app.get('/uploads/*', async (c) => {
-  const res = await serveUpload(c.env.UPLOADS, new URL(c.req.url).pathname);
-  return res ?? c.env.ASSETS.fetch(c.req.raw);
+  if (c.env.UPLOADS) {
+    const res = await serveUpload(c.env.UPLOADS, new URL(c.req.url).pathname);
+    if (res) return res;
+  }
+  return c.env.ASSETS.fetch(c.req.raw);
 });
 
 // ── API routes ──

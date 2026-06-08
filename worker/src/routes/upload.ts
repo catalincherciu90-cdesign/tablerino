@@ -8,6 +8,13 @@ import { deleteUpload, extToContentType, fileExt, putUpload } from '../r2';
 // upload_reclama.php. All require an authenticated restaurant.
 const upload = new Hono<HonoEnv>();
 upload.use('/*', requireRestaurant);
+// Image uploads need R2; disabled gracefully when the bucket isn't configured.
+upload.use('/*', async (c, next) => {
+  if (!c.env.UPLOADS) {
+    return c.json({ ok: false, msg: 'Încărcarea de imagini este indisponibilă (R2 neconfigurat).' }, 503);
+  }
+  await next();
+});
 
 const rid = (c: AppContext) => c.get('restaurant')!.rid;
 const now = () => Math.floor(Date.now() / 1000);
@@ -30,10 +37,10 @@ upload.post('/imagine', async (c) => {
   const sub = tip === 'logo' ? 'logo' : 'bg';
 
   const r = await one<Record<string, string | null>>(c.env.DB, `SELECT ${camp} AS val FROM restaurante WHERE id = ?`, rid(c));
-  if (r?.val) await deleteUpload(c.env.UPLOADS, r.val);
+  if (r?.val) await deleteUpload(c.env.UPLOADS!, r.val);
 
   const name = `${tip}_${rid(c)}_${now()}.${ext}`;
-  const cale = await putUpload(c.env.UPLOADS, sub, name, await file.arrayBuffer(), extToContentType(ext) ?? 'image/jpeg');
+  const cale = await putUpload(c.env.UPLOADS!, sub, name, await file.arrayBuffer(), extToContentType(ext) ?? 'image/jpeg');
   await run(c.env.DB, `UPDATE restaurante SET ${camp} = ? WHERE id = ?`, cale, rid(c));
   return c.json({ ok: true, cale });
 });
@@ -60,10 +67,10 @@ upload.post('/poza', async (c) => {
   }
   if (file.size > 2 * 1024 * 1024) return c.json({ ok: false, msg: 'Poza e prea mare. Maximum 2MB.' }, 400);
 
-  if (produs.poza) await deleteUpload(c.env.UPLOADS, produs.poza);
+  if (produs.poza) await deleteUpload(c.env.UPLOADS!, produs.poza);
 
   const name = `prod_${rid(c)}_${pid}_${now()}.${ext}`;
-  const poza = await putUpload(c.env.UPLOADS, 'produse', name, await file.arrayBuffer(), extToContentType(ext) ?? 'image/jpeg');
+  const poza = await putUpload(c.env.UPLOADS!, 'produse', name, await file.arrayBuffer(), extToContentType(ext) ?? 'image/jpeg');
   await run(c.env.DB, 'UPDATE meniu_produse SET poza = ? WHERE id = ? AND restaurant_id = ?', poza, pid, rid(c));
   return c.json({ ok: true, poza });
 });
@@ -88,10 +95,10 @@ upload.post('/reclama', async (c) => {
   if (!['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) return c.json({ ok: false, msg: 'Format neacceptat' }, 400);
   if (file.size > 2 * 1024 * 1024) return c.json({ ok: false, msg: 'Maxim 2MB' }, 400);
 
-  if (reclama.imagine) await deleteUpload(c.env.UPLOADS, reclama.imagine);
+  if (reclama.imagine) await deleteUpload(c.env.UPLOADS!, reclama.imagine);
 
   const name = `reclama_${rid(c)}_${reclamaId}_${now()}.${ext}`;
-  const cale = await putUpload(c.env.UPLOADS, 'reclame', name, await file.arrayBuffer(), extToContentType(ext) ?? 'image/jpeg');
+  const cale = await putUpload(c.env.UPLOADS!, 'reclame', name, await file.arrayBuffer(), extToContentType(ext) ?? 'image/jpeg');
   await run(c.env.DB, 'UPDATE reclame SET imagine = ? WHERE id = ?', cale, reclamaId);
   return c.json({ ok: true, cale });
 });
