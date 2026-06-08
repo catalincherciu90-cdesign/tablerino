@@ -514,4 +514,77 @@ admin.post('/salveaza_parola_reset', async (c) => {
   return c.json({ ok: true });
 });
 
+// ── Daily report (admin/raport.php) ──
+admin.get('/raport', async (c) => {
+  const data = c.req.query('data') || new Date().toISOString().slice(0, 10);
+  const db = c.env.DB;
+  const r = rid(c);
+
+  // Per-order totals as a reusable subquery join.
+  const ordTotals = `JOIN (SELECT comanda_id, SUM(total) AS total_comanda FROM comanda_produse GROUP BY comanda_id) cp ON cp.comanda_id = c.id`;
+  const filter = `c.restaurant_id = ? AND DATE(c.created_at) = ? AND c.status = 'servita'`;
+
+  const sumar = await one<Record<string, number>>(
+    db,
+    `SELECT COUNT(*) AS total_comenzi,
+            COALESCE(SUM(cp.total_comanda),0) AS total_vanzari,
+            COALESCE(SUM(CASE WHEN c.metoda_plata='cash' THEN cp.total_comanda ELSE 0 END),0) AS total_cash,
+            COALESCE(SUM(CASE WHEN c.metoda_plata='card' THEN cp.total_comanda ELSE 0 END),0) AS total_card,
+            COUNT(CASE WHEN c.metoda_plata='cash' THEN 1 END) AS nr_cash,
+            COUNT(CASE WHEN c.metoda_plata='card' THEN 1 END) AS nr_card,
+            AVG(cp.total_comanda) AS medie_comanda
+     FROM comenzi c ${ordTotals} WHERE ${filter}`,
+    r, data
+  );
+
+  const top_produse = await all(
+    db,
+    `SELECT cp.nume_produs, SUM(cp.cantitate) AS cantitate_totala, SUM(cp.total) AS total_produs,
+            COUNT(DISTINCT cp.comanda_id) AS nr_comenzi, cp.pret_unitar
+     FROM comanda_produse cp JOIN comenzi c ON c.id = cp.comanda_id
+     WHERE ${filter}
+     GROUP BY cp.nume_produs, cp.pret_unitar ORDER BY cantitate_totala DESC LIMIT 20`,
+    r, data
+  );
+
+  const per_masa = await all(
+    db,
+    `SELECT m.nume AS masa_nume, COUNT(c.id) AS nr_comenzi, SUM(cp.total_comanda) AS total_masa,
+            c.metoda_plata, MIN(c.created_at) AS prima_comanda, MAX(c.created_at) AS ultima_comanda
+     FROM comenzi c JOIN mese m ON m.id = c.masa_id ${ordTotals}
+     WHERE ${filter}
+     GROUP BY m.id, m.nume, c.metoda_plata ORDER BY total_masa DESC`,
+    r, data
+  );
+
+  const per_ora = await all(
+    db,
+    `SELECT CAST(strftime('%H', c.created_at) AS INTEGER) AS ora, COUNT(*) AS nr_comenzi,
+            SUM(cp.total_comanda) AS total_ora
+     FROM comenzi c ${ordTotals}
+     WHERE ${filter}
+     GROUP BY ora ORDER BY ora`,
+    r, data
+  );
+
+  const maseRow = await one<{ n: number }>(
+    db,
+    "SELECT COUNT(DISTINCT masa_id) AS n FROM comenzi WHERE restaurant_id = ? AND DATE(created_at) = ? AND status = 'servita'",
+    r, data
+  );
+
+  const rest = await one<{ nume: string }>(db, 'SELECT nume FROM restaurante WHERE id = ?', r);
+
+  return c.json({
+    ok: true,
+    data,
+    nume: rest?.nume ?? '',
+    sumar,
+    top_produse,
+    per_masa,
+    per_ora,
+    mese_active: maseRow?.n ?? 0,
+  });
+});
+
 export default admin;

@@ -13,6 +13,16 @@ const app = new Hono<HonoEnv>();
 // ── Health check ──
 app.get('/api/health', (c) => c.json({ ok: true, service: 'tablerino', ts: Date.now() }));
 
+// ── Public landing settings (defaults merged with master overrides) ──
+app.get('/api/landing', async (c) => {
+  const { all } = await import('./db');
+  const { LANDING_DEFAULTS } = await import('./landingDefaults');
+  const settings: Record<string, string> = { ...LANDING_DEFAULTS };
+  const rows = await all<{ cheie: string; valoare: string }>(c.env.DB, 'SELECT cheie, valoare FROM landing_settings');
+  for (const row of rows) settings[row.cheie] = row.valoare;
+  return c.json({ ok: true, settings });
+});
+
 // ── Uploaded images: R2 first (user uploads), then static assets (app icons,
 //    landing images shipped in public/uploads/) ──
 app.get('/uploads/*', async (c) => {
