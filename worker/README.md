@@ -68,12 +68,7 @@ npm run deploy
 - [x] Phase 3 — admin API (`/api/admin`)
 - [x] Phase 4 — master API + registration
 - [x] Phase 5 — R2 uploads + Groq AI
-- [x] Phase 6 — core frontend (home, masa, admin login/orders/menu/tables, master panel/requests)
-- [x] Phase 7 — deploy config + secrets + master seed helper
+- [x] Phase 6 — full frontend (home, masa, admin, master — all 16 pages)
+- [x] Phase 7 — deploy config + secrets + master seed helper + data migration
 
-### Deferred (secondary screens, not yet ported)
-- admin: istoric, raport, reclame, setari, audit
-- master: comenzi, landing editor, meniu
-
-These render server-side DB data in the PHP app and would each need a matching
-API endpoint; their nav links currently 404.
+See `DEPLOY.md` for the full deployment guide.
