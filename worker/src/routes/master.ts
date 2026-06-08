@@ -124,4 +124,19 @@ master.post('/toggle_activ', async (c) => {
   return c.json({ ok: true });
 });
 
+// Registration requests (master/cereri.php) — approve or reject a pending account.
+master.post('/accepta', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  await run(c.env.DB, 'UPDATE restaurante SET activ = 1 WHERE id = ?', id);
+  return c.json({ ok: true });
+});
+
+master.post('/respinge', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  await run(c.env.DB, 'DELETE FROM restaurante WHERE id = ? AND activ = 0', id);
+  return c.json({ ok: true });
+});
+
 export default master;
