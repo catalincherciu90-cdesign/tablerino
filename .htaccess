@@ -1,0 +1,17 @@
+RewriteEngine On
+RewriteBase /
+
+# Blocheaza accesul direct la config.php
+RewriteRule ^config\.php$ - [F,L]
+
+# Homepage -> index.php
+RewriteRule ^$ index.php [L]
+
+# Tableta client
+RewriteRule ^masa/$ masa/index.php [L]
+
+# Admin
+RewriteRule ^admin/(.*)$ admin/$1 [L]
+
+# Master
+RewriteRule ^master/(.*)$ master/$1 [L]
