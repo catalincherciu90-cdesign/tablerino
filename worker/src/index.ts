@@ -13,10 +13,11 @@ const app = new Hono<HonoEnv>();
 // ── Health check ──
 app.get('/api/health', (c) => c.json({ ok: true, service: 'tablerino', ts: Date.now() }));
 
-// ── Uploaded images, served from R2 (replaces the PHP uploads/ filesystem) ──
+// ── Uploaded images: R2 first (user uploads), then static assets (app icons,
+//    landing images shipped in public/uploads/) ──
 app.get('/uploads/*', async (c) => {
   const res = await serveUpload(c.env.UPLOADS, new URL(c.req.url).pathname);
-  return res ?? c.notFound();
+  return res ?? c.env.ASSETS.fetch(c.req.raw);
 });
 
 // ── API routes ──

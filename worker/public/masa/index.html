@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tablerino">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="manifest" href="/masa/manifest.json">
+<link rel="apple-touch-icon" href="/uploads/icon-192.png">
+<title>Tablerino</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+    --primar: #6c47ff;
+    --bg: #f5f5fa;
+    --card-bg: #fff;
+    --header-bg: #1a1a2e;
+    --header-text: #fff;
+    --border-r: 12px;
+    --text: #111;
+    --text-sub: #666;
+    --header-h: 56px;
+    --padding: 12px;
+    --font-sm: 11px;
+    --font-md: 13px;
+    --font-lg: 15px;
+    --font-xl: 18px;
+    --banner-h: 200px;
+    --banner-cols: 2;
+    --grid-cols: 2;
+    --produs-poza-h: 90px;
+    --drawer-max: 88vh;
+}
+@media (max-width: 380px) {
+    :root { --header-h: 50px; --padding: 10px; --font-sm: 10px; --font-md: 12px; --font-lg: 13px; --font-xl: 16px; --banner-h: 160px; --banner-cols: 1; --grid-cols: 2; --produs-poza-h: 80px; }
+}
+@media (min-width: 601px) and (max-width: 900px) {
+    :root { --header-h: 64px; --padding: 16px; --font-sm: 12px; --font-md: 14px; --font-lg: 16px; --font-xl: 20px; --banner-h: 260px; --banner-cols: 3; --grid-cols: 3; --produs-poza-h: 110px; --drawer-max: 85vh; }
+}
+@media (min-width: 901px) {
+    :root { --header-h: 70px; --padding: 20px; --font-sm: 13px; --font-md: 15px; --font-lg: 17px; --font-xl: 22px; --banner-h: 320px; --banner-cols: 3; --grid-cols: 4; --produs-poza-h: 130px; --drawer-max: 80vh; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+    :root { --header-h: 46px; --banner-h: 140px; --drawer-max: 95vh; --padding: 8px; }
+}
+html, body { height: 100%; overflow: hidden; }
+body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+.header { background: var(--header-bg); color: var(--header-text); padding: 0 var(--padding); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; gap: 10px; height: var(--header-h); min-height: var(--header-h); }
+.header-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+.header-logo { width: calc(var(--header-h) - 20px); height: calc(var(--header-h) - 20px); border-radius: 8px; object-fit: contain; flex-shrink: 0; display: none; }
+.header-text { min-width: 0; }
+.header-text h1 { font-size: var(--font-lg); font-weight: 700; color: var(--header-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.header-text span { font-size: var(--font-sm); color: var(--header-text); opacity: .6; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block; animation: blink 2s infinite; flex-shrink: 0; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.header-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.lang-btns { display: flex; gap: 4px; flex-shrink: 0; }
+.lang-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 6px 8px; font-size: 16px; cursor: pointer; transition: background .15s; }
+.lang-btn:hover, .lang-btn.activ { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.5); }
+.btn-meniu { background: var(--primar); color: #fff; border: none; padding: clamp(9px,2vw,12px) clamp(14px,3vw,22px); border-radius: 20px; font-size: clamp(13px,2.5vw,16px); font-weight: 800; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 8px rgba(108,71,255,0.4); }
+.btn-cos-mic { background: rgba(255,255,255,0.15); color: var(--header-text); border: 2px solid rgba(255,255,255,0.3); padding: clamp(9px,2vw,12px) clamp(12px,2.5vw,18px); border-radius: 20px; font-size: clamp(13px,2.5vw,16px); font-weight: 700; cursor: pointer; position: relative; white-space: nowrap; }
+.cos-badge { position: absolute; top: -5px; right: -5px; background: #f59e0b; color: #fff; border-radius: 50%; width: 17px; height: 17px; font-size: 10px; font-weight: 700; display: none; align-items: center; justify-content: center; }
+.ticker-wrap { background: var(--primar); overflow: hidden; height: 32px; flex-shrink: 0; display: flex; align-items: center; }
+.ticker-track { display: flex; align-items: center; white-space: nowrap; will-change: transform; }
+.ticker-track span { color: #fff; font-size: 13px; font-weight: 600; padding: 0 80px; opacity: .95; }
+@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.ecran-sumar { flex: 1; overflow-y: auto; padding: var(--padding); -webkit-overflow-scrolling: touch; position: relative; min-height: 0; }
+.ecran-sumar::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0); pointer-events: none; z-index: 0; }
+.ecran-sumar.cu-fundal::before { background: rgba(0,0,0,0.45); }
+.ecran-sumar > * { position: relative; z-index: 1; }
+.status-card { border-radius: 16px; padding: clamp(14px,3vw,20px); margin-bottom: var(--padding); display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.status-card.noua { background: #fef3c7; border-left: 5px solid #f59e0b; }
+.status-card.in_pregatire { background: #dbeafe; border-left: 5px solid #3b82f6; }
+.status-card.servita { background: #d1fae5; border-left: 5px solid #10b981; }
+.status-icon { font-size: clamp(26px,5vw,36px); flex-shrink: 0; }
+.status-text h3 { font-size: clamp(15px,3vw,20px); font-weight: 800; }
+.status-text p { font-size: clamp(12px,2vw,15px); margin-top: 3px; opacity: .75; }
+.sectiune-titlu { font-size: var(--font-sm); font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.produs-comandat { background: var(--card-bg); border-radius: 10px; padding: clamp(10px,2vw,14px); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.produs-comandat.livrat { opacity: .6; }
+.pc-qty { background: var(--primar); color: #fff; border-radius: 6px; padding: 3px 8px; font-size: var(--font-sm); font-weight: 700; min-width: 30px; text-align: center; flex-shrink: 0; }
+.pc-info { flex: 1; min-width: 0; }
+.pc-info strong { font-size: var(--font-md); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.pc-info span { font-size: var(--font-sm); color: var(--text-sub); }
+.pc-total { font-weight: 700; font-size: var(--font-md); color: var(--text); flex-shrink: 0; }
+.total-bar { background: var(--card-bg); border-radius: 10px; padding: clamp(12px,2vw,16px); margin-top: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.total-bar span:first-child { font-size: var(--font-md); color: var(--text-sub); font-weight: 600; }
+.total-bar span:last-child { font-size: var(--font-xl); font-weight: 800; color: var(--primar); }
+.btn-solicita-nota { width: 100%; padding: clamp(14px,3vw,20px); background: linear-gradient(135deg, #1a1a2e, #2d1f6e); color: #fff; border: none; border-radius: 16px; font-size: clamp(15px,3vw,20px); font-weight: 800; cursor: pointer; margin-top: var(--padding); letter-spacing: .3px; box-shadow: 0 4px 16px rgba(26,26,46,0.3); }
+.btn-solicita-nota:active { opacity: .85; transform: scale(0.99); }
+.gol-comanda { text-align: center; padding: clamp(40px,10vh,80px) var(--padding); color: #bbb; }
+.gol-comanda .icon { font-size: clamp(52px,12vw,80px); margin-bottom: 16px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
+.gol-comanda p { font-size: clamp(18px,4vw,26px); color: #888; font-weight: 700; }
+.gol-comanda small { font-size: clamp(13px,2.5vw,17px); color: #bbb; margin-top: 8px; display: block; }
+.banner-reclame { flex-shrink: 0; display: none; background: #111; height: 90px; overflow: hidden; position: relative; }
+.banner-reclame.vizibil { display: block; }
+.banner-track { display: flex; align-items: center; height: 100%; gap: 12px; animation: bannerScroll 30s linear infinite; width: max-content; padding: 8px 0; }
+.banner-track:hover { animation-play-state: paused; }
+@keyframes bannerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.banner-item { flex-shrink: 0; position: relative; overflow: hidden; border-radius: 12px; box-shadow: 0 3px 12px rgba(0,0,0,0.4); height: 74px; width: 220px; transition: transform .2s; }
+.banner-item:active { transform: scale(0.97); }
+.banner-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+.banner-item-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); border-radius: 12px; }
+.banner-item-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 8px; color: #fff; }
+.banner-item-text h4 { font-size: 13px; font-weight: 800; background: rgba(0,0,0,0.5); padding: 3px 10px; border-radius: 20px; backdrop-filter: blur(4px); margin-bottom: 3px; }
+.banner-item-text p { font-size: 10px; opacity: .9; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 10px; backdrop-filter: blur(4px); }
+.banner-item-fara-img { background: linear-gradient(135deg, #1a1a2e, #2d1f6e); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 10px; color: #fff; border-radius: 12px; box-shadow: 0 3px 12px rgba(0,0,0,0.4); height: 74px; width: 220px; flex-shrink: 0; }
+.banner-item-fara-img .bi { font-size: 20px; margin-bottom: 4px; }
+.banner-item-fara-img h4 { font-size: 12px; font-weight: 800; background: rgba(255,255,255,0.15); padding: 3px 10px; border-radius: 20px; margin-bottom: 3px; }
+.banner-item-fara-img p { font-size: 10px; opacity: .85; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; }
+.social-bar { display: none; justify-content: center; gap: 16px; padding: 14px; flex-shrink: 0; background: var(--card-bg); border-top: 1px solid rgba(0,0,0,0.06); }
+.social-bar.vizibil { display: flex; }
+.social-btn { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: transform .15s, opacity .15s; flex-shrink: 0; }
+.social-btn:active { transform: scale(0.9); opacity: .8; }
+.social-btn svg { width: 24px; height: 24px; }
+.social-btn.facebook { background: #1877f2; }
+.social-btn.instagram { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
+.social-btn.tiktok { background: #010101; }
+.social-btn.whatsapp { background: #25d366; }
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 100; }
+.overlay.open { display: block; }
+.drawer { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 20px 20px 0 0; padding: var(--padding) var(--padding) 0; max-height: var(--drawer-max); overflow-y: auto; z-index: 101; transform: translateY(100%); transition: transform .3s ease; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; }
+.drawer.open { transform: translateY(0); }
+.drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--padding); flex-shrink: 0; }
+.drawer-header h3 { font-size: var(--font-xl); font-weight: 700; }
+.btn-chiude { background: #f3f4f6; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #555; flex-shrink: 0; }
+.drawer-footer-cos { flex-shrink: 0; padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); background: #fff; position: sticky; bottom: 0; }
+.btn-vezi-comanda { width: 100%; padding: clamp(13px,2.5vw,17px); background: var(--primar); color: #fff; border: none; border-radius: 14px; font-size: clamp(14px,2.5vw,17px); font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 16px rgba(108,71,255,0.35); }
+.btn-vezi-comanda:active { opacity: .88; transform: scale(0.99); }
+.btn-vezi-comanda span { background: rgba(255,255,255,0.25); padding: 2px 10px; border-radius: 20px; font-size: clamp(12px,2vw,15px); }
+.categorii-tabs { display: flex; gap: 6px; overflow-x: auto; margin-bottom: var(--padding); -ms-overflow-style: none; scrollbar-width: none; }
+.categorii-tabs::-webkit-scrollbar { display: none; }
+.tab { padding: clamp(5px,1vw,8px) clamp(12px,2vw,18px); border-radius: 20px; border: 2px solid #eee; background: #fff; font-size: var(--font-sm); font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .15s; flex-shrink: 0; }
+.tab.activ { border-color: var(--primar); background: var(--primar); color: #fff; }
+.produse-grid { display: grid; grid-template-columns: repeat(var(--grid-cols), 1fr); gap: clamp(10px,2vw,16px); margin-bottom: var(--padding); }
+.produs-card { background: #fff; border-radius: 16px; overflow: hidden; cursor: pointer; transition: transform .15s, box-shadow .15s; user-select: none; box-shadow: 0 2px 12px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.06); }
+.produs-card:active { transform: scale(0.96); box-shadow: 0 1px 6px rgba(0,0,0,0.1); }
+.produs-card.indisponibil { opacity: .35; pointer-events: none; }
+.produs-poza { height: var(--produs-poza-h); background: linear-gradient(135deg, #ede9ff, #dbeafe); display: flex; align-items: center; justify-content: center; font-size: clamp(28px,6vw,42px); overflow: hidden; }
+.produs-poza img { width: 100%; height: 100%; object-fit: cover; }
+.produs-body { padding: clamp(8px,2vw,12px); }
+.produs-body h4 { font-size: clamp(13px,2.5vw,16px); font-weight: 700; margin-bottom: 3px; line-height: 1.3; color: #111; }
+.produs-body p { font-size: clamp(11px,2vw,13px); color: #888; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
+.produs-footer { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.produs-pret { font-weight: 800; font-size: clamp(14px,2.5vw,18px); color: var(--primar); white-space: nowrap; }
+.btn-adauga { background: var(--primar); color: #fff; border: none; border-radius: 8px; padding: clamp(5px,1vw,8px) clamp(10px,2vw,14px); font-size: clamp(11px,2vw,13px); font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.tag-indisponibil { font-size: 11px; color: #e53e3e; font-weight: 700; }
+.cat-titlu { font-size: clamp(15px,3vw,20px); font-weight: 800; margin-bottom: 12px; color: #111; padding-top: 4px; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; }
+.cos-item { display: flex; align-items: center; gap: 10px; padding: clamp(9px,1.8vw,12px) 0; border-bottom: 1px solid #f0f0f0; }
+.cos-item:last-of-type { border-bottom: none; }
+.cos-item-info { flex: 1; min-width: 0; }
+.cos-item-info strong { font-size: var(--font-md); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cos-item-info span { display: block; font-size: var(--font-sm); color: #888; margin-top: 1px; }
+.cos-qty { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.qty-btn { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #eee; background: #fff; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.qty-btn:hover { border-color: var(--primar); color: var(--primar); }
+.qty-val { font-weight: 700; font-size: var(--font-md); min-width: 20px; text-align: center; }
+.cos-item-pret { font-weight: 700; font-size: var(--font-md); color: #333; min-width: 60px; text-align: right; flex-shrink: 0; }
+.cos-total-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 0; font-size: var(--font-lg); font-weight: 700; border-top: 2px solid #eee; margin-top: 6px; }
+.cos-total-row span:last-child { color: var(--primar); font-size: var(--font-xl); }
+.obs-input { width: 100%; padding: clamp(8px,1.5vw,11px) 12px; border: 1px solid #ddd; border-radius: var(--border-r); font-size: var(--font-md); outline: none; margin: 12px 0; resize: none; }
+.obs-input:focus { border-color: var(--primar); }
+.btn-trimite { width: 100%; padding: clamp(12px,2.5vw,16px); background: var(--primar); color: #fff; border: none; border-radius: var(--border-r); font-size: var(--font-lg); font-weight: 700; cursor: pointer; }
+.btn-trimite:disabled { opacity: .5; }
+.modal-plata-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 300; align-items: center; justify-content: center; padding: var(--padding); }
+.modal-plata-overlay.open { display: flex; }
+.modal-plata-box { background: #fff; border-radius: 20px; padding: clamp(20px,4vw,32px); width: 100%; max-width: 380px; text-align: center; }
+.modal-plata-box h2 { font-size: var(--font-xl); margin-bottom: 4px; }
+.modal-plata-box p { color: #888; font-size: var(--font-md); margin-bottom: 6px; }
+.modal-plata-total { font-size: clamp(24px,5vw,34px); font-weight: 800; color: #111; margin: 14px 0 22px; }
+.plata-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.btn-plata { padding: clamp(16px,3vw,22px) 8px; border-radius: 12px; border: 2px solid #eee; background: #fafafa; cursor: pointer; font-size: var(--font-lg); font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all .15s; }
+.btn-plata .plata-icon { font-size: clamp(28px,5vw,36px); }
+.btn-plata.cash:active, .btn-plata.cash:hover { border-color: #10b981; background: #f0fdf4; }
+.btn-plata.card:active, .btn-plata.card:hover { border-color: #3b82f6; background: #eff6ff; }
+.confirmare { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; align-items: center; justify-content: center; padding: var(--padding); }
+.confirmare.open { display: flex; }
+.confirmare-box { background: #fff; border-radius: 16px; padding: clamp(20px,4vw,32px); text-align: center; width: 100%; max-width: 300px; }
+.confirmare-box .icon { font-size: clamp(36px,7vw,48px); margin-bottom: 10px; }
+.confirmare-box h3 { font-size: var(--font-xl); margin-bottom: 6px; }
+.confirmare-box p { color: #666; font-size: var(--font-md); margin-bottom: 20px; }
+.btn-ok { padding: clamp(10px,2vw,13px) clamp(24px,4vw,32px); background: var(--primar); color: #fff; border: none; border-radius: 10px; font-size: var(--font-md); font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-left">
+        <img class="header-logo" id="logoImg" src="" alt="Logo">
+        <div class="header-text">
+            <h1 id="masaNume">Se încarcă...</h1>
+            <span><span class="live-dot"></span><span>live</span></span>
+        </div>
+    </div>
+    <div class="header-btns">
+        <button class="btn-cos-mic" onclick="deschideCos()">
+            📋 Comanda ta <span class="cos-badge" id="cosBadge">0</span>
+        </button>
+        <button class="btn-meniu" onclick="deschideMeniu()">🍕 Meniu</button>
+        <div class="lang-btns">
+            <button class="lang-btn" id="langRo" onclick="schimbaLimba('ro')">🇷🇴</button>
+            <button class="lang-btn" id="langEn" onclick="schimbaLimba('en')">🇬🇧</button>
+        </div>
+    </div>
+</div>
+
+<div class="ticker-wrap" id="tickerWrap" style="display:none">
+    <div class="ticker-track" id="tickerTrack">
+        <span id="tickerText"></span>
+        <span id="tickerText2"></span>
+    </div>
+</div>
+
+<div class="ecran-sumar" id="ecranSumar">
+    <div class="gol-comanda" id="golComanda">
+        <div class="icon">🍽️</div>
+        <p>Nicio comandă activă</p>
+        <small>Apasă pe "Meniu" pentru a comanda</small>
+    </div>
+    <div id="sumarContent" style="display:none">
+        <div class="status-card" id="statusCard">
+            <span class="status-icon" id="statusIcon">⏳</span>
+            <div class="status-text">
+                <h3 id="statusTitlu">—</h3>
+                <p id="statusSubtitlu">—</p>
+            </div>
+        </div>
+        <div class="sectiune-titlu">Produse comandate</div>
+        <div id="listaProduse"></div>
+        <div class="total-bar">
+            <span>Total</span>
+            <span id="totalComanda">0.00 lei</span>
+        </div>
+        <button class="btn-solicita-nota" id="btnSolicitaNota" onclick="solicitaNota()" style="display:none">
+            🧾 Solicită nota
+        </button>
+    </div>
+</div>
+
+<div class="banner-reclame" id="bannerReclame">
+    <div class="banner-track" id="bannerTrack"></div>
+</div>
+
+<div class="social-bar" id="socialBar">
+    <a class="social-btn facebook" id="btnFacebook" href="#" target="_blank" style="display:none">
+        <svg viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+    </a>
+    <a class="social-btn instagram" id="btnInstagram" href="#" target="_blank" style="display:none">
+        <svg viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+    </a>
+    <a class="social-btn tiktok" id="btnTiktok" href="#" target="_blank" style="display:none">
+        <svg viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.27 8.27 0 004.84 1.55V6.79a4.85 4.85 0 01-1.07-.1z"/></svg>
+    </a>
+    <a class="social-btn whatsapp" id="btnWhatsapp" href="#" target="_blank" style="display:none">
+        <svg viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    </a>
+</div>
+
+<div class="overlay" id="overlayMeniu" onclick="inchideMeniu()"></div>
+<div class="drawer" id="drawerMeniu">
+    <div class="drawer-header">
+        <h3>🍕 Meniu</h3>
+        <button class="btn-chiude" onclick="inchideMeniu()">×</button>
+    </div>
+    <div class="categorii-tabs" id="categoriiTabs"></div>
+    <div id="produseContent"></div>
+    <div class="drawer-footer-cos">
+        <button class="btn-vezi-comanda" id="btnVeziComanda" onclick="inchideMeniu(); deschideCos()">
+            🛒 Vezi comanda <span id="footerBadge"></span>
+        </button>
+    </div>
+</div>
+
+<div class="overlay" id="overlayCos" onclick="inchideCos()"></div>
+<div class="drawer" id="drawerCos">
+    <div class="drawer-header">
+        <h3>📋 Comanda ta</h3>
+        <button class="btn-chiude" onclick="inchideCos()">×</button>
+    </div>
+    <div id="cosItems"></div>
+    <div class="cos-total-row">
+        <span>Total</span>
+        <span id="cosTotal">0.00 lei</span>
+    </div>
+    <textarea class="obs-input" id="observatii" placeholder="Observații (alergii, preferințe...)" rows="2"></textarea>
+    <button class="btn-trimite" id="btnTrimite" onclick="trimiteComanda()">Trimite comanda</button>
+</div>
+
+<div class="modal-plata-overlay" id="modalPlataOverlay">
+    <div class="modal-plata-box">
+        <h2 id="modalPlataTitle">💳 Achitați nota</h2>
+        <p id="modalPlataSubtitle">Alegeți metoda de plată</p>
+        <div class="modal-plata-total" id="modalPlatTotal">0.00 lei</div>
+        <div class="plata-btns">
+            <button class="btn-plata cash" onclick="alegePlata('cash')">
+                <span class="plata-icon">💵</span><span id="btnCashLabel">Cash</span>
+            </button>
+            <button class="btn-plata card" onclick="alegePlata('card')">
+                <span class="plata-icon">💳</span><span id="btnCardLabel">Card</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="confirmare" id="confirmare">
+    <div class="confirmare-box">
+        <div class="icon">✅</div>
+        <h3>Comandă trimisă!</h3>
+        <p>Comanda ta a ajuns la bucătărie.</p>
+        <button class="btn-ok" onclick="document.getElementById('confirmare').classList.remove('open'); incarcaSumar();">OK</button>
+    </div>
+</div>
+
+<script>
+const token = new URLSearchParams(window.location.search).get('token');
+if (!token) document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#c62828">Link invalid.</div>';
+
+let meniu = [];
+let cos = {};
+let primaIncarcare = true;
+
+const translations = {
+    ro: {
+        yourOrder: 'Comanda ta', menu: '🍕 Meniu', noOrder: 'Nicio comandă activă',
+        tapMenu: 'Apasă pe "Meniu" pentru a comanda', orderedItems: 'Produse comandate',
+        requestBill: '🧾 Solicită nota', sendOrder: 'Trimite comanda',
+        observations: 'Observații (alergii, preferințe...)', orderSent: 'Comandă trimisă!',
+        orderSentDesc: 'Comanda ta a ajuns la bucătărie.', ok: 'OK', addBtn: '+ Adaugă',
+        statusReceived: 'Comandă primită', statusReceivedS: 'Se pregătește în curând...',
+        statusPreparing: 'În pregătire', statusPreparingS: 'Bucătăria lucrează la comanda ta!',
+        statusAllServed: 'Toate servite!', statusAllServedS: 'Poți solicita nota când ești gata.',
+        statusBill: 'Notă solicitată', statusBillS: 'Chelnerul vine în curând.',
+        payTitle: '💳 Achitați nota', payChoose: 'Alegeți metoda de plată',
+        cash: 'Cash', card: 'Card', inPrep: '⏳ în pregătire', served: '✓ servit',
+        live: 'live', viewOrder: '🛒 Vezi comanda', total: 'Total', sending: 'Se trimite...',
+        noProducts: 'Niciun produs adăugat.', pieces: 'buc', unavailable: 'Indisponibil'
+    },
+    en: {
+        yourOrder: 'Your order', menu: '🍕 Menu', noOrder: 'No active order',
+        tapMenu: 'Tap "Menu" to order', orderedItems: 'Ordered items',
+        requestBill: '🧾 Request bill', sendOrder: 'Send order',
+        observations: 'Notes (allergies, preferences...)', orderSent: 'Order sent!',
+        orderSentDesc: 'Your order has reached the kitchen.', ok: 'OK', addBtn: '+ Add',
+        statusReceived: 'Order received', statusReceivedS: 'Being prepared soon...',
+        statusPreparing: 'Being prepared', statusPreparingS: 'The kitchen is working on your order!',
+        statusAllServed: 'All served!', statusAllServedS: 'You can request the bill when ready.',
+        statusBill: 'Bill requested', statusBillS: 'The waiter will be right with you.',
+        payTitle: '💳 Pay the bill', payChoose: 'Choose payment method',
+        cash: 'Cash', card: 'Card', inPrep: '⏳ preparing', served: '✓ served',
+        live: 'live', viewOrder: '🛒 View order', total: 'Total', sending: 'Sending...',
+        noProducts: 'No products added.', pieces: 'pcs', unavailable: 'Unavailable'
+    }
+};
+let _t = translations.ro;
+
+function applyLang(limba) {
+    _t = translations[limba] || translations.ro;
+    const s = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+    const q = (sel, txt) => { const el = document.querySelector(sel); if (el) el.textContent = txt; };
+    const p = (sel, txt) => { const el = document.querySelector(sel); if (el) el.placeholder = txt; };
+    const btnCos = document.querySelector('.btn-cos-mic');
+    if (btnCos) btnCos.childNodes[0].textContent = '📋 ' + _t.yourOrder + ' ';
+    const btnMeniu = document.querySelector('.btn-meniu');
+    if (btnMeniu) btnMeniu.textContent = _t.menu;
+    q('.gol-comanda p', _t.noOrder);
+    q('.gol-comanda small', _t.tapMenu);
+    q('.sectiune-titlu', _t.orderedItems);
+    p('.obs-input', _t.observations);
+    q('.btn-trimite', _t.sendOrder);
+    q('.cos-total-row span:first-child', _t.total);
+    q('.btn-solicita-nota', _t.requestBill);
+    s('modalPlataTitle', _t.payTitle);
+    s('modalPlataSubtitle', _t.payChoose);
+    s('btnCashLabel', _t.cash);
+    s('btnCardLabel', _t.card);
+    q('.confirmare-box h3', _t.orderSent);
+    q('.confirmare-box p', _t.orderSentDesc);
+    q('.btn-ok', _t.ok);
+    const drawerCosH = document.querySelector('#drawerCos .drawer-header h3');
+    if (drawerCosH) drawerCosH.textContent = '📋 ' + _t.yourOrder;
+    const drawerMeniuH = document.querySelector('#drawerMeniu .drawer-header h3');
+    if (drawerMeniuH) drawerMeniuH.textContent = _t.menu;
+    const btnVezi = document.querySelector('.btn-vezi-comanda');
+    if (btnVezi) btnVezi.firstChild.textContent = _t.viewOrder + ' ';
+}
+
+function schimbaLimba(limba) {
+    applyLang(limba);
+    localStorage.setItem('limba_' + token, limba);
+    document.getElementById('langRo').classList.toggle('activ', limba === 'ro');
+    document.getElementById('langEn').classList.toggle('activ', limba === 'en');
+    if (meniu.length) renderProduse(meniu);
+}
+
+async function incarcaSumar() {
+    try {
+        const r = await fetch(`/api/table/sumar_comanda?token=${token}`);
+        const d = await r.json();
+        const gol = document.getElementById('golComanda');
+        const sumar = document.getElementById('sumarContent');
+
+        if (d.status === 'plata_aleasa') {
+            document.getElementById('modalPlatTotal').textContent = parseFloat(d.total || 0).toFixed(2) + ' lei';
+            document.getElementById('modalPlataOverlay').classList.add('open');
+            gol.style.display = 'none';
+            sumar.style.display = 'none';
+            primaIncarcare = false;
+            return;
+        }
+        document.getElementById('modalPlataOverlay').classList.remove('open');
+
+        if (!d.produse || !d.produse.length) {
+            gol.style.display = 'block';
+            sumar.style.display = 'none';
+            if (primaIncarcare) {
+                primaIncarcare = false;
+                setTimeout(() => deschideMeniu(), 700);
+            }
+            return;
+        }
+        primaIncarcare = false;
+        gol.style.display = 'none';
+        sumar.style.display = 'block';
+
+        const statusConfig = {
+            noua:         { icon: '⏳', titlu: _t.statusReceived,  subtitlu: _t.statusReceivedS,  cls: 'noua' },
+            in_pregatire: { icon: '👨‍🍳', titlu: _t.statusPreparing, subtitlu: _t.statusPreparingS, cls: 'in_pregatire' },
+            plata_aleasa: { icon: '💳', titlu: _t.statusBill,       subtitlu: _t.statusBillS,       cls: 'servita' },
+        };
+        const cfg = statusConfig[d.status] || statusConfig['noua'];
+        const card = document.getElementById('statusCard');
+        card.className = 'status-card ' + cfg.cls;
+        document.getElementById('statusIcon').textContent = cfg.icon;
+        document.getElementById('statusTitlu').textContent = cfg.titlu;
+        document.getElementById('statusSubtitlu').textContent = cfg.subtitlu;
+
+        document.getElementById('listaProduse').innerHTML = d.produse.map(p => {
+            const eNou = p.status === 'nou' || !p.status;
+            return `
+            <div class="produs-comandat ${eNou ? '' : 'livrat'}">
+                <span class="pc-qty">${p.cantitate}×</span>
+                <div class="pc-info">
+                    <strong>${p.nume_produs}</strong>
+                    <span>${parseFloat(p.pret_unitar).toFixed(2)} lei / ${_t.pieces || 'buc'}</span>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
+                    <span class="pc-total">${parseFloat(p.total).toFixed(2)} lei</span>
+                    <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;${eNou ? 'background:#fef3c7;color:#92400e' : 'background:#d1fae5;color:#065f46'}">${eNou ? _t.inPrep : _t.served}</span>
+                </div>
+            </div>`;
+        }).join('');
+
+        document.getElementById('totalComanda').textContent = parseFloat(d.total || 0).toFixed(2) + ' lei';
+
+        const toateLivrate = d.produse.length > 0 && d.produse.every(p => p.status === 'livrat');
+        const eInAsteptarePlata = d.status === 'plata_aleasa';
+
+        if (toateLivrate && !eInAsteptarePlata) {
+            card.className = 'status-card servita';
+            document.getElementById('statusIcon').textContent = '✅';
+            document.getElementById('statusTitlu').textContent = _t.statusAllServed;
+            document.getElementById('statusSubtitlu').textContent = _t.statusAllServedS;
+        }
+
+        document.getElementById('btnSolicitaNota').style.display = (toateLivrate && !eInAsteptarePlata) ? 'block' : 'none';
+        document.getElementById('btnSolicitaNota').textContent = _t.requestBill;
+    } catch(e) {}
+}
+
+function solicitaNota() {
+    const total = document.getElementById('totalComanda').textContent;
+    document.getElementById('modalPlatTotal').textContent = total;
+    document.getElementById('modalPlataOverlay').classList.add('open');
+}
+
+async function alegePlata(metoda) {
+    await fetch('/api/table/alege_plata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actiune: 'alege_plata', token, metoda })
+    });
+    document.getElementById('modalPlataOverlay').classList.remove('open');
+    document.getElementById('golComanda').style.display = 'block';
+    document.getElementById('sumarContent').style.display = 'none';
+    cos = {};
+    updateBadge();
+}
+
+async function incarcaMeniu() {
+    try {
+        const r = await fetch(`/api/table/meniu?token=${token}`);
+        const d = await r.json();
+        if (!d.ok) return;
+        meniu = d.categorii;
+        document.getElementById('masaNume').textContent = d.masa.nume;
+
+        if (d.logo) { const img = document.getElementById('logoImg'); img.src = '/' + d.logo; img.style.display = 'block'; }
+        if (d.text_bun_venit) {
+            const ticker = document.getElementById('tickerWrap');
+            const track = document.getElementById('tickerTrack');
+            document.getElementById('tickerText').textContent = d.text_bun_venit;
+            document.getElementById('tickerText2').textContent = d.text_bun_venit;
+            ticker.style.display = 'flex';
+            requestAnimationFrame(() => {
+                const durata = Math.max(8, d.text_bun_venit.length * 0.3);
+                track.style.animation = `ticker ${durata}s linear infinite`;
+            });
+        }
+
+        const limbaLocala = localStorage.getItem('limba_' + token);
+        const limbaFinala = limbaLocala || d.limba || 'ro';
+        applyLang(limbaFinala);
+        document.getElementById('langRo').classList.toggle('activ', limbaFinala === 'ro');
+        document.getElementById('langEn').classList.toggle('activ', limbaFinala === 'en');
+
+        if (d.social && Object.keys(d.social).length) {
+            const bar = document.getElementById('socialBar');
+            bar.classList.add('vizibil');
+            if (d.social.facebook)  { const b = document.getElementById('btnFacebook');  b.href = d.social.facebook; b.style.display = 'flex'; }
+            if (d.social.instagram) { const b = document.getElementById('btnInstagram'); b.href = d.social.instagram; b.style.display = 'flex'; }
+            if (d.social.tiktok)    { const b = document.getElementById('btnTiktok');    b.href = d.social.tiktok; b.style.display = 'flex'; }
+            if (d.social.whatsapp)  { const b = document.getElementById('btnWhatsapp');  b.href = 'https://wa.me/' + d.social.whatsapp; b.style.display = 'flex'; }
+        }
+        if (d.bg_imagine) {
+            const ecran = document.getElementById('ecranSumar');
+            ecran.style.backgroundImage = `url('/${d.bg_imagine}')`;
+            ecran.style.backgroundSize = 'cover';
+            ecran.style.backgroundPosition = 'center';
+            ecran.classList.add('cu-fundal');
+        }
+        if (d.tema) {
+            const t = d.tema;
+            const root = document.documentElement;
+            root.style.setProperty('--primar', t.primar);
+            root.style.setProperty('--bg', t.bg);
+            root.style.setProperty('--card-bg', t.card_bg);
+            root.style.setProperty('--header-bg', t.header_bg);
+            root.style.setProperty('--header-text', t.header_text);
+            root.style.setProperty('--border-r', t.border_r);
+            root.style.setProperty('--text', t.dark ? '#e0e0e0' : '#111');
+            root.style.setProperty('--text-sub', t.dark ? '#aaa' : '#666');
+            document.body.style.fontFamily = t.font;
+            document.body.style.background = t.bg;
+        }
+
+        document.getElementById('categoriiTabs').innerHTML = meniu.map((c, i) =>
+            `<button class="tab ${i===0?'activ':''}" onclick="filtreazaCategorie(${c.id}, this)">${c.nume}</button>`
+        ).join('');
+        renderProduse(meniu);
+    } catch(e) { console.error('incarcaMeniu:', e); }
+}
+
+function renderProduse(categorii) {
+    document.getElementById('produseContent').innerHTML = categorii.map(cat => `
+        <div class="cat-titlu">${cat.nume}</div>
+        <div class="produse-grid">
+            ${cat.produse.map(p => {
+                const poza = p.poza ? `<img src="/${p.poza}" alt="${p.nume.replace(/"/g,'')}">` : `<span>🍽️</span>`;
+                return `
+                <div class="produs-card ${p.disponibil ? '' : 'indisponibil'}" onclick="adaugaInCos(${p.id})">
+                    <div class="produs-poza">${poza}</div>
+                    <div class="produs-body">
+                        <h4>${p.nume}</h4>
+                        <p>${p.descriere || ''}</p>
+                        <div class="produs-footer">
+                            <span class="produs-pret">${parseFloat(p.pret).toFixed(2)} lei</span>
+                            ${p.disponibil ? `<button class="btn-adauga">${_t.addBtn}</button>` : `<span class="tag-indisponibil">${_t.unavailable || 'Indisponibil'}</span>`}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>
+    `).join('');
+}
+
+function filtreazaCategorie(catId, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('activ'));
+    el.classList.add('activ');
+    const cat = meniu.find(c => c.id == catId);
+    renderProduse(cat ? [cat] : []);
+}
+
+function deschideMeniu() { document.getElementById('overlayMeniu').classList.add('open'); document.getElementById('drawerMeniu').classList.add('open'); }
+function inchideMeniu() { document.getElementById('overlayMeniu').classList.remove('open'); document.getElementById('drawerMeniu').classList.remove('open'); }
+
+function adaugaInCos(produsId) {
+    const produs = meniu.flatMap(c => c.produse).find(p => p.id == produsId);
+    if (!produs) return;
+    cos[produsId] ? cos[produsId].cantitate++ : (cos[produsId] = { produs, cantitate: 1 });
+    updateBadge();
+}
+
+function updateBadge() {
+    const items = Object.values(cos);
+    const total = items.reduce((s, i) => s + i.cantitate, 0);
+    const pretTotal = items.reduce((s, i) => s + i.produs.pret * i.cantitate, 0);
+    const badge = document.getElementById('cosBadge');
+    badge.textContent = total;
+    badge.style.display = total > 0 ? 'flex' : 'none';
+    const footerBadge = document.getElementById('footerBadge');
+    if (footerBadge) {
+        footerBadge.textContent = total > 0 ? `${total} produse · ${pretTotal.toFixed(2)} lei` : '';
+        footerBadge.style.display = total > 0 ? 'inline' : 'none';
+    }
+}
+
+function deschideCos() { renderCos(); document.getElementById('overlayCos').classList.add('open'); document.getElementById('drawerCos').classList.add('open'); }
+function inchideCos() { document.getElementById('overlayCos').classList.remove('open'); document.getElementById('drawerCos').classList.remove('open'); }
+
+function renderCos() {
+    const items = Object.values(cos);
+    const div = document.getElementById('cosItems');
+    if (!items.length) {
+        div.innerHTML = `<p style="color:#aaa;font-size:13px;padding:16px 0">${_t.noProducts}</p>`;
+        document.getElementById('cosTotal').textContent = '0.00 lei';
+        return;
+    }
+    div.innerHTML = items.map(i => `
+        <div class="cos-item">
+            <div class="cos-item-info">
+                <strong>${i.produs.nume}</strong>
+                <span>${parseFloat(i.produs.pret).toFixed(2)} lei / ${_t.pieces || 'buc'}</span>
+            </div>
+            <div class="cos-qty">
+                <button class="qty-btn" onclick="schimbaQty(${i.produs.id}, -1)">−</button>
+                <span class="qty-val">${i.cantitate}</span>
+                <button class="qty-btn" onclick="schimbaQty(${i.produs.id}, 1)">+</button>
+            </div>
+            <div class="cos-item-pret">${(i.produs.pret * i.cantitate).toFixed(2)} lei</div>
+        </div>
+    `).join('');
+    document.getElementById('cosTotal').textContent = items.reduce((s, i) => s + i.produs.pret * i.cantitate, 0).toFixed(2) + ' lei';
+}
+
+function schimbaQty(produsId, delta) {
+    if (!cos[produsId]) return;
+    cos[produsId].cantitate += delta;
+    if (cos[produsId].cantitate <= 0) delete cos[produsId];
+    updateBadge();
+    renderCos();
+}
+
+async function trimiteComanda() {
+    const items = Object.values(cos);
+    if (!items.length) return;
+    const btn = document.getElementById('btnTrimite');
+    btn.disabled = true;
+    btn.textContent = _t.sending;
+    const r = await fetch('/api/table/trimite_comanda', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            actiune: 'trimite_comanda', token,
+            produse: items.map(i => ({ produs_id: i.produs.id, cantitate: i.cantitate })),
+            observatii: document.getElementById('observatii').value
+        })
+    });
+    const d = await r.json();
+    btn.disabled = false;
+    btn.textContent = _t.sendOrder;
+    if (d.ok) {
+        cos = {};
+        updateBadge();
+        inchideCos();
+        document.querySelector('.confirmare-box h3') && (document.querySelector('.confirmare-box h3').textContent = _t.orderSent);
+        document.querySelector('.confirmare-box p') && (document.querySelector('.confirmare-box p').textContent = _t.orderSentDesc);
+        document.getElementById('confirmare').classList.add('open');
+        setTimeout(() => incarcaSumar(), 800);
+    }
+}
+
+async function incarcaReclame() {
+    try {
+        const r = await fetch(`/api/table/reclame?token=${token}`);
+        const d = await r.json();
+        if (d.ok && d.reclame && d.reclame.length) {
+            const banner = document.getElementById('bannerReclame');
+            const track = document.getElementById('bannerTrack');
+            banner.classList.add('vizibil');
+            const html = d.reclame.map(r => renderBannerItem(r)).join('');
+            track.innerHTML = html + html;
+            const durata = Math.max(15, d.reclame.length * 8);
+            track.style.animationDuration = durata + 's';
+        }
+    } catch(e) {}
+}
+
+function renderBannerItem(r) {
+    if (r.imagine) {
+        return `<div class="banner-item"><img src="/${r.imagine}" alt=""><div class="banner-item-overlay"></div><div class="banner-item-text">${r.titlu ? `<h4>${r.titlu}</h4>` : ''}${r.text ? `<p>${r.text}</p>` : ''}</div></div>`;
+    }
+    return `<div class="banner-item-fara-img"><div class="bi">📢</div>${r.titlu ? `<h4>${r.titlu}</h4>` : ''}${r.text ? `<p>${r.text}</p>` : ''}</div>`;
+}
+
+// === INIT ===
+incarcaMeniu();
+incarcaSumar();
+incarcaReclame();
+setInterval(incarcaSumar, 5000);
+setInterval(incarcaReclame, 60000);
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/masa/sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
