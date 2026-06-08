@@ -42,6 +42,19 @@ admin.post('/logout', (c) => {
   return c.json({ ok: true });
 });
 
+// Editable restaurant profile, for the settings page.
+admin.get('/profil', requireRestaurant, async (c) => {
+  const profil = await one(
+    c.env.DB,
+    `SELECT id, nume, email, telefon, tema, logo, text_bun_venit, bg_imagine,
+            facebook, instagram, tiktok, whatsapp, limba,
+            CASE WHEN parola_reset IS NULL THEN 0 ELSE 1 END AS are_parola_reset
+     FROM restaurante WHERE id = ?`,
+    c.get('restaurant')!.rid
+  );
+  return c.json({ ok: true, profil });
+});
+
 admin.get('/me', async (c) => {
   const sess = await currentRestaurant(c);
   if (!sess) return c.json({ ok: false }, 401);
