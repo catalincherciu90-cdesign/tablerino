@@ -5,6 +5,8 @@ import table from './routes/table';
 import admin from './routes/admin';
 import master from './routes/master';
 import register from './routes/register';
+import upload from './routes/upload';
+import ai from './routes/ai';
 
 const app = new Hono<HonoEnv>();
 
@@ -22,10 +24,8 @@ app.route('/api/table', table); // masa/api.php
 app.route('/api/admin', admin); // admin/api.php + admin/login.php
 app.route('/api/master', master); // master/api.php + master/login.php
 app.route('/api/register', register); // api/inregistrare.php
-
-// ── API routes (mounted in later phases) ──
-// app.route('/api/upload', uploadRoutes);   // phase 5 — admin/upload_*.php
-// app.route('/api/ai', aiRoutes);           // phase 5 — admin/ai_meniu.php
+app.route('/api/upload', upload); // admin/upload_*.php
+app.route('/api/ai', ai); // admin/ai_meniu.php
 
 // ── Everything else falls through to the static frontend in ./public ──
 app.all('*', (c) => c.env.ASSETS.fetch(c.req.raw));
