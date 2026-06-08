@@ -42,17 +42,38 @@ npm run db:remote     # or db:local for local dev
 npx wrangler secret put GROQ_KEY          # Groq API key
 npx wrangler secret put SESSION_SECRET    # random long string for cookie signing
 
+# Create the first master (platform admin) user
+node scripts/create-master.mjs admin@tablerino.ro 'your-password' > /tmp/master.sql
+npx wrangler d1 execute tablerino --remote --file=/tmp/master.sql
+
 # Develop / deploy
+cp .dev.vars.example .dev.vars   # fill in for local dev
 npm run dev
 npm run deploy
 ```
 
+## Routes / pages
+
+| URL | Page |
+|---|---|
+| `/` | Landing + registration |
+| `/admin/login.html` → `/admin/index.html` | Restaurant dashboard (orders, menu, tables) |
+| `/master/login.html` → `/master/index.html` | Platform admin (restaurants, requests) |
+| `/masa/?token=…` | Tablet ordering UI |
+
 ## Build status
 
 - [x] Phase 1 — scaffold, D1 schema, auth/db/r2/themes infrastructure
-- [ ] Phase 2 — table API (`/api/table`)
-- [ ] Phase 3 — admin API (`/api/admin`)
-- [ ] Phase 4 — master API + registration
-- [ ] Phase 5 — R2 uploads + Groq AI
-- [ ] Phase 6 — frontend (home, masa, admin, master)
-- [ ] Phase 7 — deploy config + secrets
+- [x] Phase 2 — table API (`/api/table`)
+- [x] Phase 3 — admin API (`/api/admin`)
+- [x] Phase 4 — master API + registration
+- [x] Phase 5 — R2 uploads + Groq AI
+- [x] Phase 6 — core frontend (home, masa, admin login/orders/menu/tables, master panel/requests)
+- [x] Phase 7 — deploy config + secrets + master seed helper
+
+### Deferred (secondary screens, not yet ported)
+- admin: istoric, raport, reclame, setari, audit
+- master: comenzi, landing editor, meniu
+
+These render server-side DB data in the PHP app and would each need a matching
+API endpoint; their nav links currently 404.
