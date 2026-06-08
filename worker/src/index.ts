@@ -3,6 +3,8 @@ import type { HonoEnv } from './types';
 import { serveUpload } from './r2';
 import table from './routes/table';
 import admin from './routes/admin';
+import master from './routes/master';
+import register from './routes/register';
 
 const app = new Hono<HonoEnv>();
 
@@ -18,10 +20,10 @@ app.get('/uploads/*', async (c) => {
 // ── API routes ──
 app.route('/api/table', table); // masa/api.php
 app.route('/api/admin', admin); // admin/api.php + admin/login.php
+app.route('/api/master', master); // master/api.php + master/login.php
+app.route('/api/register', register); // api/inregistrare.php
 
 // ── API routes (mounted in later phases) ──
-// app.route('/api/master', masterRoutes);   // phase 4 — master/api.php
-// app.route('/api/register', registerRoutes); // phase 4 — api/inregistrare.php
 // app.route('/api/upload', uploadRoutes);   // phase 5 — admin/upload_*.php
 // app.route('/api/ai', aiRoutes);           // phase 5 — admin/ai_meniu.php
 
