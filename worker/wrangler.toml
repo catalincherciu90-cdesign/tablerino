@@ -22,7 +22,7 @@ GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 [[d1_databases]]
 binding = "DB"
 database_name = "tablerino"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "3cc0b84d-ada3-4a08-9d8f-9863f7ab320f"
 
 # R2 bucket for uploads (logos, product photos, ad images).
 # DISABLED for now — image uploads are off until R2 is enabled. To turn images
