@@ -106,6 +106,19 @@ CREATE TABLE IF NOT EXISTS master_users (
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Waiter accounts, created by a restaurant owner. They share the restaurant's
+-- data but have a limited role (orders + product availability only).
+CREATE TABLE IF NOT EXISTS ospatari (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER NOT NULL,
+    nume          TEXT NOT NULL,
+    email         TEXT NOT NULL UNIQUE,
+    parola        TEXT NOT NULL,
+    activ         INTEGER DEFAULT 1,
+    created_at    TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS reclame (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     restaurant_id INTEGER NOT NULL,

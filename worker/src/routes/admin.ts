@@ -3,6 +3,7 @@ import type { HonoEnv } from '../types';
 import { all, one, run } from '../db';
 import {
   requireRestaurant,
+  requireOwner,
   loginRestaurant,
   logoutRestaurant,
   currentRestaurant,
@@ -25,16 +26,32 @@ admin.post('/login', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const email = (body.email ?? '').trim();
   const parola = body.parola ?? '';
+
+  // Owner account first.
   const rest = await one<{ id: number; nume: string; parola: string }>(
     c.env.DB,
     'SELECT id, nume, parola FROM restaurante WHERE email = ? AND activ = 1',
     email
   );
-  if (!rest || !(await verifyPassword(parola, rest.parola))) {
-    return c.json({ ok: false, msg: 'Email sau parolă incorecte.' }, 401);
+  if (rest && (await verifyPassword(parola, rest.parola))) {
+    await loginRestaurant(c, { rid: rest.id, nume: rest.nume, role: 'owner' });
+    return c.json({ ok: true, role: 'owner' });
   }
-  await loginRestaurant(c, { rid: rest.id, nume: rest.nume });
-  return c.json({ ok: true });
+
+  // Otherwise a waiter account (only if its restaurant is active).
+  const osp = await one<{ id: number; nume: string; parola: string; restaurant_id: number }>(
+    c.env.DB,
+    `SELECT o.id, o.nume, o.parola, o.restaurant_id
+     FROM ospatari o JOIN restaurante r ON r.id = o.restaurant_id
+     WHERE o.email = ? AND o.activ = 1 AND r.activ = 1`,
+    email
+  );
+  if (osp && (await verifyPassword(parola, osp.parola))) {
+    await loginRestaurant(c, { rid: osp.restaurant_id, nume: osp.nume, role: 'ospatar' });
+    return c.json({ ok: true, role: 'ospatar' });
+  }
+
+  return c.json({ ok: false, msg: 'Email sau parolă incorecte.' }, 401);
 });
 
 admin.post('/logout', (c) => {
@@ -42,8 +59,8 @@ admin.post('/logout', (c) => {
   return c.json({ ok: true });
 });
 
-// Editable restaurant profile, for the settings page.
-admin.get('/profil', requireRestaurant, async (c) => {
+// Editable restaurant profile, for the settings page (owner only).
+admin.get('/profil', requireRestaurant, requireOwner, async (c) => {
   const profil = await one(
     c.env.DB,
     `SELECT id, nume, email, telefon, tema, logo, text_bun_venit, bg_imagine,
@@ -67,6 +84,7 @@ admin.get('/me', async (c) => {
     ok: true,
     id: sess.rid,
     nume: sess.nume,
+    role: sess.role,
     tema: r?.tema ?? 'italian',
     limba: r?.limba ?? 'ro',
   });
@@ -79,7 +97,7 @@ const rid = (c: import('../types').AppContext) => c.get('restaurant')!.rid;
 
 // ── Dashboard / orders ──
 
-admin.post('/salveaza_tema', async (c) => {
+admin.post('/salveaza_tema', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const tema = body.tema ?? '';
   if (!(tema in THEMES)) return c.json({ ok: false, msg: 'Temă invalidă' }, 400);
@@ -87,7 +105,7 @@ admin.post('/salveaza_tema', async (c) => {
   return c.json({ ok: true });
 });
 
-admin.get('/sumar_zi', async (c) => {
+admin.get('/sumar_zi', requireOwner, async (c) => {
   const s = await one<Record<string, number>>(
     c.env.DB,
     `SELECT COUNT(*) AS total_comenzi,
@@ -123,7 +141,7 @@ admin.get('/comenzi', async (c) => {
   return c.json({ ok: true, comenzi });
 });
 
-admin.get('/istoric', async (c) => {
+admin.get('/istoric', requireOwner, async (c) => {
   const masaId = Number(c.req.query('masa_id') ?? 0);
   const data = c.req.query('data') ?? '';
   const page = Math.max(1, Number(c.req.query('page') ?? 1));
@@ -255,7 +273,7 @@ admin.get('/produse', async (c) => {
   return c.json({ ok: true, produse });
 });
 
-admin.post('/adauga_categorie', async (c) => {
+admin.post('/adauga_categorie', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const nume = (body.nume ?? '').trim();
   if (!nume) return c.json({ ok: false, msg: 'Numele este obligatoriu' }, 400);
@@ -263,14 +281,14 @@ admin.post('/adauga_categorie', async (c) => {
   return c.json({ ok: true, id: res.meta.last_row_id });
 });
 
-admin.post('/sterge_categorie', async (c) => {
+admin.post('/sterge_categorie', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const catId = Number(body.categorie_id ?? 0);
   await run(c.env.DB, 'DELETE FROM meniu_categorii WHERE id = ? AND restaurant_id = ?', catId, rid(c));
   return c.json({ ok: true });
 });
 
-admin.post('/adauga_produs', async (c) => {
+admin.post('/adauga_produs', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const catId = Number(body.categorie_id ?? 0);
   const nume = (body.nume ?? '').trim();
@@ -289,7 +307,7 @@ admin.post('/adauga_produs', async (c) => {
   return c.json({ ok: true, id: res.meta.last_row_id });
 });
 
-admin.post('/editeaza_produs', async (c) => {
+admin.post('/editeaza_produs', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const pid = Number(body.produs_id ?? 0);
   const nume = (body.nume ?? '').trim();
@@ -320,7 +338,7 @@ admin.post('/editeaza_produs', async (c) => {
   return c.json({ ok: true });
 });
 
-admin.post('/sterge_produs', async (c) => {
+admin.post('/sterge_produs', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const pid = Number(body.produs_id ?? 0);
   await run(c.env.DB, 'DELETE FROM meniu_produse WHERE id = ? AND restaurant_id = ?', pid, rid(c));
@@ -334,7 +352,7 @@ admin.post('/toggle_disponibil', async (c) => {
   return c.json({ ok: true });
 });
 
-admin.post('/reordoneaza_produse', async (c) => {
+admin.post('/reordoneaza_produse', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const ordine: number[] = body.ordine ?? [];
   await Promise.all(
@@ -345,7 +363,7 @@ admin.post('/reordoneaza_produse', async (c) => {
   return c.json({ ok: true });
 });
 
-admin.post('/reordoneaza_categorii', async (c) => {
+admin.post('/reordoneaza_categorii', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const ordine: number[] = body.ordine ?? [];
   await Promise.all(
@@ -363,7 +381,7 @@ admin.get('/mese', async (c) => {
   return c.json({ ok: true, mese });
 });
 
-admin.post('/adauga_masa', async (c) => {
+admin.post('/adauga_masa', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const nume = (body.nume ?? '').trim();
   if (!nume) return c.json({ ok: false }, 400);
@@ -372,7 +390,7 @@ admin.post('/adauga_masa', async (c) => {
   return c.json({ ok: true, id: res.meta.last_row_id, token });
 });
 
-admin.post('/sterge_masa', async (c) => {
+admin.post('/sterge_masa', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const mid = Number(body.masa_id ?? 0);
   await run(c.env.DB, 'DELETE FROM mese WHERE id = ? AND restaurant_id = ?', mid, rid(c));
@@ -381,14 +399,14 @@ admin.post('/sterge_masa', async (c) => {
 
 // ── Visual profile / social ──
 
-admin.post('/salveaza_profil_vizual', async (c) => {
+admin.post('/salveaza_profil_vizual', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const text = (body.text_bun_venit ?? '').trim();
   await run(c.env.DB, 'UPDATE restaurante SET text_bun_venit = ? WHERE id = ?', text || null, rid(c));
   return c.json({ ok: true });
 });
 
-admin.post('/salveaza_social', async (c) => {
+admin.post('/salveaza_social', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const facebook = (body.facebook ?? '').trim();
   const instagram = (body.instagram ?? '').trim();
@@ -406,7 +424,7 @@ admin.post('/salveaza_social', async (c) => {
   return c.json({ ok: true });
 });
 
-admin.post('/sterge_imagine', async (c) => {
+admin.post('/sterge_imagine', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const tip = body.tip ?? '';
   if (tip !== 'logo' && tip !== 'bg_imagine') return c.json({ ok: false }, 400);
@@ -418,12 +436,12 @@ admin.post('/sterge_imagine', async (c) => {
 
 // ── Ads (reclame) ──
 
-admin.get('/reclame', async (c) => {
+admin.get('/reclame', requireOwner, async (c) => {
   const reclame = await all(c.env.DB, 'SELECT * FROM reclame WHERE restaurant_id = ? ORDER BY ordine, id', rid(c));
   return c.json({ ok: true, reclame });
 });
 
-admin.post('/adauga_reclama', async (c) => {
+admin.post('/adauga_reclama', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const titlu = (body.titlu ?? '').trim();
   const text = (body.text ?? '').trim();
@@ -439,7 +457,7 @@ admin.post('/adauga_reclama', async (c) => {
   return c.json({ ok: true, id: res.meta.last_row_id });
 });
 
-admin.post('/editeaza_reclama', async (c) => {
+admin.post('/editeaza_reclama', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.id ?? 0);
   const titlu = (body.titlu ?? '').trim();
@@ -457,14 +475,14 @@ admin.post('/editeaza_reclama', async (c) => {
   return c.json({ ok: true });
 });
 
-admin.post('/toggle_reclama', async (c) => {
+admin.post('/toggle_reclama', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.reclama_id ?? body.id ?? 0);
   await run(c.env.DB, 'UPDATE reclame SET activa = 1 - activa WHERE id = ? AND restaurant_id = ?', id, rid(c));
   return c.json({ ok: true });
 });
 
-admin.post('/sterge_reclama', async (c) => {
+admin.post('/sterge_reclama', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.reclama_id ?? body.id ?? 0);
   const r = await one<{ imagine: string | null }>(c.env.DB, 'SELECT imagine FROM reclame WHERE id = ? AND restaurant_id = ?', id, rid(c));
@@ -484,7 +502,7 @@ async function checkAuditPassword(c: import('../types').AppContext, parola: stri
   return !!pr?.parola_reset && verifyPassword(parola, pr.parola_reset);
 }
 
-admin.post('/audit_seteaza_plata', async (c) => {
+admin.post('/audit_seteaza_plata', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const comandaId = Number(body.comanda_id ?? 0);
   const metoda = body.metoda_plata ?? '';
@@ -501,7 +519,7 @@ admin.post('/audit_seteaza_plata', async (c) => {
   return c.json({ ok: true });
 });
 
-admin.post('/audit_inchide', async (c) => {
+admin.post('/audit_inchide', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const comandaId = Number(body.comanda_id ?? 0);
   const parola = (body.parola ?? '').trim();
@@ -510,7 +528,7 @@ admin.post('/audit_inchide', async (c) => {
   return c.json({ ok: true });
 });
 
-admin.post('/audit_inchide_tot', async (c) => {
+admin.post('/audit_inchide_tot', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parola = (body.parola ?? '').trim();
   if (!(await checkAuditPassword(c, parola))) return c.json({ ok: false, msg: 'Parolă greșită' }, 403);
@@ -518,7 +536,7 @@ admin.post('/audit_inchide_tot', async (c) => {
   return c.json({ ok: true });
 });
 
-admin.post('/salveaza_parola_reset', async (c) => {
+admin.post('/salveaza_parola_reset', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parola = (body.parola ?? '').trim();
   if (parola.length < 4) return c.json({ ok: false, msg: 'Parola este prea scurtă' }, 400);
@@ -528,7 +546,7 @@ admin.post('/salveaza_parola_reset', async (c) => {
 });
 
 // ── Daily report (admin/raport.php) ──
-admin.get('/raport', async (c) => {
+admin.get('/raport', requireOwner, async (c) => {
   const data = c.req.query('data') || new Date().toISOString().slice(0, 10);
   const db = c.env.DB;
   const r = rid(c);
@@ -598,6 +616,69 @@ admin.get('/raport', async (c) => {
     per_ora,
     mese_active: maseRow?.n ?? 0,
   });
+});
+
+// ── Waiter (ospatar) accounts — owner only ──
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+admin.get('/ospatari', requireOwner, async (c) => {
+  const ospatari = await all(
+    c.env.DB,
+    'SELECT id, nume, email, activ, created_at FROM ospatari WHERE restaurant_id = ? ORDER BY id',
+    rid(c)
+  );
+  return c.json({ ok: true, ospatari });
+});
+
+admin.post('/adauga_ospatar', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const nume = (body.nume ?? '').trim();
+  const email = (body.email ?? '').trim().toLowerCase();
+  const parola = body.parola ?? '';
+  if (!nume || !email || !parola) return c.json({ ok: false, msg: 'Date incomplete' }, 400);
+  if (!EMAIL_RE.test(email)) return c.json({ ok: false, msg: 'Email invalid' }, 400);
+  if (parola.length < 6) return c.json({ ok: false, msg: 'Parola trebuie să aibă minim 6 caractere' }, 400);
+
+  // Email must not collide with a restaurant or another waiter (login is by email).
+  const dupR = await one(c.env.DB, 'SELECT id FROM restaurante WHERE email = ?', email);
+  const dupO = await one(c.env.DB, 'SELECT id FROM ospatari WHERE email = ?', email);
+  if (dupR || dupO) return c.json({ ok: false, msg: 'Există deja un cont cu acest email' }, 400);
+
+  const hash = await hashPassword(parola);
+  const res = await run(
+    c.env.DB,
+    'INSERT INTO ospatari (restaurant_id, nume, email, parola) VALUES (?, ?, ?, ?)',
+    rid(c),
+    nume,
+    email,
+    hash
+  );
+  return c.json({ ok: true, id: res.meta.last_row_id });
+});
+
+admin.post('/toggle_ospatar', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  await run(c.env.DB, 'UPDATE ospatari SET activ = 1 - activ WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return c.json({ ok: true });
+});
+
+admin.post('/reset_parola_ospatar', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  const parola = body.parola ?? '';
+  if (parola.length < 6) return c.json({ ok: false, msg: 'Parola trebuie să aibă minim 6 caractere' }, 400);
+  const hash = await hashPassword(parola);
+  await run(c.env.DB, 'UPDATE ospatari SET parola = ? WHERE id = ? AND restaurant_id = ?', hash, id, rid(c));
+  return c.json({ ok: true });
+});
+
+admin.post('/sterge_ospatar', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  await run(c.env.DB, 'DELETE FROM ospatari WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return c.json({ ok: true });
 });
 
 export default admin;

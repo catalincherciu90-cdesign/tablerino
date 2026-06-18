@@ -124,6 +124,15 @@ export const requireRestaurant: MiddlewareHandler<HonoEnv> = async (c, next) => 
   await next();
 };
 
+/** Requires the restaurant OWNER (not a waiter). Run after requireRestaurant. */
+export const requireOwner: MiddlewareHandler<HonoEnv> = async (c, next) => {
+  const sess = c.get('restaurant');
+  if (!sess || sess.role !== 'owner') {
+    return c.json({ ok: false, msg: 'Doar contul principal al restaurantului poate face asta.' }, 403);
+  }
+  await next();
+};
+
 /** Requires a valid master session; attaches it to c.var.master. */
 export const requireMaster: MiddlewareHandler<HonoEnv> = async (c, next) => {
   const sess = await currentMaster(c as AppContext);

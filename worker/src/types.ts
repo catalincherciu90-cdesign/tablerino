@@ -21,10 +21,11 @@ export interface Env {
   SESSION_SECRET: string;
 }
 
-/** Authenticated restaurant session payload (replaces $_SESSION restaurant_*). */
+/** Authenticated restaurant-scoped session (owner or waiter). */
 export interface RestaurantSession {
   rid: number;
   nume: string;
+  role: 'owner' | 'ospatar';
 }
 
 /** Authenticated master session payload (replaces $_SESSION master_*). */
