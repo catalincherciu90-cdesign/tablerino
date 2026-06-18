@@ -101,6 +101,7 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
     <a href="/admin/setari.html">🎨 Design</a>
     <a href="/admin/reclame.html" class="activ">📢 Reclame</a>
     <a href="/admin/audit.html">🔍 Audit</a>
+    <a href="/admin/ospatari.html">👤 Ospătari</a>
         <div style="margin-top:auto;padding:8px 4px;display:flex;gap:6px;justify-content:center">
         <a href="?lang=ro" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;background:#6c47ff;color:#fff">🇷🇴 RO</a>
         <a href="?lang=en" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#aaa">🇬🇧 EN</a>
@@ -304,6 +305,10 @@ async function stergeReclama(id) {
 
 fetch('/api/admin/me').then(function (r) {
     if (!r.ok) { location.href = '/admin/login.html'; return; }
+    return r.json();
+}).then(function (me) {
+    if (!me) return;
+    if (me.role === 'ospatar') { location.href = '/admin/index.html'; return; }
     incarcaReclame();
 });
 </script>

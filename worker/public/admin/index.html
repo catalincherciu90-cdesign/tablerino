@@ -95,12 +95,13 @@ li.livrat { opacity: 0.5; }
     <div class="logo"><img src="/uploads/logo-tablerino.png" alt="Tablerino"></div>
     <a href="/admin/index.html" class="activ">📋 Comenzi</a>
     <a href="/admin/meniu.html">🍕 Meniu</a>
-    <a href="/admin/mese.html">🪑 Mese</a>
-    <a href="/admin/istoric.html">📂 Istoric</a>
-    <a href="/admin/raport.html">📊 Rapoarte</a>
-    <a href="/admin/setari.html">🎨 Design</a>
-    <a href="/admin/reclame.html">📢 Reclame</a>
-    <a href="/admin/audit.html">🔍 Audit</a>
+    <a href="/admin/mese.html" class="owner-only">🪑 Mese</a>
+    <a href="/admin/istoric.html" class="owner-only">📂 Istoric</a>
+    <a href="/admin/raport.html" class="owner-only">📊 Rapoarte</a>
+    <a href="/admin/setari.html" class="owner-only">🎨 Design</a>
+    <a href="/admin/reclame.html" class="owner-only">📢 Reclame</a>
+    <a href="/admin/audit.html" class="owner-only">🔍 Audit</a>
+    <a href="/admin/ospatari.html" class="owner-only">👤 Ospătari</a>
     <div style="margin-top:auto;padding:8px 4px;display:flex;gap:6px;justify-content:center">
         <a href="?lang=ro" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;background:#6c47ff;color:#fff">🇷🇴 RO</a>
         <a href="?lang=en" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#aaa">🇬🇧 EN</a>
@@ -124,7 +125,7 @@ li.livrat { opacity: 0.5; }
         <span id="liveText">Ultima actualizare...</span>
     </div>
 
-    <div class="sumar-zi" id="sumarZi"></div>
+    <div class="sumar-zi owner-only" id="sumarZi"></div>
 
     <div class="filtre">
         <button class="filtru-btn activ" data-status="toate">Toate</button>
@@ -149,6 +150,7 @@ function logout(e) {
 }
 
 let restaurantId = null;
+let esteOspatar = false;
 const _t = {
     noOrders:     'Nicio comandă momentan.',
     loading:      'Se încarcă...',
@@ -263,6 +265,7 @@ function renderComenzi(comenzi) {
 }
 
 async function incarcaSumarZi() {
+    if (esteOspatar) return;
     try {
         const r = await fetch('/api/admin/sumar_zi');
         const d = await r.json();
@@ -371,6 +374,10 @@ fetch('/api/admin/me').then(function (r) {
 }).then(function (d) {
     if (!d) return;
     restaurantId = d.id;
+    esteOspatar = d.role === 'ospatar';
+    if (esteOspatar) {
+        document.querySelectorAll('.owner-only').forEach(el => el.style.display = 'none');
+    }
     if (d.nume) document.getElementById('pageTitle').textContent = 'Comenzi — ' + d.nume;
     incarcaComenzi();
     setInterval(incarcaComenzi, 5000);

@@ -32,15 +32,19 @@ async function incarcaCategorii() {
     const d = await r.json();
     const list = document.getElementById('categoriiList');
     if (!d.categorii.length) { list.innerHTML = `<div class="gol">${_mn.noCategory}</div>`; return; }
+    const osp = window.esteOspatar;
     list.innerHTML = d.categorii.map(c => `
         <div class="cat-item ${catActiva == c.id ? 'activ' : ''}" data-id="${c.id}" onclick="selecteazaCategorie(${c.id}, '${c.nume.replace(/'/g,"\\'")}')">
             <span style="display:flex;align-items:center;gap:4px;min-width:0">
-                <span class="cat-drag-handle" onclick="event.stopPropagation()">⠿</span>
+                ${osp ? '' : `<span class="cat-drag-handle" onclick="event.stopPropagation()">⠿</span>`}
                 <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.nume}</span>
             </span>
-            <span class="del" onclick="event.stopPropagation();stergeCategorie(${c.id})">×</span>
+            ${osp ? '' : `<span class="del" onclick="event.stopPropagation();stergeCategorie(${c.id})">×</span>`}
         </div>
     `).join('');
+
+    // Ospătarii nu pot reordona categoriile.
+    if (osp) return;
 
     // Sortable categorii
     if (sortableCateg) sortableCateg.destroy();
@@ -62,7 +66,7 @@ async function incarcaCategorii() {
 async function selecteazaCategorie(id, nume) {
     catActiva = id;
     document.getElementById('titluCategorie').textContent = nume;
-    document.getElementById('btnAdaugaProdus').style.display = 'block';
+    if (!window.esteOspatar) document.getElementById('btnAdaugaProdus').style.display = 'block';
     incarcaCategorii();
     incarcaProduse();
 }
@@ -73,18 +77,22 @@ async function incarcaProduse() {
     const d = await r.json();
     const list = document.getElementById('produseList');
     if (!d.produse.length) { list.innerHTML = `<div class="gol">${_mn.noProducts}</div>`; return; }
+    const osp = window.esteOspatar;
     list.innerHTML = d.produse.map(p => {
         const pozaHtml = p.poza
             ? `<img src="/${p.poza}" alt="${p.nume}">`
             : `<div class="produs-poza-placeholder">🍽️</div>`;
-        return `
-        <div class="produs-item ${p.disponibil == 0 ? 'indisponibil' : ''}" id="produs-${p.id}" data-id="${p.id}">
-            <span class="drag-handle" title="Trage pentru a reordona">⠿</span>
-            <div class="produs-poza-wrap" onclick="document.getElementById('poza-input-${p.id}').click()" title="${_mn.changePic}">
+        const pozaWrap = osp
+            ? `<div class="produs-poza-wrap">${pozaHtml}</div>`
+            : `<div class="produs-poza-wrap" onclick="document.getElementById('poza-input-${p.id}').click()" title="${_mn.changePic}">
                 ${pozaHtml}
                 <div class="poza-hover">📷 ${_mn.changePic}</div>
             </div>
-            <input type="file" class="poza-input" id="poza-input-${p.id}" accept="image/jpeg,image/png,image/webp" onchange="uploadPoza(${p.id}, this)">
+            <input type="file" class="poza-input" id="poza-input-${p.id}" accept="image/jpeg,image/png,image/webp" onchange="uploadPoza(${p.id}, this)">`;
+        return `
+        <div class="produs-item ${p.disponibil == 0 ? 'indisponibil' : ''}" id="produs-${p.id}" data-id="${p.id}">
+            ${osp ? '' : `<span class="drag-handle" title="Trage pentru a reordona">⠿</span>`}
+            ${pozaWrap}
             <div class="produs-info">
                 <strong>${p.nume}</strong>
                 ${p.descriere ? `<p>${p.descriere}</p>` : ''}
@@ -95,14 +103,17 @@ async function incarcaProduse() {
             </div>
             <div class="produs-pret">${parseFloat(p.pret).toFixed(2)} lei</div>
             <div class="produs-actiuni">
-                <button class="btn-sm btn-edit" onclick="deschideEditare(${p.id}, '${p.nume.replace(/'/g,"\\'")}', '${(p.descriere||'').replace(/'/g,"\\'")}', ${p.pret}, '${(p.ingrediente||'').replace(/'/g,"\\'")}', '${(p.alergeni||'').replace(/'/g,"\\'")}', ${p.calorii||0}, ${p.proteine||0}, ${p.carbohidrati||0}, ${p.grasimi||0})">✏️</button>
+                ${osp ? '' : `<button class="btn-sm btn-edit" onclick="deschideEditare(${p.id}, '${p.nume.replace(/'/g,"\\'")}', '${(p.descriere||'').replace(/'/g,"\\'")}', ${p.pret}, '${(p.ingrediente||'').replace(/'/g,"\\'")}', '${(p.alergeni||'').replace(/'/g,"\\'")}', ${p.calorii||0}, ${p.proteine||0}, ${p.carbohidrati||0}, ${p.grasimi||0})">✏️</button>`}
                 <button class="btn-sm btn-toggle ${p.disponibil ? 'activ' : ''}" onclick="toggleDisponibil(${p.id})">
                     ${p.disponibil ? '✓ ' + _mn.available : '✗ ' + _mn.unavailable}
                 </button>
-                <button class="btn-sm btn-del" onclick="stergeProdus(${p.id})">Șterge</button>
+                ${osp ? '' : `<button class="btn-sm btn-del" onclick="stergeProdus(${p.id})">Șterge</button>`}
             </div>
         </div>`;
     }).join('');
+
+    // Ospătarii nu pot reordona produsele.
+    if (osp) return;
 
     // Sortable produse
     if (sortableProduse) sortableProduse.destroy();
@@ -120,6 +131,7 @@ async function incarcaProduse() {
             showToast('Ordine salvată!', 'ok');
         }
     });
+}
 
 async function uploadPoza(produsId, input) {
     if (!input.files.length) return;
@@ -229,4 +241,5 @@ async function stergeProdus(id) {
     incarcaProduse();
 }
 
-incarcaCategorii();
+// Inițializarea (incarcaCategorii) este declanșată de meniuInit() din meniu.html,
+// după ce se cunoaște rolul (owner / ospătar).

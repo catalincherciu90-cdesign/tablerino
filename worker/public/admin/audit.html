@@ -99,6 +99,7 @@ tr:last-child td { border-bottom: none; }
     <a href="/admin/audit.html" class="activ">🔍 Audit</a>
     <a href="/admin/setari.html">🎨 Design</a>
     <a href="/admin/reclame.html">📢 Reclame</a>
+    <a href="/admin/ospatari.html">👤 Ospătari</a>
     <div class="lang-switch">
         <a href="?lang=ro" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;background:#6c47ff;color:#fff">🇷🇴 RO</a>
         <a href="?lang=en" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#aaa">🇬🇧 EN</a>
@@ -407,7 +408,11 @@ async function confirmaInchidereTot() {
 }
 
 fetch('/api/admin/me').then(function (r) {
-    if (!r.ok) { location.href = '/admin/login.html'; return; }
+    if (!r.ok) { location.href = '/admin/login.html'; return null; }
+    return r.json();
+}).then(function (me) {
+    if (!me) return null;
+    if (me.role === 'ospatar') { location.href = '/admin/index.html'; return null; }
     return fetch('/api/admin/profil');
 }).then(function (r) {
     if (!r) return null;
