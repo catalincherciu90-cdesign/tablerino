@@ -1,0 +1,10 @@
+{
+  "name": "tablerino-root",
+  "private": true,
+  "description": "Root shim so Cloudflare Workers Builds can bundle worker/src from the repo root. Real project lives in worker/.",
+  "type": "module",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "hono": "^4.6.14"
+  }
+}
