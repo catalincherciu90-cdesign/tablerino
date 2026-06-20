@@ -48,6 +48,8 @@ jobs:
         run: |
           npx wrangler d1 execute tablerino --remote --yes \
             --command "ALTER TABLE ospatari ADD COLUMN masa_default_id INTEGER" || true
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE comenzi ADD COLUMN preluat_de INTEGER" || true
 
       - name: Deploy Worker
         run: npx wrangler deploy

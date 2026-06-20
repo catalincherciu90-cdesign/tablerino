@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS comenzi (
                     CHECK (status IN ('noua','in_pregatire','servita','plata_aleasa')),
     metoda_plata  TEXT CHECK (metoda_plata IN ('cash','card')),
     observatii    TEXT,
+    preluat_de    INTEGER,                 -- waiter (ospatari.id) who claimed it, or NULL
     created_at    TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at    TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (masa_id) REFERENCES mese(id) ON DELETE CASCADE,

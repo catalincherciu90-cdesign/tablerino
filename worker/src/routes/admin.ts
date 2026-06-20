@@ -145,8 +145,9 @@ admin.get('/sumar_zi', requireOwner, async (c) => {
 admin.get('/comenzi', async (c) => {
   const comenzi = await all<Record<string, unknown>>(
     c.env.DB,
-    `SELECT c.*, m.nume AS masa_nume FROM comenzi c
+    `SELECT c.*, m.nume AS masa_nume, o.nume AS preluat_de_nume FROM comenzi c
      JOIN mese m ON m.id = c.masa_id
+     LEFT JOIN ospatari o ON o.id = c.preluat_de
      WHERE c.restaurant_id = ? AND c.status NOT IN ('servita')
      ORDER BY CASE c.status WHEN 'noua' THEN 0 WHEN 'in_pregatire' THEN 1 WHEN 'plata_aleasa' THEN 2 ELSE 3 END, c.created_at DESC`,
     rid(c)
@@ -268,6 +269,46 @@ admin.post('/elibereaza_masa', async (c) => {
     masaId,
     rid(c)
   );
+  return c.json({ ok: true });
+});
+
+// Waiter claims an unclaimed order (any table). Only succeeds if not already taken.
+admin.post('/preia_comanda', async (c) => {
+  const sess = c.get('restaurant')!;
+  if (sess.role !== 'ospatar' || !sess.uid) {
+    return c.json({ ok: false, msg: 'Doar un ospătar poate prelua comenzi.' }, 400);
+  }
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.comanda_id ?? 0);
+  const res = await run(
+    c.env.DB,
+    'UPDATE comenzi SET preluat_de = ? WHERE id = ? AND restaurant_id = ? AND preluat_de IS NULL',
+    sess.uid,
+    id,
+    sess.rid
+  );
+  if (res.meta.changes === 0) {
+    return c.json({ ok: false, msg: 'Comanda a fost deja preluată.' }, 409);
+  }
+  return c.json({ ok: true });
+});
+
+// Release a claim. A waiter can release only their own; the owner can release any.
+admin.post('/renunta_comanda', async (c) => {
+  const sess = c.get('restaurant')!;
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.comanda_id ?? 0);
+  if (sess.role === 'ospatar') {
+    await run(
+      c.env.DB,
+      'UPDATE comenzi SET preluat_de = NULL WHERE id = ? AND restaurant_id = ? AND preluat_de = ?',
+      id,
+      sess.rid,
+      sess.uid ?? 0
+    );
+  } else {
+    await run(c.env.DB, 'UPDATE comenzi SET preluat_de = NULL WHERE id = ? AND restaurant_id = ?', id, sess.rid);
+  }
   return c.json({ ok: true });
 });
 
