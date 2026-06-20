@@ -47,6 +47,11 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
 .card-masa { font-weight: 700; font-size: 16px; }
 .card-nr { font-size: 11px; font-weight: 700; background: #f3f4f6; color: #666; padding: 2px 8px; border-radius: 20px; margin-left: 6px; }
 .card-ora { font-size: 12px; color: #888; margin-top: 2px; }
+.card-preluat { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; margin-top: 6px; display: inline-block; }
+.card-preluat.da { background: #ede9fe; color: #5b21b6; }
+.card-preluat.nu { background: #f3f4f6; color: #999; }
+.btn-preia { background: #6c47ff; color: #fff; flex: 1; }
+.btn-renunta { background: #fff; color: #6c47ff; border: 2px solid #6c47ff; flex: 1; }
 .card-status { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
 .status-noua { background: #fef3c7; color: #92400e; }
 .status-in_pregatire { background: #dbeafe; color: #1e40af; }
@@ -128,8 +133,9 @@ li.livrat { opacity: 0.5; }
     <div class="sumar-zi owner-only" id="sumarZi"></div>
 
     <div class="filtre filtre-masa" id="filtreMasa" style="display:none">
-        <button class="filtru-btn activ" id="btnMasaMea" onclick="setFiltruMasa(true)">Masa mea</button>
-        <button class="filtru-btn" id="btnToateMesele" onclick="setFiltruMasa(false)">Toate mesele</button>
+        <button class="filtru-btn activ" id="btnAleMele" onclick="setFiltruMasa('ale_mele')">Ale mele</button>
+        <button class="filtru-btn" id="btnNepreluate" onclick="setFiltruMasa('nepreluate')">Nepreluate</button>
+        <button class="filtru-btn" id="btnToateMesele" onclick="setFiltruMasa('toate')">Toate mesele</button>
     </div>
 
     <div class="filtre">
@@ -156,9 +162,10 @@ function logout(e) {
 
 let restaurantId = null;
 let esteOspatar = false;
+let ospatarId = null;        // logged-in waiter's id (null for owners)
 let masaDefaultId = null;
 let masaDefaultNume = null;
-let doarMasaMea = false;     // when true, show only orders for the waiter's default table
+let filtruMasa = 'ale_mele'; // 'ale_mele' | 'nepreluate' | 'toate' (waiter order filter)
 let comenziToate = [];       // full orders array from the last fetch (filtered at render time)
 const _t = {
     noOrders:     'Nicio comandă momentan.',
@@ -183,6 +190,10 @@ const _t = {
     total:        'Total',
     lei:          'lei',
     releaseConf:  'Eliberezi masa? Comanda curentă va fi arhivată.',
+    claimed:      'Preluată',
+    unclaimed:    'Nepreluată',
+    btnClaim:     'Preia',
+    btnDrop:      'Renunță',
     connError:    'Eroare conexiune, reîncearcă...',
     fullscreen:   'Full Screen',
     exitFS:       'Ieși Full Screen',
@@ -207,9 +218,18 @@ function formatOra(dt) {
 
 function renderComenzi(comenzi) {
     const grid = document.getElementById('comenziGrid');
-    // Table filter (waiter with a default table, "Masa mea" selected) then status filter.
+    // Waiter order filter ("Ale mele" / "Nepreluate" / "Toate mesele"), then status filter.
     let baza = comenzi;
-    if (doarMasaMea && masaDefaultId) baza = baza.filter(c => c.masa_id === masaDefaultId);
+    if (esteOspatar) {
+        if (filtruMasa === 'ale_mele') {
+            // Their default table + any orders they personally claimed. With no
+            // default table, this is just the orders they claimed.
+            baza = baza.filter(c => (masaDefaultId && c.masa_id === masaDefaultId) || c.preluat_de === ospatarId);
+        } else if (filtruMasa === 'nepreluate') {
+            baza = baza.filter(c => c.preluat_de == null);
+        }
+        // 'toate' -> no filter
+    }
     const filtrate = filtruActiv === 'toate' ? baza : baza.filter(c => c.status === filtruActiv);
 
     if (!filtrate.length) {
@@ -259,18 +279,36 @@ function renderComenzi(comenzi) {
             actiuni = `<button class="btn btn-servita" onclick="livreazaToare(${c.id})">${_t.btnServeAll}</button>`;
         }
 
+        // Claim status badge (shown for owners and waiters alike).
+        const preluat = c.preluat_de != null;
+        const badgePreluat = preluat
+            ? `<div class="card-preluat da">👤 ${_t.claimed}: ${c.preluat_de_nume || ''}</div>`
+            : `<div class="card-preluat nu">${_t.unclaimed}</div>`;
+
+        // Waiter claim/release action: claim if unclaimed, release if it's theirs.
+        let actiuneClaim = '';
+        if (esteOspatar) {
+            if (!preluat) {
+                actiuneClaim = `<button class="btn btn-preia" onclick="preiaComanda(${c.id})">${_t.btnClaim}</button>`;
+            } else if (c.preluat_de === ospatarId) {
+                actiuneClaim = `<button class="btn btn-renunta" onclick="renuntaComanda(${c.id})">${_t.btnDrop}</button>`;
+            }
+        }
+
         return `
         <div class="comanda-card ${c.status}">
             <div class="card-header">
                 <div>
                     <div class="card-masa">${c.masa_nume} <span class="card-nr">#${c.nr_ordine_zi || '—'}</span></div>
                     <div class="card-ora">${formatOra(c.created_at)}</div>
+                    ${badgePreluat}
                 </div>
                 <span class="card-status status-${c.status}">${statusLabel(c.status, c.metoda_plata)}</span>
             </div>
             ${bannerPlata}
             <ul class="card-produse">${produse}</ul>
             <div class="card-total">${_t.total}: ${total.toFixed(2)} ${_t.lei}</div>
+            ${actiuneClaim ? `<div class="card-actiuni" style="margin-bottom:8px">${actiuneClaim}</div>` : ''}
             <div class="card-actiuni">${actiuni}</div>
         </div>`;
     }).join('');
@@ -300,6 +338,7 @@ async function incarcaComenzi() {
         const nouaGasita = data.comenzi.some(c => c.status === 'noua' && !comenziCunoscute.has(c.id));
         if (nouaGasita && comenziCunoscute.size > 0) {
             const notif = document.getElementById('notif');
+            notif.textContent = '🔔 Noi!';
             notif.style.display = 'block';
             setTimeout(() => notif.style.display = 'none', 3000);
         }
@@ -355,12 +394,45 @@ async function elibereazaMasa(masaId) {
     incarcaComenzi();
 }
 
-// Table toggle (only shown for waiters with a default table). Re-render from the
-// cached orders array so we don't need to re-fetch.
-function setFiltruMasa(doar) {
-    doarMasaMea = doar;
-    document.getElementById('btnMasaMea').classList.toggle('activ', doar);
-    document.getElementById('btnToateMesele').classList.toggle('activ', !doar);
+// Small toast reusing the notif element (e.g. for "order already taken").
+function toast(msg) {
+    const notif = document.getElementById('notif');
+    notif.textContent = msg;
+    notif.style.display = 'block';
+    setTimeout(() => notif.style.display = 'none', 3000);
+}
+
+// Waiter claims an unclaimed order. On 409 (someone else got it) show the message.
+async function preiaComanda(comandaId) {
+    try {
+        const r = await fetch('/api/admin/preia_comanda', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ comanda_id: comandaId })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok && d.msg) toast(d.msg);
+    } catch (e) {}
+    incarcaComenzi();
+}
+
+// Waiter releases their own claim (owner could release any, but has no button).
+async function renuntaComanda(comandaId) {
+    await fetch('/api/admin/renunta_comanda', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comanda_id: comandaId })
+    });
+    incarcaComenzi();
+}
+
+// Waiter order filter ("Ale mele" / "Nepreluate" / "Toate mesele"). Re-render
+// from the cached orders array so we don't need to re-fetch.
+function setFiltruMasa(mod) {
+    filtruMasa = mod;
+    document.getElementById('btnAleMele').classList.toggle('activ', mod === 'ale_mele');
+    document.getElementById('btnNepreluate').classList.toggle('activ', mod === 'nepreluate');
+    document.getElementById('btnToateMesele').classList.toggle('activ', mod === 'toate');
     renderComenzi(comenziToate);
 }
 
@@ -397,16 +469,19 @@ fetch('/api/admin/me').then(function (r) {
     if (!d) return;
     restaurantId = d.id;
     esteOspatar = d.role === 'ospatar';
+    ospatarId = d.ospatar_id || null;
     masaDefaultId = d.masa_default_id || null;
     masaDefaultNume = d.masa_default_nume || null;
     if (esteOspatar) {
         document.querySelectorAll('.owner-only').forEach(el => el.style.display = 'none');
     }
-    // Waiter with a default table: show the "Masa mea / Toate mesele" toggle,
-    // defaulting to only their table.
-    if (esteOspatar && masaDefaultId) {
-        doarMasaMea = true;
-        document.getElementById('btnMasaMea').textContent = 'Masa mea (' + (masaDefaultNume || '') + ')';
+    // Any waiter gets the "Ale mele / Nepreluate / Toate mesele" toggle,
+    // defaulting to their own orders. If they have a default table, name it.
+    if (esteOspatar) {
+        filtruMasa = 'ale_mele';
+        if (masaDefaultNume) {
+            document.getElementById('btnAleMele').textContent = 'Ale mele (' + masaDefaultNume + ')';
+        }
         document.getElementById('filtreMasa').style.display = 'flex';
     }
     if (d.nume) document.getElementById('pageTitle').textContent = 'Comenzi — ' + d.nume;
