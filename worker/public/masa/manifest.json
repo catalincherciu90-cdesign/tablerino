@@ -1,0 +1,25 @@
+{
+    "name": "Tablerino",
+    "short_name": "Tablerino",
+    "description": "Comandă de la masă",
+    "start_url": "/masa/",
+    "scope": "/masa/",
+    "display": "fullscreen",
+    "orientation": "portrait",
+    "background_color": "#1a1a2e",
+    "theme_color": "#1a1a2e",
+    "icons": [
+        {
+            "src": "/uploads/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/uploads/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

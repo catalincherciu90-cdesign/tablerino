@@ -1,0 +1,169 @@
+<?php
+require_once __DIR__ . '/../config.php';
+authMaster();
+
+// Acțiuni rapide
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $body = json_decode(file_get_contents('php://input'), true) ?? [];
+    $actiune = $body['actiune'] ?? '';
+    $id = (int)($body['id'] ?? 0);
+
+    if ($actiune === 'accepta') {
+        $q = db()->prepare("UPDATE restaurante SET activ = 1 WHERE id = ?");
+        $q->execute([$id]);
+        jsonResponse(['ok' => true]);
+    }
+    if ($actiune === 'respinge') {
+        $q = db()->prepare("DELETE FROM restaurante WHERE id = ? AND activ = 0");
+        $q->execute([$id]);
+        jsonResponse(['ok' => true]);
+    }
+    jsonResponse(['ok' => false], 400);
+}
+
+// Număr cereri în așteptare
+$nrCereri = (int)db()->query("SELECT COUNT(*) FROM restaurante WHERE activ = 0")->fetchColumn();
+?>
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Master — Cereri înregistrare</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #0f0f1a; color: #e0e0e0; min-height: 100vh; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #1a1a2e; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; }
+.sidebar .logo { color: #fff; font-size: 18px; font-weight: 700; margin-bottom: 4px; padding: 0 8px; }
+.sidebar .badge { display: inline-block; background: #6c47ff; color: #fff; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; margin-left: 6px; }
+.sidebar .sub { color: #555; font-size: 11px; padding: 0 8px; margin-bottom: 20px; }
+.sidebar a { color: #aaa; text-decoration: none; padding: 10px 12px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; transition: background .15s; justify-content: space-between; }
+.sidebar a:hover, .sidebar a.activ { background: #6c47ff; color: #fff; }
+.sidebar .logout { margin-top: auto; }
+.badge-count { background: #e53e3e; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+.main { margin-left: 220px; padding: 32px; }
+.main h2 { font-size: 20px; margin-bottom: 6px; color: #fff; font-weight: 800; }
+.main p.sub { color: #666; font-size: 13px; margin-bottom: 28px; }
+.tabel-wrap { background: #1a1a2e; border-radius: 12px; overflow: hidden; border: 1px solid #2a2a3e; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 12px 16px; font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #2a2a3e; }
+td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid #1f1f2e; color: #ccc; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(108,71,255,0.05); }
+.td-num { font-weight: 700; color: #fff; }
+.td-muted { color: #555; font-size: 12px; margin-top: 2px; }
+.btn-sm { padding: 6px 14px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-accept { background: rgba(16,185,129,0.15); color: #10b981; }
+.btn-accept:hover { background: rgba(16,185,129,0.3); }
+.btn-respinge { background: rgba(239,68,68,0.15); color: #ef4444; }
+.btn-respinge:hover { background: rgba(239,68,68,0.3); }
+.td-actiuni { display: flex; gap: 8px; }
+.gol { text-align: center; color: #444; padding: 60px; font-size: 15px; }
+.gol .icon { font-size: 40px; margin-bottom: 12px; }
+.toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; display: none; z-index: 999; color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="logo">🍽️ Tablerino <span class="badge">MASTER</span></div>
+    <div class="sub">Panou platformă</div>
+    <a href="/master/index.php">🏢 Restaurante</a>
+    <a href="/master/cereri.php" class="activ">
+        <span>📋 Cereri înregistrare</span>
+        <?php if ($nrCereri > 0): ?><span class="badge-count"><?= $nrCereri ?></span><?php endif; ?>
+    </a>
+    <a href="/master/landing.php">🌐 Landing Page</a>
+    <a href="/master/logout.php" class="logout">🚪 Ieșire</a>
+</div>
+
+<div class="main">
+    <h2>📋 Cereri de înregistrare</h2>
+    <p class="sub">Restaurante care au completat formularul și așteaptă activarea contului.</p>
+
+    <div class="tabel-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Restaurant</th>
+                    <th>Email</th>
+                    <th>Telefon</th>
+                    <th>Data cererii</th>
+                    <th>Acțiuni</th>
+                </tr>
+            </thead>
+            <tbody id="tabelBody">
+                <tr><td colspan="5" class="gol">Se încarcă...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function showToast(msg, ok = true) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = ok ? '#10b981' : '#e53e3e';
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3000);
+}
+
+async function incarcaCereri() {
+    const r = await fetch('/master/api.php?actiune=cereri_inregistrare');
+    const d = await r.json();
+    const body = document.getElementById('tabelBody');
+
+    if (!d.cereri || !d.cereri.length) {
+        body.innerHTML = `<tr><td colspan="5" class="gol"><div class="icon">✅</div><div>Nicio cerere în așteptare.</div></td></tr>`;
+        return;
+    }
+
+    body.innerHTML = d.cereri.map(c => `
+        <tr id="row-${c.id}">
+            <td>
+                <div class="td-num">${c.nume}</div>
+                <div class="td-muted">ID #${c.id}</div>
+            </td>
+            <td>${c.email}</td>
+            <td>${c.telefon || '—'}</td>
+            <td style="color:#666;font-size:13px">${new Date(c.created_at).toLocaleDateString('ro-RO', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+            <td>
+                <div class="td-actiuni">
+                    <button class="btn-sm btn-accept" onclick="actiune(${c.id},'accepta')">✓ Acceptă</button>
+                    <button class="btn-sm btn-respinge" onclick="actiune(${c.id},'respinge')">✕ Respinge</button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function actiune(id, tip) {
+    const confirmMsg = tip === 'accepta'
+        ? 'Activezi contul acestui restaurant?'
+        : 'Ștergi cererea? Această acțiune nu poate fi anulată.';
+    if (!confirm(confirmMsg)) return;
+
+    const r = await fetch('/master/cereri.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actiune: tip, id })
+    });
+    const d = await r.json();
+    if (d.ok) {
+        document.getElementById('row-' + id)?.remove();
+        showToast(tip === 'accepta' ? 'Cont activat cu succes!' : 'Cerere ștearsă.');
+        // Verifică dacă mai sunt rânduri
+        if (!document.querySelector('#tabelBody tr[id]')) {
+            document.getElementById('tabelBody').innerHTML = '<tr><td colspan="5" class="gol"><div class="icon">✅</div><div>Nicio cerere în așteptare.</div></td></tr>';
+        }
+    } else {
+        showToast('Eroare. Încearcă din nou.', false);
+    }
+}
+
+incarcaCereri();
+</script>
+</body>
+</html>

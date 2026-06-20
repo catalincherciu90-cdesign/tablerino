@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<title>Tablerino - Audit comenzi</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #1a1a2e; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; z-index: 50; }
+.sidebar .logo { margin-bottom: 20px; padding: 4px; display: flex; align-items: center; justify-content: center; }
+.sidebar .logo img { height: 190px; width: auto; object-fit: contain; }
+.sidebar a { color: #aaa; text-decoration: none; padding: 11px 12px; border-radius: 10px; font-size: 14px; display: flex; align-items: center; gap: 10px; transition: background .15s, color .15s; font-weight: 500; }
+.sidebar a:hover, .sidebar a.activ { background: #6c47ff; color: #fff; }
+.sidebar .logout { margin-top: auto; }
+.lang-switch { margin-top: auto; padding: 8px 4px; display: flex; gap: 6px; justify-content: center; }
+.lang-switch a { padding: 5px 10px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; flex: none; }
+
+.main { margin-left: 220px; padding: 28px; }
+.main h2 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.main p.sub { color: #888; font-size: 14px; margin-bottom: 24px; }
+
+/* Alerta parola lipsa */
+.alert { padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; font-size: 14px; display: flex; align-items: center; gap: 12px; }
+.alert-warn { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+.alert-warn a { color: #92400e; font-weight: 700; }
+
+/* Carduri statistici */
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
+.stat-card { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.stat-card .val { font-size: 32px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+.stat-card .lbl { font-size: 12px; color: #888; font-weight: 500; }
+.val-rosu { color: #e53e3e; }
+.val-portocaliu { color: #f59e0b; }
+.val-verde { color: #10b981; }
+
+/* Tabel comenzi */
+.tabel-wrap { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); overflow: hidden; margin-bottom: 24px; }
+.tabel-header { padding: 18px 24px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+.tabel-header h3 { font-size: 15px; font-weight: 700; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 10px 16px; background: #f8f8fc; color: #888; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; border-bottom: 2px solid #f0f0f0; }
+td { padding: 12px 16px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+.badge-status { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.s-noua { background: #fef3c7; color: #92400e; }
+.s-in_pregatire { background: #dbeafe; color: #1e40af; }
+.s-plata_aleasa { background: #ede9fe; color: #5b21b6; }
+.badge-vechi { padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+.vechi-ok { background: #d1fae5; color: #065f46; }
+.vechi-warn { background: #fef3c7; color: #92400e; }
+.vechi-danger { background: #fee2e2; color: #c62828; }
+.btn-inchide { padding: 7px 14px; background: #6c47ff; color: #fff; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-inchide:hover { background: #5535e0; }
+.btn-inchide:disabled { opacity: .5; cursor: not-allowed; }
+.gol { text-align: center; padding: 48px; color: #aaa; font-size: 15px; }
+.gol .icon { font-size: 40px; margin-bottom: 12px; }
+
+/* Modal confirmare */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 16px; padding: 32px 28px; width: 100%; max-width: 420px; }
+.modal h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+.modal p { color: #888; font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
+.modal label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.modal input { width: 100%; padding: 11px 14px; border: 2px solid #ddd; border-radius: 10px; font-size: 14px; outline: none; margin-bottom: 20px; }
+.modal input:focus { border-color: #6c47ff; }
+.modal-btns { display: flex; gap: 10px; }
+.btn-cancel { padding: 11px 20px; border: 1px solid #ddd; background: #fff; border-radius: 8px; cursor: pointer; font-size: 14px; flex: 1; }
+.btn-confirm { padding: 11px 20px; background: #e53e3e; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; flex: 1; }
+.btn-confirm-all { background: #6c47ff; }
+
+.toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; display: none; z-index: 999; color: #fff; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: 100%; height: 62px; flex-direction: row; padding: 0; justify-content: space-around; align-items: center; border-top: 1px solid #2a2a3e; z-index: 100; }
+    .sidebar .logo { display: none; }
+    .sidebar .logout { margin-top: 0; }
+    .sidebar a { flex-direction: column; gap: 2px; font-size: 10px; padding: 6px 8px; border-radius: 6px; flex: 1; justify-content: center; text-align: center; }
+    .main { margin-left: 0; padding: 14px 12px 80px; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    table { font-size: 11px; }
+    th, td { padding: 8px 10px; }
+    .lang-switch { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="logo"><img src="/uploads/logo-tablerino.png" alt="Tablerino" style="height:190px;width:auto;object-fit:contain;display:block;"></div>
+    <a href="/admin/index.html">📋 Comenzi</a>
+    <a href="/admin/meniu.html">🍕 Meniu</a>
+    <a href="/admin/mese.html">🪑 Mese</a>
+    <a href="/admin/istoric.html">📂 Istoric</a>
+    <a href="/admin/raport.html">📊 Rapoarte</a>
+    <a href="/admin/audit.html" class="activ">🔍 Audit</a>
+    <a href="/admin/setari.html">🎨 Design</a>
+    <a href="/admin/reclame.html">📢 Reclame</a>
+    <a href="/admin/ospatari.html">👤 Ospătari</a>
+    <div class="lang-switch">
+        <a href="?lang=ro" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;background:#6c47ff;color:#fff">🇷🇴 RO</a>
+        <a href="?lang=en" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#aaa">🇬🇧 EN</a>
+    </div>
+    <a href="#" class="logout" onclick="logout(event)">🚪 Ieșire</a>
+</div>
+
+<div class="main">
+    <h2>🔍 Audit comenzi</h2>
+    <p class="sub">Vizualizează și închide comenzile rămase deschise (nefinalizate corect).</p>
+
+    <div id="alertParola"></div>
+
+    <div class="stats-row" id="statsRow"></div>
+
+    <!-- Tabel comenzi active -->
+    <div class="tabel-wrap">
+        <div class="tabel-header">
+            <h3>Comenzi nefinalizate</h3>
+            <div id="closeAllWrap"></div>
+        </div>
+        <div id="tabelContent">
+            <div class="gol">Se încarcă...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal setare plata -->
+<div class="modal-overlay" id="modalOverlayPlata">
+    <div class="modal">
+        <h3>💳 Setează metoda de plată</h3>
+        <p id="modalDescPlata"></p>
+        <label>Metodă de plată</label>
+        <div style="display:flex;gap:10px;margin-bottom:20px">
+            <button id="btnCash" onclick="selecteazaPlata('cash')" style="flex:1;padding:12px;border:2px solid #ddd;border-radius:10px;font-size:14px;cursor:pointer;font-weight:600;background:#fff">💵 Cash</button>
+            <button id="btnCard" onclick="selecteazaPlata('card')" style="flex:1;padding:12px;border:2px solid #ddd;border-radius:10px;font-size:14px;cursor:pointer;font-weight:600;background:#fff">💳 Card</button>
+        </div>
+        <label>Parolă de audit</label>
+        <input type="password" id="modalParolaPlata" placeholder="••••••••" onkeydown="if(event.key==='Enter') confirmaPlata()">
+        <div class="modal-btns" style="margin-top:20px">
+            <button class="btn-cancel" onclick="inchideModalPlata()">Anulează</button>
+            <button class="btn-confirm btn-confirm-all" onclick="confirmaPlata()">Salvează</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal inchidere individuala -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <h3>🔒 Închide comanda</h3>
+        <p id="modalDesc"></p>
+        <label>Parolă de audit</label>
+        <input type="password" id="modalParola" placeholder="••••••••" onkeydown="if(event.key==='Enter') confirmaInchidere()">
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="inchideModal()">Anulează</button>
+            <button class="btn-confirm" onclick="confirmaInchidere()">Confirmă</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal inchidere toate -->
+<div class="modal-overlay" id="modalOverlayTot">
+    <div class="modal">
+        <h3>⚠️ Închide toate comenzile active</h3>
+        <p>Toate comenzile active vor fi marcate ca finalizate. Această acțiune nu poate fi anulată.</p>
+        <label>Parolă de audit</label>
+        <input type="password" id="modalParolaTot" placeholder="••••••••" onkeydown="if(event.key==='Enter') confirmaInchidereTot()">
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="inchideModalTot()">Anulează</button>
+            <button class="btn-confirm btn-confirm-all" onclick="confirmaInchidereTot()">Închide toate</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function logout(e) {
+    if (e) e.preventDefault();
+    fetch('/api/admin/logout', { method: 'POST' }).finally(function () {
+        location.href = '/admin/login.html';
+    });
+}
+
+let comandaActivaId = null;
+let metodaSelectata = null;
+let areParola = false;
+
+function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function minuteVechi(createdAt) {
+    return Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+}
+
+function formatCreated(dt) {
+    const d = new Date(dt);
+    const p = n => String(n).padStart(2, '0');
+    return `${p(d.getDate())}.${p(d.getMonth()+1)} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+async function incarca() {
+    const r = await fetch('/api/admin/comenzi');
+    const d = await r.json();
+    const comenzi = (d.comenzi || []).map(c => {
+        const total = (c.produse || []).reduce((s, p) => s + parseFloat(p.total || 0), 0);
+        const min = minuteVechi(c.created_at);
+        // active = orice comanda nefinalizata (status != servita)
+        // fara_plata = servita fara metoda_plata (nu apare in acest endpoint, dar tratam defensiv)
+        const tip = c.status !== 'servita' ? 'activa' : (!c.metoda_plata ? 'fara_plata' : null);
+        return { ...c, total, minute_vechi: min, tip_problema: tip };
+    }).filter(c => c.tip_problema);
+
+    const nrActive = comenzi.filter(c => c.tip_problema === 'activa').length;
+    const nrFaraPlata = comenzi.filter(c => c.tip_problema === 'fara_plata').length;
+    const totalBlocat = comenzi.reduce((s, c) => s + c.total, 0);
+
+    document.getElementById('statsRow').innerHTML = `
+        <div class="stat-card">
+            <div class="val ${nrActive > 0 ? 'val-portocaliu' : 'val-verde'}">${nrActive}</div>
+            <div class="lbl">Comenzi active</div>
+        </div>
+        <div class="stat-card">
+            <div class="val ${nrFaraPlata > 0 ? 'val-rosu' : 'val-verde'}">${nrFaraPlata}</div>
+            <div class="lbl">Fără metodă de plată</div>
+        </div>
+        <div class="stat-card">
+            <div class="val ${totalBlocat > 0 ? 'val-portocaliu' : 'val-verde'}">${totalBlocat.toFixed(2)} lei</div>
+            <div class="lbl">Valoare blocată</div>
+        </div>
+    `;
+
+    document.getElementById('closeAllWrap').innerHTML = nrActive > 0
+        ? `<button class="btn-inchide" onclick="deschideModalTot()" ${!areParola ? 'disabled title="Setează parola mai întâi"' : ''}>⚠️ Închide toate</button>`
+        : '';
+
+    const content = document.getElementById('tabelContent');
+    if (!comenzi.length) {
+        content.innerHTML = `<div class="gol"><div class="icon">✅</div><p>Toate comenzile sunt finalizate corect.</p></div>`;
+        return;
+    }
+
+    const rows = comenzi.map(c => {
+        const ore = Math.floor(c.minute_vechi / 60);
+        const min = c.minute_vechi % 60;
+        const vecheClasa = c.minute_vechi < 60 ? 'vechi-ok' : (c.minute_vechi < 120 ? 'vechi-warn' : 'vechi-danger');
+        const vecheText = ore > 0 ? `${ore}h ${min}m` : `${min}m`;
+        const eFaraPlata = c.tip_problema === 'fara_plata';
+        const masaEsc = esc(c.masa_nume).replace(/'/g, "\\'");
+        const problema = eFaraPlata
+            ? `<span style="background:#fee2e2;color:#c62828;padding:3px 8px;border-radius:8px;font-size:11px;font-weight:700">⚠️ Fără plată</span>`
+            : `<span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:8px;font-size:11px;font-weight:700">⏳ Nefinalizată</span>`;
+        const btnPlata = eFaraPlata
+            ? `<button class="btn-inchide" style="background:#10b981" onclick="deschideModalPlata(${c.id}, '${masaEsc}')" ${!areParola ? 'disabled' : ''}>💳 Setează plata</button>`
+            : '';
+        return `
+        <tr>
+            <td style="color:#aaa;font-size:12px">#${c.id} <span style="color:#ccc">·</span> <span style="font-weight:700">#${c.nr_ordine_zi || ''}</span></td>
+            <td><strong>${esc(c.masa_nume)}</strong></td>
+            <td><span class="badge-status s-${c.status}">${esc(c.status)}</span></td>
+            <td>${problema}</td>
+            <td><strong>${c.total.toFixed(2)} lei</strong></td>
+            <td style="color:#888;font-size:12px">${formatCreated(c.created_at)}</td>
+            <td><span class="badge-vechi ${vecheClasa}">${vecheText}</span></td>
+            <td style="display:flex;gap:6px;flex-wrap:wrap">
+                ${btnPlata}
+                <button class="btn-inchide" onclick="deschideModal(${c.id}, '${masaEsc}', '${esc(c.status)}')" ${!areParola ? 'disabled' : ''}>Închide</button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    content.innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Masă</th>
+                    <th>Status</th>
+                    <th>Problemă</th>
+                    <th>Total</th>
+                    <th>Deschisă la</th>
+                    <th>Durată</th>
+                    <th>Acțiune</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+}
+
+function selecteazaPlata(metoda) {
+    metodaSelectata = metoda;
+    document.getElementById('btnCash').style.borderColor = metoda === 'cash' ? '#10b981' : '#ddd';
+    document.getElementById('btnCash').style.background  = metoda === 'cash' ? '#d1fae5' : '#fff';
+    document.getElementById('btnCard').style.borderColor = metoda === 'card' ? '#6c47ff' : '#ddd';
+    document.getElementById('btnCard').style.background  = metoda === 'card' ? '#ede9fe' : '#fff';
+}
+
+function deschideModalPlata(id, masa) {
+    comandaActivaId = id;
+    metodaSelectata = null;
+    document.getElementById('modalDescPlata').innerHTML = `Comanda de la masa <strong>${masa}</strong> — alege cum a plătit clientul.`;
+    document.getElementById('modalParolaPlata').value = '';
+    document.getElementById('btnCash').style.cssText = 'flex:1;padding:12px;border:2px solid #ddd;border-radius:10px;font-size:14px;cursor:pointer;font-weight:600;background:#fff';
+    document.getElementById('btnCard').style.cssText = 'flex:1;padding:12px;border:2px solid #ddd;border-radius:10px;font-size:14px;cursor:pointer;font-weight:600;background:#fff';
+    document.getElementById('modalOverlayPlata').classList.add('open');
+    setTimeout(() => document.getElementById('modalParolaPlata').focus(), 100);
+}
+
+function inchideModalPlata() {
+    document.getElementById('modalOverlayPlata').classList.remove('open');
+    comandaActivaId = null;
+    metodaSelectata = null;
+}
+
+async function confirmaPlata() {
+    if (!metodaSelectata) { showToast('Alege metoda de plată', false); return; }
+    const parola = document.getElementById('modalParolaPlata').value;
+    if (!parola) { showToast('Introdu parola', false); return; }
+    const r = await fetch('/api/admin/audit_seteaza_plata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comanda_id: comandaActivaId, metoda_plata: metodaSelectata, parola })
+    });
+    const d = await r.json();
+    if (d.ok) {
+        inchideModalPlata();
+        showToast('Plată salvată!');
+        incarca();
+    } else {
+        showToast(d.msg || 'Parolă incorectă.', false);
+        document.getElementById('modalParolaPlata').value = '';
+    }
+}
+
+function showToast(msg, ok = true) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = ok ? '#10b981' : '#e53e3e';
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3000);
+}
+
+function deschideModal(id, masa, status) {
+    comandaActivaId = id;
+    document.getElementById('modalDesc').innerHTML =
+        `Marchezi ca finalizată comanda de la masa <strong>${masa}</strong> (${status}).`;
+    document.getElementById('modalParola').value = '';
+    document.getElementById('modalOverlay').classList.add('open');
+    setTimeout(() => document.getElementById('modalParola').focus(), 100);
+}
+
+function inchideModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    comandaActivaId = null;
+}
+
+async function confirmaInchidere() {
+    const parola = document.getElementById('modalParola').value;
+    if (!parola) return;
+    const r = await fetch('/api/admin/audit_inchide', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comanda_id: comandaActivaId, parola })
+    });
+    const d = await r.json();
+    if (d.ok) {
+        inchideModal();
+        showToast('Comanda a fost închisă.');
+        incarca();
+    } else {
+        showToast(d.msg || 'Parolă incorectă.', false);
+        document.getElementById('modalParola').value = '';
+        document.getElementById('modalParola').focus();
+    }
+}
+
+function deschideModalTot() {
+    document.getElementById('modalParolaTot').value = '';
+    document.getElementById('modalOverlayTot').classList.add('open');
+    setTimeout(() => document.getElementById('modalParolaTot').focus(), 100);
+}
+
+function inchideModalTot() {
+    document.getElementById('modalOverlayTot').classList.remove('open');
+}
+
+async function confirmaInchidereTot() {
+    const parola = document.getElementById('modalParolaTot').value;
+    if (!parola) return;
+    const r = await fetch('/api/admin/audit_inchide_tot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parola })
+    });
+    const d = await r.json();
+    if (d.ok) {
+        inchideModalTot();
+        showToast('Toate comenzile au fost închise.');
+        incarca();
+    } else {
+        showToast(d.msg || 'Parolă incorectă.', false);
+        document.getElementById('modalParolaTot').value = '';
+        document.getElementById('modalParolaTot').focus();
+    }
+}
+
+fetch('/api/admin/me').then(function (r) {
+    if (!r.ok) { location.href = '/admin/login.html'; return null; }
+    return r.json();
+}).then(function (me) {
+    if (!me) return null;
+    if (me.role === 'ospatar') { location.href = '/admin/index.html'; return null; }
+    return fetch('/api/admin/profil');
+}).then(function (r) {
+    if (!r) return null;
+    return r.json();
+}).then(function (d) {
+    if (!d) return;
+    areParola = !!(d.profil && d.profil.are_parola_reset);
+    if (!areParola) {
+        document.getElementById('alertParola').innerHTML =
+            `<div class="alert alert-warn">⚠️ Nu ai setat o parolă de audit. Accesează <a href="/admin/setari.html">Design > Setări pentru a o configura.</a></div>`;
+    }
+    incarca();
+});
+</script>
+</body>
+</html>

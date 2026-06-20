@@ -1,0 +1,35 @@
+name = "tablerino"
+main = "src/index.ts"
+compatibility_date = "2024-12-18"
+compatibility_flags = ["nodejs_compat"]
+
+# Static frontend (home, masa, admin, master HTML/CSS/JS) served from ./public
+[assets]
+directory = "./public"
+binding = "ASSETS"
+# The Worker runs first; only unmatched routes fall through to static assets.
+run_worker_first = true
+
+# Non-secret configuration. Secrets (GROQ_KEY, SESSION_SECRET) are set with:
+#   wrangler secret put GROQ_KEY
+#   wrangler secret put SESSION_SECRET
+[vars]
+BASE_URL = "https://tablerino.ro"
+GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+
+# D1 database. Create with: wrangler d1 create tablerino
+# then paste the returned database_id below.
+[[d1_databases]]
+binding = "DB"
+database_name = "tablerino"
+database_id = "3cc0b84d-ada3-4a08-9d8f-9863f7ab320f"
+
+# R2 bucket for uploads (logos, product photos, ad images).
+# DISABLED for now — image uploads are off until R2 is enabled. To turn images
+# on: create the bucket (`wrangler r2 bucket create tablerino-uploads`), then
+# uncomment the three lines below and redeploy.
+# [[r2_buckets]]
+# binding = "UPLOADS"
+# bucket_name = "tablerino-uploads"
+
+# deploy trigger: secrets configured

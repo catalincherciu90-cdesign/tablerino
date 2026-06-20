@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16.png">
+<link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablerino - Design</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #1a1a2e; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; }
+.sidebar .logo { margin-bottom: 20px; padding: 4px; display: flex; align-items: center; justify-content: center; }
+.sidebar .logo img { height: 64px; width: auto; object-fit: contain; background: #fff; border-radius: 10px; padding: 6px; }
+.sidebar a { color: #aaa; text-decoration: none; padding: 10px 12px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; transition: background .15s, color .15s; }
+.sidebar a:hover, .sidebar a.activ { background: #6c47ff; color: #fff; }
+.sidebar .logout { margin-top: auto; }
+.main { margin-left: 220px; padding: 32px; max-width: 960px; }
+.main h2 { font-size: 20px; margin-bottom: 6px; }
+.main p.sub { color: #888; font-size: 14px; margin-bottom: 32px; }
+.sectiune { background: #fff; border-radius: 14px; padding: 28px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); margin-bottom: 24px; }
+.sectiune h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.sectiune p.desc { font-size: 13px; color: #888; margin-bottom: 20px; }
+.upload-zone { border: 2px dashed #ddd; border-radius: 12px; padding: 28px; text-align: center; cursor: pointer; transition: all .2s; position: relative; }
+.upload-zone:hover { border-color: #6c47ff; background: #f5f3ff; }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.upload-zone .icon { font-size: 32px; margin-bottom: 8px; }
+.upload-zone p { font-size: 13px; color: #888; }
+.upload-zone p strong { color: #6c47ff; }
+.preview-wrap { position: relative; display: inline-block; margin-top: 16px; }
+.preview-wrap img { max-height: 120px; max-width: 100%; border-radius: 10px; border: 1px solid #eee; display: block; }
+.preview-wrap.bg img { max-height: 160px; max-width: 300px; object-fit: cover; }
+.btn-sterge-img { position: absolute; top: -8px; right: -8px; background: #e53e3e; color: #fff; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.field label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px; }
+.field input { width: 100%; padding: 11px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; transition: border-color .2s; }
+.field input:focus { border-color: #6c47ff; }
+.field small { color: #aaa; font-size: 12px; margin-top: 6px; display: block; }
+.btn-salva { padding: 10px 22px; background: #6c47ff; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 16px; }
+.btn-salva:hover { background: #5a38e0; }
+.teme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+.tema-card { border-radius: 12px; overflow: hidden; cursor: pointer; border: 3px solid transparent; transition: all .2s; box-shadow: 0 1px 8px rgba(0,0,0,0.08); }
+.tema-card:hover { transform: translateY(-2px); }
+.tema-card.activa { border-color: #6c47ff; box-shadow: 0 0 0 4px rgba(108,71,255,0.2); }
+.tema-preview { height: 100px; display: flex; flex-direction: column; }
+.tema-header-prev { padding: 10px 12px; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.tema-body-prev { flex: 1; padding: 8px 12px; display: flex; flex-direction: column; gap: 5px; }
+.prev-card { height: 16px; border-radius: 4px; opacity: .7; }
+.prev-btn { height: 12px; border-radius: 20px; width: 55%; opacity: .9; }
+.tema-info { background: #fff; padding: 10px 12px; }
+.tema-info h4 { font-size: 13px; font-weight: 700; }
+.tema-info .check { color: #6c47ff; font-size: 11px; font-weight: 600; display: none; }
+.tema-card.activa .tema-info .check { display: block; }
+.toast { position: fixed; bottom: 24px; right: 24px; background: #10b981; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 13px; display: none; z-index: 999; }
+.toast.err { background: #e53e3e; }
+@media (max-width: 768px) {
+    .header-mobil { display: flex !important; }
+    .sidebar { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: 100%; height: 62px; flex-direction: row; padding: 0; justify-content: space-around; align-items: center; border-top: 1px solid #2a2a3e; z-index: 100; }
+    .sidebar .logo { display: none; }
+    .sidebar .logout { margin-top: 0; }
+    .sidebar a { flex-direction: column; gap: 2px; font-size: 10px; padding: 6px 8px; border-radius: 6px; flex: 1; justify-content: center; text-align: center; font-weight: 600; }
+    .main { margin-left: 0 !important; padding: 14px 12px 80px !important; }
+    .teme-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .sectiune { padding: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="logo"><img src="/uploads/logo-tablerino.png" alt="Tablerino" style="height:190px;width:auto;object-fit:contain;display:block;"></div>
+    <a href="/admin/index.html">📋 Comenzi</a>
+    <a href="/admin/meniu.html">🍕 Meniu</a>
+    <a href="/admin/mese.html">🪑 Mese</a>
+    <a href="/admin/istoric.html">📂 Istoric</a>
+    <a href="/admin/raport.html">📊 Rapoarte</a>
+    <a href="/admin/setari.html" class="activ">🎨 Design</a>
+    <a href="/admin/reclame.html">📢 Reclame</a>
+    <a href="/admin/audit.html">🔍 Audit</a>
+    <a href="/admin/ospatari.html">👤 Ospătari</a>
+    <div style="margin-top:auto;padding:8px 4px;display:flex;gap:6px;justify-content:center">
+        <a href="?lang=ro" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;background:#6c47ff;color:#fff">🇷🇴 RO</a>
+        <a href="?lang=en" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#aaa">🇬🇧 EN</a>
+    </div>
+    <a href="#" class="logout" onclick="logout(event)">🚪 Ieșire</a>
+</div>
+
+<div class="main">
+    <h2>Design & Personalizare</h2>
+    <p class="sub">Configurează aspectul vizual al paginii văzute de clienți pe tabletă.</p>
+
+    <!-- Logo -->
+    <div class="sectiune">
+        <h3>🖼️ Logo restaurant</h3>
+        <p class="desc">Apare în header-ul tabletei alături de numele restaurantului. Recomandat: PNG transparent, minim 200x200px.</p>
+        <div class="upload-zone" onclick="document.getElementById('inputLogo').click()">
+            <input type="file" id="inputLogo" accept="image/jpeg,image/png,image/webp,image/svg+xml" onchange="uploadImagine('logo', this)" style="opacity:0;position:absolute;inset:0;cursor:pointer">
+            <div class="icon">📁</div>
+            <p>Click pentru a selecta logo<br><strong>JPG, PNG, SVG, WEBP</strong> · max 3MB</p>
+        </div>
+        <div id="previewLogo"></div>
+        <div id="progressLogo" style="font-size:12px;color:#6c47ff;margin-top:8px;display:none">Se încarcă...</div>
+    </div>
+
+    <!-- Text bun venit -->
+    <div class="sectiune">
+        <h3>👋 Text de bun venit</h3>
+        <p class="desc">Apare sub numele restaurantului în header-ul tabletei.</p>
+        <div class="field">
+            <label>Mesaj de bun venit</label>
+            <input type="text" id="textBunVenit" value="" placeholder="Ex: Bun venit! Explorați meniul nostru.">
+            <small>Maximum 80 de caractere</small>
+        </div>
+        <button class="btn-salva" onclick="salveazaText()">Salvează textul</button>
+    </div>
+
+    <!-- Social media -->
+    <div class="sectiune">
+        <h3>📱 Social Media</h3>
+        <p class="desc">Linkurile apar ca iconițe în pagina clientului pe tabletă.</p>
+        <div class="field" style="margin-bottom:14px">
+            <label>🔵 Facebook</label>
+            <input type="url" id="smFacebook" value="" placeholder="https://facebook.com/your-restaurant">
+        </div>
+        <div class="field" style="margin-bottom:14px">
+            <label>📸 Instagram</label>
+            <input type="url" id="smInstagram" value="" placeholder="https://instagram.com/your-restaurant">
+        </div>
+        <div class="field" style="margin-bottom:14px">
+            <label>🎵 TikTok</label>
+            <input type="url" id="smTiktok" value="" placeholder="https://tiktok.com/@your-restaurant">
+        </div>
+        <div class="field" style="margin-bottom:14px">
+            <label>💬 WhatsApp</label>
+            <input type="tel" id="smWhatsapp" value="" placeholder="407XXXXXXXX">
+            <small>Exemplu: 40712345678</small>
+        </div>
+        <button class="btn-salva" onclick="salveazaSocial()">Salvează social media</button>
+    </div>
+
+    <!-- Imagine fundal -->
+    <div class="sectiune">
+        <h3>🖼️ Imagine de fundal</h3>
+        <p class="desc">Apare ca fundal pe ecranul principal al tabletei. Recomandat: minim 1920x1080px.</p>
+        <div class="upload-zone" onclick="document.getElementById('inputBg').click()">
+            <input type="file" id="inputBg" accept="image/jpeg,image/png,image/webp" onchange="uploadImagine('bg', this)" style="opacity:0;position:absolute;inset:0;cursor:pointer">
+            <div class="icon">🖼️</div>
+            <p>Click pentru a selecta imaginea de fundal<br><strong>JPG, PNG, WEBP</strong> · max 3MB</p>
+        </div>
+        <div id="previewBg"></div>
+        <div id="progressBg" style="font-size:12px;color:#6c47ff;margin-top:8px;display:none">Se încarcă...</div>
+    </div>
+
+    <!-- Teme -->
+    <div class="sectiune">
+        <h3>🎨 Temă vizuală</h3>
+        <p class="desc">Culori, fonturi și stil general al interfeței pentru clienți.</p>
+        <div class="teme-grid" id="temeGrid"></div>
+    </div>
+
+    <!-- Parolă audit comenzi -->
+    <div class="sectiune">
+        <h3>🔒 Parolă audit comenzi</h3>
+        <p class="desc">Această parolă protejează închiderea manuală a comenzilor din pagina de Audit.</p>
+        <div class="field">
+            <label>Parolă nouă (minim 4 caractere)</label>
+            <input type="password" id="parolaAudit" placeholder="••••••••" autocomplete="new-password">
+        </div>
+        <button class="btn-salva" onclick="salveazaParolaAudit()">Salvează parola</button>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function logout(e) {
+    if (e) e.preventDefault();
+    fetch('/api/admin/logout', { method: 'POST' }).finally(function () {
+        location.href = '/admin/login.html';
+    });
+}
+
+// Teme (din themes.ts)
+const TEME = {
+    italian:    { nume: '🍕 Italian', primar: '#c0392b', bg: '#fdf6f0', card_bg: '#fff', header_bg: '#c0392b', header_text: '#fff', font: "'Georgia', serif", border_r: '12px', pattern: 'repeating-linear-gradient(45deg, rgba(192,57,43,0.04) 0px, rgba(192,57,43,0.04) 1px, transparent 1px, transparent 12px)' },
+    asian:      { nume: '🍣 Asian', primar: '#c0392b', bg: '#1a1a1a', card_bg: '#242424', header_bg: '#111', header_text: '#fff', font: "'system-ui', sans-serif", border_r: '4px', pattern: 'none' },
+    fastfood:   { nume: '🍔 Fast Food', primar: '#e74c3c', bg: '#fff9f0', card_bg: '#fff', header_bg: '#e74c3c', header_text: '#fff', font: "'system-ui', sans-serif", border_r: '8px', pattern: 'none' },
+    finedining: { nume: '🥂 Fine Dining', primar: '#c9a84c', bg: '#0f0f1a', card_bg: '#1a1a2e', header_bg: '#0f0f1a', header_text: '#c9a84c', font: "'Georgia', serif", border_r: '2px', pattern: 'none' },
+    streetfood: { nume: '🌮 Street Food', primar: '#e67e22', bg: '#f8f9fa', card_bg: '#fff', header_bg: '#2d2d2d', header_text: '#e67e22', font: "'system-ui', sans-serif", border_r: '16px', pattern: 'none' },
+    cafe:       { nume: '☕ Cafe & Bistro', primar: '#6f4e37', bg: '#fdf8f2', card_bg: '#fff', header_bg: '#3d2b1f', header_text: '#f5e6d3', font: "'Georgia', serif", border_r: '10px', pattern: 'repeating-linear-gradient(0deg, rgba(111,78,55,0.03) 0px, rgba(111,78,55,0.03) 1px, transparent 1px, transparent 20px)' },
+    grecesc:    { nume: '🫒 Grecesc', primar: '#1a5276', bg: '#f0f4f8', card_bg: '#fff', header_bg: '#1a5276', header_text: '#fff', font: "'Georgia', serif", border_r: '50px', pattern: 'radial-gradient(circle at 20px 20px, rgba(26,82,118,0.05) 2px, transparent 2px)' },
+    romanesc:   { nume: '🥩 Românesc', primar: '#922b21', bg: '#fdf6ec', card_bg: '#fff', header_bg: '#7b241c', header_text: '#fdebd0', font: "'Georgia', serif", border_r: '8px', pattern: 'repeating-linear-gradient(90deg, rgba(146,43,33,0.04) 0px, rgba(146,43,33,0.04) 1px, transparent 1px, transparent 30px)' },
+};
+
+let temaActiva = 'italian';
+
+function renderTeme() {
+    const grid = document.getElementById('temeGrid');
+    grid.innerHTML = Object.keys(TEME).map(slug => {
+        const t = TEME[slug];
+        const bodyBg = t.pattern !== 'none' ? `${t.pattern}, ${t.bg}` : t.bg;
+        return `
+        <div class="tema-card ${slug === temaActiva ? 'activa' : ''}" data-slug="${slug}" onclick="alegeaTema('${slug}')">
+            <div class="tema-preview" style="background: ${t.bg}; font-family: ${t.font};">
+                <div class="tema-header-prev" style="background: ${t.header_bg}; color: ${t.header_text};">
+                    ${t.nume}
+                </div>
+                <div class="tema-body-prev" style="background: ${bodyBg}">
+                    <div class="prev-card" style="background: ${t.card_bg}; border-radius: ${t.border_r}; border: 1px solid rgba(0,0,0,0.08)"></div>
+                    <div class="prev-card" style="background: ${t.card_bg}; border-radius: ${t.border_r}; width: 80%; border: 1px solid rgba(0,0,0,0.08)"></div>
+                    <div class="prev-btn" style="background: ${t.primar}; border-radius: ${t.border_r}"></div>
+                </div>
+            </div>
+            <div class="tema-info">
+                <h4>${t.nume}</h4>
+                <div class="check">✓ Temă activă</div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function showToast(msg, tip = 'ok') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (tip === 'err' ? ' err' : '');
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 2500);
+}
+
+async function uploadImagine(tip, input) {
+    if (!input.files.length) return;
+    const progId = tip === 'logo' ? 'progressLogo' : 'progressBg';
+    const prevId = tip === 'logo' ? 'previewLogo' : 'previewBg';
+    document.getElementById(progId).style.display = 'block';
+    const formData = new FormData();
+    formData.append('imagine', input.files[0]);
+    formData.append('tip', tip);
+    try {
+        const r = await fetch('/api/upload/imagine', { method: 'POST', body: formData });
+        const d = await r.json();
+        if (d.ok) {
+            const prev = document.getElementById(prevId);
+            prev.className = 'preview-wrap' + (tip === 'bg' ? ' bg' : '');
+            prev.innerHTML = `<img src="/${d.cale}?t=${Date.now()}" alt=""><button class="btn-sterge-img" onclick="stergeImagine('${tip === 'bg' ? 'bg_imagine' : 'logo'}')">×</button>`;
+            showToast('Imagine salvată!');
+        } else { showToast(d.msg || 'Eroare', 'err'); }
+    } catch(e) { showToast('Eroare', 'err'); }
+    document.getElementById(progId).style.display = 'none';
+    input.value = '';
+}
+
+async function stergeImagine(tip) {
+    if (!confirm('Ștergi imaginea?')) return;
+    const r = await fetch('/api/admin/sterge_imagine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tip })
+    });
+    const d = await r.json();
+    if (d.ok) {
+        document.getElementById(tip === 'logo' ? 'previewLogo' : 'previewBg').innerHTML = '';
+        showToast('Imagine ștearsă');
+    }
+}
+
+async function salveazaText() {
+    const text = document.getElementById('textBunVenit').value.trim();
+    const r = await fetch('/api/admin/salveaza_profil_vizual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text_bun_venit: text })
+    });
+    const d = await r.json();
+    if (d.ok) showToast('Text salvat!');
+    else showToast('Eroare', 'err');
+}
+
+async function salveazaSocial() {
+    const r = await fetch('/api/admin/salveaza_social', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            facebook: document.getElementById('smFacebook').value.trim(),
+            instagram: document.getElementById('smInstagram').value.trim(),
+            tiktok: document.getElementById('smTiktok').value.trim(),
+            whatsapp: document.getElementById('smWhatsapp').value.trim()
+        })
+    });
+    const d = await r.json();
+    if (d.ok) showToast('Social media salvat!');
+    else showToast('Eroare', 'err');
+}
+
+async function alegeaTema(slug) {
+    const r = await fetch('/api/admin/salveaza_tema', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tema: slug })
+    });
+    const d = await r.json();
+    if (d.ok) {
+        temaActiva = slug;
+        document.querySelectorAll('.tema-card').forEach(c => c.classList.remove('activa'));
+        document.querySelector(`.tema-card[data-slug="${slug}"]`).classList.add('activa');
+        showToast('Temă salvată!');
+    }
+}
+
+async function salveazaParolaAudit() {
+    const parola = document.getElementById('parolaAudit').value.trim();
+    if (!parola) { showToast('Parolă nouă (minim 4 caractere)', 'err'); return; }
+    const r = await fetch('/api/admin/salveaza_parola_reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parola })
+    });
+    const d = await r.json();
+    if (d.ok) {
+        document.getElementById('parolaAudit').value = '';
+        showToast('Parolă salvată!');
+    } else {
+        showToast(d.msg || 'Eroare', 'err');
+    }
+}
+
+function prefill(profil) {
+    if (!profil) return;
+    temaActiva = profil.tema || 'italian';
+    document.getElementById('textBunVenit').value = profil.text_bun_venit || '';
+    document.getElementById('smFacebook').value = profil.facebook || '';
+    document.getElementById('smInstagram').value = profil.instagram || '';
+    document.getElementById('smTiktok').value = profil.tiktok || '';
+    document.getElementById('smWhatsapp').value = profil.whatsapp || '';
+    if (profil.logo) {
+        document.getElementById('previewLogo').className = 'preview-wrap';
+        document.getElementById('previewLogo').innerHTML = `<img src="/${profil.logo}" alt="Logo"><button class="btn-sterge-img" onclick="stergeImagine('logo')">×</button>`;
+    }
+    if (profil.bg_imagine) {
+        document.getElementById('previewBg').className = 'preview-wrap bg';
+        document.getElementById('previewBg').innerHTML = `<img src="/${profil.bg_imagine}" alt="Fundal"><button class="btn-sterge-img" onclick="stergeImagine('bg_imagine')">×</button>`;
+    }
+    renderTeme();
+}
+
+(async function () {
+    const rMe = await fetch('/api/admin/me');
+    if (!rMe.ok) { location.href = '/admin/login.html'; return; }
+    const me = await rMe.json();
+    if (me.role === 'ospatar') { location.href = '/admin/index.html'; return; }
+    renderTeme();
+    const r = await fetch('/api/admin/profil');
+    const d = await r.json();
+    if (d && d.ok) prefill(d.profil);
+})();
+</script>
+</body>
+</html>

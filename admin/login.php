@@ -1,0 +1,89 @@
+<?php
+require_once __DIR__ . '/../config.php';
+session_start();
+
+if (!empty($_SESSION['restaurant_id'])) {
+    header('Location: /admin/index.php');
+    exit;
+}
+
+$eroare = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email = trim($_POST['email'] ?? '');
+    $parola = $_POST['parola'] ?? '';
+    $r = db()->prepare('SELECT id, nume, parola FROM restaurante WHERE email = ? AND activ = 1');
+    $r->execute([$email]);
+    $rest = $r->fetch();
+    if ($rest && password_verify($parola, $rest['parola'])) {
+        $_SESSION['restaurant_id'] = $rest['id'];
+        $_SESSION['restaurant_nume'] = $rest['nume'];
+        header('Location: /admin/index.php');
+        exit;
+    }
+    $eroare = 'Email sau parolă incorecte.';
+}
+?>
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16.png">
+<link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablerino - Login</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f5f5f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.card { background: #fff; border-radius: 12px; padding: 40px; width: 100%; max-width: 400px; box-shadow: 0 2px 20px rgba(0,0,0,0.08); }
+h1 { font-size: 22px; margin-bottom: 6px; color: #111; }
+p.sub { color: #888; font-size: 13px; margin-bottom: 28px; }
+label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px; }
+input { width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 18px; outline: none; transition: border-color .2s; }
+input:focus { border-color: #6c47ff; }
+button { width: 100%; padding: 12px; background: #6c47ff; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+button:hover { background: #5a38e0; }
+.eroare { background: #ffebee; color: #c62828; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 18px; }
+
+
+/* ── RESPONSIVE SIDEBAR ── */
+@media (max-width: 768px) {
+    .header-mobil { display: flex !important; }
+    .sidebar { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: 100%; height: 62px; flex-direction: row; padding: 0; justify-content: space-around; align-items: center; border-top: 1px solid #2a2a3e; z-index: 100; }
+    .sidebar .logo { display: none; }
+    .sidebar .logout { margin-top: 0; }
+    .sidebar a { flex-direction: column; gap: 2px; font-size: 10px; padding: 6px 8px; border-radius: 6px; flex: 1; justify-content: center; text-align: center; font-weight: 600; }
+    .main { margin-left: 0 !important; padding: 14px 12px 80px !important; }
+    .main h2 { font-size: 18px !important; }
+    .layout { grid-template-columns: 1fr !important; }
+    .teme-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .mese-grid { grid-template-columns: 1fr !important; }
+    .adauga-form { flex-direction: column; }
+    table { font-size: 12px; }
+    th, td { padding: 8px 10px; }
+    .filtre-bar { flex-wrap: wrap; }
+    .sumar { gap: 8px; }
+    .sumar-card { padding: 12px 14px; min-width: 0; flex: 1; }
+    .sectiune { padding: 18px; }
+    .produs-item { flex-wrap: wrap; }
+}
+
+</style>
+</head>
+<body>
+<div class="card">
+    <h1>🍽️ Tablerino</h1>
+    <p class="sub">Intră în contul restaurantului tău.</p>
+    <?php if ($eroare): ?>
+        <div class="eroare"><?= htmlspecialchars($eroare) ?></div>
+    <?php endif; ?>
+    <form method="POST">
+        <label>Email</label>
+        <input type="email" name="email" required autofocus>
+        <label>Parolă</label>
+        <input type="password" name="parola" required>
+        <button type="submit">Intră în cont</button>
+    </form>
+</div>
+</body>
+</html>

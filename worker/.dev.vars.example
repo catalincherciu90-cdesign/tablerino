@@ -1,0 +1,4 @@
+# Local dev secrets for `wrangler dev`. Copy to `.dev.vars` (gitignored) and fill in.
+# In production set these with `wrangler secret put <NAME>`.
+GROQ_KEY="your-groq-api-key"
+SESSION_SECRET="a-long-random-string-used-to-sign-session-cookies"
