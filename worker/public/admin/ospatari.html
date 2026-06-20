@@ -25,8 +25,11 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
 .adauga-form .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
 .adauga-form .field { flex: 1; min-width: 180px; }
 .adauga-form label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px; }
-.adauga-form input { width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; transition: border-color .2s; }
-.adauga-form input:focus { border-color: #6c47ff; }
+.adauga-form input, .adauga-form select { width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; transition: border-color .2s; background: #fff; }
+.adauga-form input:focus, .adauga-form select:focus { border-color: #6c47ff; }
+.masa-select { padding: 6px 10px; border: 1px solid #ddd; border-radius: 7px; font-size: 13px; outline: none; background: #fff; max-width: 200px; }
+.masa-select:focus { border-color: #6c47ff; }
+td .masa-curenta { color: #888; font-size: 12px; margin-bottom: 4px; }
 .btn-add { padding: 10px 18px; background: #6c47ff; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .btn-add:hover { background: #5a38e0; }
 
@@ -101,6 +104,10 @@ td .email { color: #888; font-size: 13px; }
                 <label>Parolă (minim 6 caractere)</label>
                 <input type="password" id="parolaOspatar" placeholder="••••••••" autocomplete="new-password">
             </div>
+            <div class="field">
+                <label>Masă implicită</label>
+                <select id="masaOspatar"></select>
+            </div>
             <button class="btn-add" onclick="adaugaOspatar()">+ Adaugă</button>
         </div>
     </div>
@@ -132,6 +139,40 @@ function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
 
+let mese = [];
+
+// Build <option> markup: "— fără masă —" first, then one option per table.
+// selectedId preselects the matching table (loose compare to allow null/string).
+function optiuniMasa(selectedId) {
+    let html = `<option value="">— fără masă —</option>`;
+    html += mese.map(m =>
+        `<option value="${m.id}" ${String(m.id) === String(selectedId) ? 'selected' : ''}>${escapeHtml(m.nume)}</option>`
+    ).join('');
+    return html;
+}
+
+async function incarcaMese() {
+    try {
+        const r = await fetch('/api/admin/mese');
+        const d = await r.json();
+        if (d.ok) mese = d.mese || [];
+    } catch (e) { mese = []; }
+    const sel = document.getElementById('masaOspatar');
+    if (sel) sel.innerHTML = optiuniMasa('');
+}
+
+async function seteazaMasaOspatar(id, value) {
+    const masa_default_id = Number(value) || null;
+    const r = await fetch('/api/admin/set_masa_ospatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, masa_default_id })
+    });
+    const d = await r.json();
+    if (d.ok) showToast('Masă implicită salvată!');
+    else showToast(d.msg || 'Eroare', 'err');
+}
+
 async function incarcaOspatari() {
     const r = await fetch('/api/admin/ospatari');
     const d = await r.json();
@@ -141,13 +182,17 @@ async function incarcaOspatari() {
     wrap.innerHTML = `
     <table>
         <thead>
-            <tr><th>Nume</th><th>Email</th><th>Status</th><th>Acțiuni</th></tr>
+            <tr><th>Nume</th><th>Email</th><th>Masă implicită</th><th>Status</th><th>Acțiuni</th></tr>
         </thead>
         <tbody>
         ${d.ospatari.map(o => `
             <tr>
                 <td><span class="nume">${escapeHtml(o.nume)}</span></td>
                 <td><span class="email">${escapeHtml(o.email)}</span></td>
+                <td>
+                    <div class="masa-curenta">${o.masa_default_nume ? escapeHtml(o.masa_default_nume) : 'fără masă'}</div>
+                    <select class="masa-select" onchange="seteazaMasaOspatar(${o.id}, this.value)">${optiuniMasa(o.masa_default_id)}</select>
+                </td>
                 <td><span class="badge ${o.activ ? 'activ' : 'inactiv'}">${o.activ ? 'Activ' : 'Inactiv'}</span></td>
                 <td>
                     <div class="actiuni">
@@ -166,18 +211,20 @@ async function adaugaOspatar() {
     const nume = document.getElementById('numeOspatar').value.trim();
     const email = document.getElementById('emailOspatar').value.trim();
     const parola = document.getElementById('parolaOspatar').value;
+    const masa_default_id = Number(document.getElementById('masaOspatar').value) || null;
     if (!nume || !email || !parola) { showToast('Completează toate câmpurile.', 'err'); return; }
     if (parola.length < 6) { showToast('Parola trebuie să aibă minim 6 caractere.', 'err'); return; }
     const r = await fetch('/api/admin/adauga_ospatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nume, email, parola })
+        body: JSON.stringify({ nume, email, parola, masa_default_id })
     });
     const d = await r.json();
     if (d.ok) {
         document.getElementById('numeOspatar').value = '';
         document.getElementById('emailOspatar').value = '';
         document.getElementById('parolaOspatar').value = '';
+        document.getElementById('masaOspatar').value = '';
         showToast('Ospătar adăugat!');
         incarcaOspatari();
     } else {
@@ -228,7 +275,7 @@ fetch('/api/admin/me').then(function (r) {
 }).then(function (d) {
     if (!d) return;
     if (d.role === 'ospatar') { location.href = '/admin/index.html'; return; }
-    incarcaOspatari();
+    incarcaMese().then(incarcaOspatari);
 });
 </script>
 </body>

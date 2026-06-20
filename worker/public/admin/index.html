@@ -127,6 +127,11 @@ li.livrat { opacity: 0.5; }
 
     <div class="sumar-zi owner-only" id="sumarZi"></div>
 
+    <div class="filtre filtre-masa" id="filtreMasa" style="display:none">
+        <button class="filtru-btn activ" id="btnMasaMea" onclick="setFiltruMasa(true)">Masa mea</button>
+        <button class="filtru-btn" id="btnToateMesele" onclick="setFiltruMasa(false)">Toate mesele</button>
+    </div>
+
     <div class="filtre">
         <button class="filtru-btn activ" data-status="toate">Toate</button>
         <button class="filtru-btn" data-status="noua">Noi</button>
@@ -151,6 +156,10 @@ function logout(e) {
 
 let restaurantId = null;
 let esteOspatar = false;
+let masaDefaultId = null;
+let masaDefaultNume = null;
+let doarMasaMea = false;     // when true, show only orders for the waiter's default table
+let comenziToate = [];       // full orders array from the last fetch (filtered at render time)
 const _t = {
     noOrders:     'Nicio comandă momentan.',
     loading:      'Se încarcă...',
@@ -198,7 +207,10 @@ function formatOra(dt) {
 
 function renderComenzi(comenzi) {
     const grid = document.getElementById('comenziGrid');
-    const filtrate = filtruActiv === 'toate' ? comenzi : comenzi.filter(c => c.status === filtruActiv);
+    // Table filter (waiter with a default table, "Masa mea" selected) then status filter.
+    let baza = comenzi;
+    if (doarMasaMea && masaDefaultId) baza = baza.filter(c => c.masa_id === masaDefaultId);
+    const filtrate = filtruActiv === 'toate' ? baza : baza.filter(c => c.status === filtruActiv);
 
     if (!filtrate.length) {
         grid.innerHTML = `<div class="gol">${_t.noOrders}</div>`;
@@ -292,7 +304,8 @@ async function incarcaComenzi() {
             setTimeout(() => notif.style.display = 'none', 3000);
         }
         data.comenzi.forEach(c => comenziCunoscute.add(c.id));
-        renderComenzi(data.comenzi);
+        comenziToate = data.comenzi;
+        renderComenzi(comenziToate);
         incarcaSumarZi();
 
         const acum = new Date().toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -342,12 +355,21 @@ async function elibereazaMasa(masaId) {
     incarcaComenzi();
 }
 
-document.querySelectorAll('.filtru-btn').forEach(btn => {
+// Table toggle (only shown for waiters with a default table). Re-render from the
+// cached orders array so we don't need to re-fetch.
+function setFiltruMasa(doar) {
+    doarMasaMea = doar;
+    document.getElementById('btnMasaMea').classList.toggle('activ', doar);
+    document.getElementById('btnToateMesele').classList.toggle('activ', !doar);
+    renderComenzi(comenziToate);
+}
+
+document.querySelectorAll('.filtre:not(.filtre-masa) .filtru-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        document.querySelectorAll('.filtru-btn').forEach(b => b.classList.remove('activ'));
+        document.querySelectorAll('.filtre:not(.filtre-masa) .filtru-btn').forEach(b => b.classList.remove('activ'));
         btn.classList.add('activ');
         filtruActiv = btn.dataset.status;
-        incarcaComenzi();
+        renderComenzi(comenziToate);
     });
 });
 
@@ -375,8 +397,17 @@ fetch('/api/admin/me').then(function (r) {
     if (!d) return;
     restaurantId = d.id;
     esteOspatar = d.role === 'ospatar';
+    masaDefaultId = d.masa_default_id || null;
+    masaDefaultNume = d.masa_default_nume || null;
     if (esteOspatar) {
         document.querySelectorAll('.owner-only').forEach(el => el.style.display = 'none');
+    }
+    // Waiter with a default table: show the "Masa mea / Toate mesele" toggle,
+    // defaulting to only their table.
+    if (esteOspatar && masaDefaultId) {
+        doarMasaMea = true;
+        document.getElementById('btnMasaMea').textContent = 'Masa mea (' + (masaDefaultNume || '') + ')';
+        document.getElementById('filtreMasa').style.display = 'flex';
     }
     if (d.nume) document.getElementById('pageTitle').textContent = 'Comenzi — ' + d.nume;
     incarcaComenzi();
