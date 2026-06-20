@@ -1,12 +1,14 @@
 import { Hono } from 'hono';
 import type { AppContext, HonoEnv } from '../types';
 import { one, run } from '../db';
-import { requireRestaurant } from '../auth';
+import { requireRestaurant, requireOwner } from '../auth';
 import { fileExt } from '../r2';
 
-// AI menu extraction via Groq — port of admin/ai_meniu.php.
+// AI menu extraction via Groq — port of admin/ai_meniu.php. Owner only
+// (it adds/edits the menu).
 const ai = new Hono<HonoEnv>();
 ai.use('/*', requireRestaurant);
+ai.use('/*', requireOwner);
 
 const rid = (c: AppContext) => c.get('restaurant')!.rid;
 

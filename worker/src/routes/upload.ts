@@ -1,13 +1,14 @@
 import { Hono } from 'hono';
 import type { AppContext, HonoEnv } from '../types';
 import { one, run } from '../db';
-import { requireRestaurant } from '../auth';
+import { requireRestaurant, requireOwner } from '../auth';
 import { deleteUpload, extToContentType, fileExt, putUpload } from '../r2';
 
 // Image uploads to R2 — port of admin/upload_imagine.php, upload_poza.php,
-// upload_reclama.php. All require an authenticated restaurant.
+// upload_reclama.php. Owner only (logos, menu photos, ad images).
 const upload = new Hono<HonoEnv>();
 upload.use('/*', requireRestaurant);
+upload.use('/*', requireOwner);
 // Image uploads need R2; disabled gracefully when the bucket isn't configured.
 upload.use('/*', async (c, next) => {
   if (!c.env.UPLOADS) {
