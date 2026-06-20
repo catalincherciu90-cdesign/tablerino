@@ -26,6 +26,8 @@ export interface RestaurantSession {
   rid: number;
   nume: string;
   role: 'owner' | 'ospatar';
+  /** Waiter's own id (only for role 'ospatar'). */
+  uid?: number;
 }
 
 /** Authenticated master session payload (replaces $_SESSION master_*). */

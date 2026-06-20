@@ -47,7 +47,7 @@ admin.post('/login', async (c) => {
     email
   );
   if (osp && (await verifyPassword(parola, osp.parola))) {
-    await loginRestaurant(c, { rid: osp.restaurant_id, nume: osp.nume, role: 'ospatar' });
+    await loginRestaurant(c, { rid: osp.restaurant_id, nume: osp.nume, role: 'ospatar', uid: osp.id });
     return c.json({ ok: true, role: 'ospatar' });
   }
 
@@ -80,6 +80,20 @@ admin.get('/me', async (c) => {
     'SELECT tema, limba FROM restaurante WHERE id = ?',
     sess.rid
   );
+  // Waiter's default table (for pre-filtering their orders view).
+  let masa_default_id: number | null = null;
+  let masa_default_nume: string | null = null;
+  if (sess.role === 'ospatar' && sess.uid) {
+    const o = await one<{ masa_default_id: number | null; masa_nume: string | null }>(
+      c.env.DB,
+      `SELECT o.masa_default_id, m.nume AS masa_nume
+       FROM ospatari o LEFT JOIN mese m ON m.id = o.masa_default_id
+       WHERE o.id = ?`,
+      sess.uid
+    );
+    masa_default_id = o?.masa_default_id ?? null;
+    masa_default_nume = o?.masa_nume ?? null;
+  }
   return c.json({
     ok: true,
     id: sess.rid,
@@ -87,6 +101,8 @@ admin.get('/me', async (c) => {
     role: sess.role,
     tema: r?.tema ?? 'italian',
     limba: r?.limba ?? 'ro',
+    masa_default_id,
+    masa_default_nume,
   });
 });
 
@@ -625,10 +641,30 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 admin.get('/ospatari', requireOwner, async (c) => {
   const ospatari = await all(
     c.env.DB,
-    'SELECT id, nume, email, activ, created_at FROM ospatari WHERE restaurant_id = ? ORDER BY id',
+    `SELECT o.id, o.nume, o.email, o.activ, o.created_at, o.masa_default_id,
+            m.nume AS masa_default_nume
+     FROM ospatari o LEFT JOIN mese m ON m.id = o.masa_default_id
+     WHERE o.restaurant_id = ? ORDER BY o.id`,
     rid(c)
   );
   return c.json({ ok: true, ospatari });
+});
+
+// Validate a table id belongs to this restaurant; returns the id or null.
+async function validMasaId(c: import('../types').AppContext, masaId: unknown): Promise<number | null> {
+  const id = Number(masaId ?? 0);
+  if (!id) return null;
+  const m = await one<{ id: number }>(c.env.DB, 'SELECT id FROM mese WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return m ? id : null;
+}
+
+// Set/clear a waiter's default table.
+admin.post('/set_masa_ospatar', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  const masaId = await validMasaId(c, body.masa_default_id);
+  await run(c.env.DB, 'UPDATE ospatari SET masa_default_id = ? WHERE id = ? AND restaurant_id = ?', masaId, id, rid(c));
+  return c.json({ ok: true, masa_default_id: masaId });
 });
 
 admin.post('/adauga_ospatar', requireOwner, async (c) => {
@@ -645,14 +681,16 @@ admin.post('/adauga_ospatar', requireOwner, async (c) => {
   const dupO = await one(c.env.DB, 'SELECT id FROM ospatari WHERE email = ?', email);
   if (dupR || dupO) return c.json({ ok: false, msg: 'Există deja un cont cu acest email' }, 400);
 
+  const masaId = await validMasaId(c, body.masa_default_id);
   const hash = await hashPassword(parola);
   const res = await run(
     c.env.DB,
-    'INSERT INTO ospatari (restaurant_id, nume, email, parola) VALUES (?, ?, ?, ?)',
+    'INSERT INTO ospatari (restaurant_id, nume, email, parola, masa_default_id) VALUES (?, ?, ?, ?, ?)',
     rid(c),
     nume,
     email,
-    hash
+    hash,
+    masaId
   );
   return c.json({ ok: true, id: res.meta.last_row_id });
 });

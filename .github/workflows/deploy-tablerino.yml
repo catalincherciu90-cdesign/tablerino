@@ -44,6 +44,11 @@ jobs:
       - name: Apply D1 schema (idempotent)
         run: npx wrangler d1 execute tablerino --remote --file=./schema.sql --yes
 
+      - name: Apply D1 migrations (idempotent — errors ignored when already applied)
+        run: |
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE ospatari ADD COLUMN masa_default_id INTEGER" || true
+
       - name: Deploy Worker
         run: npx wrangler deploy
 
