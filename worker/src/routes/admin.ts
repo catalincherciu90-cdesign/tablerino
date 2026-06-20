@@ -108,10 +108,10 @@ admin.post('/salveaza_tema', requireOwner, async (c) => {
 admin.get('/sumar_zi', requireOwner, async (c) => {
   const s = await one<Record<string, number>>(
     c.env.DB,
-    `SELECT COUNT(*) AS total_comenzi,
+    `SELECT COUNT(DISTINCT c.id) AS total_comenzi,
             COALESCE(SUM(cp.total), 0) AS total_vanzari,
-            COALESCE(SUM(CASE WHEN c.metoda_plata = 'cash' THEN 1 ELSE 0 END), 0) AS comenzi_cash,
-            COALESCE(SUM(CASE WHEN c.metoda_plata = 'card' THEN 1 ELSE 0 END), 0) AS comenzi_card
+            COUNT(DISTINCT CASE WHEN c.metoda_plata = 'cash' THEN c.id END) AS comenzi_cash,
+            COUNT(DISTINCT CASE WHEN c.metoda_plata = 'card' THEN c.id END) AS comenzi_card
      FROM comenzi c
      LEFT JOIN comanda_produse cp ON cp.comanda_id = c.id
      WHERE c.restaurant_id = ? AND DATE(c.created_at) = DATE('now') AND c.status = 'servita'`,
