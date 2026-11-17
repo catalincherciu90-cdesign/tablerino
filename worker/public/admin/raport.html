@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16.png">
+<link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablerino - Rapoarte</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #1a1a2e; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; }
+.sidebar .logo { margin-bottom: 20px; padding: 4px; display: flex; align-items: center; justify-content: center; }
+.sidebar .logo img { height: 64px; width: auto; object-fit: contain; background: #fff; border-radius: 10px; padding: 6px; }
+.sidebar a { color: #aaa; text-decoration: none; padding: 10px 12px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; transition: background .15s, color .15s; }
+.sidebar a:hover, .sidebar a.activ { background: #6c47ff; color: #fff; }
+.sidebar .logout { margin-top: auto; }
+.main { margin-left: 220px; padding: 32px; }
+.main h2 { font-size: 20px; margin-bottom: 4px; }
+.main .sub { color: #888; font-size: 13px; margin-bottom: 22px; }
+
+.filtre-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: flex-end; }
+.filtru-group { display: flex; flex-direction: column; gap: 6px; }
+.filtru-group label { font-size: 12px; font-weight: 600; color: #666; }
+.filtru-group input { padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; outline: none; background: #fff; min-width: 160px; }
+.filtru-group input:focus { border-color: #6c47ff; }
+.btn-filtreaza { padding: 9px 20px; background: #6c47ff; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-print { padding: 9px 16px; background: #f3f4f6; color: #555; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+.sumar { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.sumar-card { background: #fff; border-radius: 10px; padding: 16px 20px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); }
+.sumar-card .val { font-size: 24px; font-weight: 700; color: #6c47ff; }
+.sumar-card .val.verde { color: #10b981; }
+.sumar-card .lbl { font-size: 12px; color: #888; margin-top: 4px; }
+
+.sectiune { margin-bottom: 28px; }
+.sectiune h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #333; }
+.tabel-wrap { background: #fff; border-radius: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 12px 16px; font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .5px; border-bottom: 2px solid #f0f0f0; background: #fafafa; }
+td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafafa; }
+.td-total { font-weight: 700; color: #333; white-space: nowrap; }
+.td-right { text-align: right; }
+.rank { color: #aaa; font-size: 12px; width: 36px; }
+
+.ore { background: #fff; border-radius: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); padding: 18px 20px; display: flex; flex-direction: column; gap: 8px; }
+.ora-row { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+.ora-lbl { width: 56px; color: #666; font-variant-numeric: tabular-nums; }
+.ora-bar-wrap { flex: 1; background: #f1f1f6; border-radius: 6px; height: 18px; overflow: hidden; }
+.ora-bar { height: 100%; background: linear-gradient(90deg,#6c47ff,#9b7bff); border-radius: 6px; }
+.ora-val { width: 150px; text-align: right; color: #555; font-size: 12px; white-space: nowrap; }
+
+.gol { text-align: center; color: #aaa; padding: 40px; font-size: 15px; }
+
+@media (max-width: 768px) {
+    .sidebar { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: 100%; height: 62px; flex-direction: row; padding: 0; justify-content: space-around; align-items: center; border-top: 1px solid #2a2a3e; z-index: 100; }
+    .sidebar .logo { display: none; }
+    .sidebar .logout { margin-top: 0; }
+    .sidebar a { flex-direction: column; gap: 2px; font-size: 10px; padding: 6px 8px; border-radius: 6px; flex: 1; justify-content: center; text-align: center; font-weight: 600; }
+    .main { margin-left: 0 !important; padding: 14px 12px 80px !important; }
+    table { font-size: 12px; }
+    th, td { padding: 8px 10px; }
+    .ora-val { width: auto; }
+}
+@media print {
+    .sidebar, .filtre-bar { display: none; }
+    .main { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="logo"><img src="/uploads/logo-tablerino.png" alt="Tablerino" style="height:190px;width:auto;object-fit:contain;display:block;"></div>
+    <a href="/admin/index.html">📋 Comenzi</a>
+    <a href="/admin/meniu.html">🍕 Meniu</a>
+    <a href="/admin/mese.html">🪑 Mese</a>
+    <a href="/admin/istoric.html">📂 Istoric</a>
+    <a href="/admin/raport.html" class="activ">📊 Rapoarte</a>
+    <a href="/admin/setari.html">🎨 Design</a>
+    <a href="/admin/reclame.html">📢 Reclame</a>
+    <a href="/admin/audit.html">🔍 Audit</a>
+    <a href="/admin/ospatari.html">👤 Ospătari</a>
+    <div style="margin-top:auto;padding:8px 4px;display:flex;gap:6px;justify-content:center">
+        <a href="?lang=ro" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;background:#6c47ff;color:#fff">🇷🇴 RO</a>
+        <a href="?lang=en" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#aaa">🇬🇧 EN</a>
+    </div>
+    <a href="#" class="logout" onclick="logout(event)">🚪 Ieșire</a>
+</div>
+
+<div class="main">
+    <h2>📊 Raport zilnic</h2>
+    <div class="sub" id="subtitlu">—</div>
+
+    <div class="filtre-bar">
+        <div class="filtru-group">
+            <label>Dată</label>
+            <input type="date" id="filtruData">
+        </div>
+        <button class="btn-filtreaza" onclick="incarca()">🔍 Caută</button>
+        <button class="btn-print" onclick="window.print()">🖨️ Printează</button>
+    </div>
+
+    <div class="sumar" id="sumar"></div>
+
+    <div class="sectiune">
+        <h3>🏆 Top produse vândute</h3>
+        <div class="tabel-wrap">
+            <table>
+                <thead><tr><th class="rank">#</th><th>Produs</th><th class="td-right">Cantitate</th><th class="td-right">Comenzi</th><th class="td-right">Total</th></tr></thead>
+                <tbody id="topBody"><tr><td colspan="5" class="gol">Se încarcă...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="sectiune">
+        <h3>🪑 Pe masă</h3>
+        <div class="tabel-wrap">
+            <table>
+                <thead><tr><th>Masă</th><th class="td-right">Comenzi</th><th class="td-right">Total</th><th>Plată</th><th>Interval</th></tr></thead>
+                <tbody id="masaBody"><tr><td colspan="5" class="gol">Se încarcă...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="sectiune">
+        <h3>🕐 Distribuție pe ore</h3>
+        <div class="ore" id="ore"></div>
+    </div>
+</div>
+
+<script>
+function logout(e) {
+    if (e) e.preventDefault();
+    fetch('/api/admin/logout', { method: 'POST' }).finally(function () { location.href = '/admin/login.html'; });
+}
+const LEI = 'lei';
+function bani(v) { return (parseFloat(v || 0)).toFixed(2) + ' ' + LEI; }
+function oraStr(h) { return String(h).padStart(2, '0') + ':00'; }
+function dataRo(s) { if (!s) return '—'; return new Date(s.replace(' ', 'T') + 'Z').toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' }); }
+
+async function incarca() {
+    const data = document.getElementById('filtruData').value;
+    const r = await fetch('/api/admin/raport?data=' + encodeURIComponent(data));
+    if (!r.ok) { document.getElementById('sumar').innerHTML = '<div class="gol">Nu am putut încărca raportul.</div>'; return; }
+    const d = await r.json();
+    const s = d.sumar || {};
+
+    const dataAfisata = new Date(d.data + 'T00:00:00').toLocaleDateString('ro-RO', { day: '2-digit', month: 'long', year: 'numeric' });
+    document.getElementById('subtitlu').textContent = (d.nume ? d.nume + ' · ' : '') + dataAfisata + ' · comenzi servite';
+
+    document.getElementById('sumar').innerHTML = `
+        <div class="sumar-card"><div class="val">${s.total_comenzi || 0}</div><div class="lbl">Comenzi servite</div></div>
+        <div class="sumar-card"><div class="val verde">${bani(s.total_vanzari)}</div><div class="lbl">Vânzări totale</div></div>
+        <div class="sumar-card"><div class="val">${d.mese_active || 0}</div><div class="lbl">Mese active</div></div>
+        <div class="sumar-card"><div class="val">${bani(s.medie_comanda)}</div><div class="lbl">Medie / comandă</div></div>
+        <div class="sumar-card"><div class="val">${s.nr_cash || 0} · ${bani(s.total_cash)}</div><div class="lbl">💵 Cash</div></div>
+        <div class="sumar-card"><div class="val">${s.nr_card || 0} · ${bani(s.total_card)}</div><div class="lbl">💳 Card</div></div>
+    `;
+
+    // Top produse
+    const tp = d.top_produse || [];
+    document.getElementById('topBody').innerHTML = tp.length ? tp.map((p, i) => `
+        <tr><td class="rank">${i + 1}</td><td>${p.nume_produs}</td>
+        <td class="td-right">${p.cantitate_totala}</td>
+        <td class="td-right">${p.nr_comenzi}</td>
+        <td class="td-right td-total">${bani(p.total_produs)}</td></tr>`).join('')
+        : '<tr><td colspan="5" class="gol">Nicio vânzare în această zi.</td></tr>';
+
+    // Pe masă
+    const pm = d.per_masa || [];
+    document.getElementById('masaBody').innerHTML = pm.length ? pm.map(m => {
+        const plata = m.metoda_plata === 'cash' ? '💵 Cash' : m.metoda_plata === 'card' ? '💳 Card' : '—';
+        return `<tr><td style="font-weight:600">${m.masa_nume}</td>
+        <td class="td-right">${m.nr_comenzi}</td>
+        <td class="td-right td-total">${bani(m.total_masa)}</td>
+        <td>${plata}</td>
+        <td style="color:#888;font-size:13px">${dataRo(m.prima_comanda)} – ${dataRo(m.ultima_comanda)}</td></tr>`;
+    }).join('') : '<tr><td colspan="5" class="gol">Nicio comandă în această zi.</td></tr>';
+
+    // Pe ore
+    const po = d.per_ora || [];
+    const maxT = po.reduce((m, o) => Math.max(m, parseFloat(o.total_ora || 0)), 0) || 1;
+    document.getElementById('ore').innerHTML = po.length ? po.map(o => {
+        const w = Math.max(3, Math.round(parseFloat(o.total_ora || 0) / maxT * 100));
+        return `<div class="ora-row"><span class="ora-lbl">${oraStr(o.ora)}</span>
+        <span class="ora-bar-wrap"><span class="ora-bar" style="width:${w}%"></span></span>
+        <span class="ora-val">${o.nr_comenzi} com · ${bani(o.total_ora)}</span></div>`;
+    }).join('') : '<div class="gol">Nicio comandă în această zi.</div>';
+}
+
+fetch('/api/admin/me').then(function (r) {
+    if (!r.ok) { location.href = '/admin/login.html'; return; }
+    return r.json();
+}).then(function (me) {
+    if (!me) return;
+    if (me.role === 'ospatar') { location.href = '/admin/index.html'; return; }
+    document.getElementById('filtruData').value = new Date().toISOString().slice(0, 10);
+    incarca();
+});
+</script>
+</body>
+</html>
