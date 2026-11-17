@@ -183,6 +183,19 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 .confirmare-box h3 { font-size: var(--font-xl); margin-bottom: 6px; }
 .confirmare-box p { color: #666; font-size: var(--font-md); margin-bottom: 20px; }
 .btn-ok { padding: clamp(10px,2vw,13px) clamp(24px,4vw,32px); background: var(--primar); color: #fff; border: none; border-radius: 10px; font-size: var(--font-md); font-weight: 600; cursor: pointer; }
+.rating-widget { margin-top: 20px; padding-top: 18px; border-top: 1px solid #eee; text-align: center; }
+.rating-titlu { font-size: var(--font-lg); font-weight: 700; margin-bottom: 12px; }
+.rating-stele { display: flex; justify-content: center; gap: 6px; margin-bottom: 14px; }
+.rating-stele span { font-size: 34px; color: #e2e2ea; cursor: pointer; transition: color .12s, transform .12s; line-height: 1; user-select: none; }
+.rating-stele span.activ { color: #f59e0b; }
+.rating-stele span:active { transform: scale(0.9); }
+.rating-coment, .rating-nume { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: var(--border-r); font-size: var(--font-md); outline: none; font-family: inherit; }
+.rating-coment { resize: none; margin-bottom: 10px; }
+.rating-nume { margin-bottom: 14px; }
+.rating-coment:focus, .rating-nume:focus { border-color: var(--primar); }
+.rating-trimite { width: 100%; padding: 13px; background: var(--primar); color: #fff; border: none; border-radius: var(--border-r); font-size: var(--font-md); font-weight: 700; cursor: pointer; }
+.rating-trimite:disabled { opacity: .5; }
+.rating-multumim { margin-top: 20px; padding-top: 18px; border-top: 1px solid #eee; font-size: var(--font-lg); font-weight: 700; color: #10b981; }
 </style>
 </head>
 <body>
@@ -302,6 +315,20 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
                 <span class="plata-icon">💳</span><span id="btnCardLabel">Card</span>
             </button>
         </div>
+        <div class="rating-widget" id="ratingWidget" style="display:none">
+            <h3 class="rating-titlu" id="ratingTitlu">⭐ Cum a fost la noi?</h3>
+            <div class="rating-stele" id="ratingStele">
+                <span data-val="1" onclick="setRating(1)" onmouseover="hoverRating(1)" onmouseout="hoverRating(0)">★</span>
+                <span data-val="2" onclick="setRating(2)" onmouseover="hoverRating(2)" onmouseout="hoverRating(0)">★</span>
+                <span data-val="3" onclick="setRating(3)" onmouseover="hoverRating(3)" onmouseout="hoverRating(0)">★</span>
+                <span data-val="4" onclick="setRating(4)" onmouseover="hoverRating(4)" onmouseout="hoverRating(0)">★</span>
+                <span data-val="5" onclick="setRating(5)" onmouseover="hoverRating(5)" onmouseout="hoverRating(0)">★</span>
+            </div>
+            <textarea class="rating-coment" id="ratingComent" placeholder="Spune-ne mai multe (opțional)" rows="2"></textarea>
+            <input class="rating-nume" id="ratingNume" placeholder="Numele tău (opțional)">
+            <button class="rating-trimite" id="ratingTrimite" onclick="trimiteRecenzie()">Trimite feedback</button>
+        </div>
+        <div class="rating-multumim" id="ratingMultumim" style="display:none">🙏 Mulțumim pentru feedback!</div>
     </div>
 </div>
 
@@ -336,7 +363,10 @@ const translations = {
         payTitle: '💳 Achitați nota', payChoose: 'Alegeți metoda de plată',
         cash: 'Cash', card: 'Card', inPrep: '⏳ în pregătire', served: '✓ servit',
         live: 'live', viewOrder: '🛒 Vezi comanda', total: 'Total', sending: 'Se trimite...',
-        noProducts: 'Niciun produs adăugat.', pieces: 'buc', unavailable: 'Indisponibil'
+        noProducts: 'Niciun produs adăugat.', pieces: 'buc', unavailable: 'Indisponibil',
+        ratingTitle: '⭐ Cum a fost la noi?', ratingComment: 'Spune-ne mai multe (opțional)',
+        ratingName: 'Numele tău (opțional)', ratingSend: 'Trimite feedback',
+        ratingThanks: '🙏 Mulțumim pentru feedback!', ratingPick: 'Te rugăm alege un rating (1-5 stele).'
     },
     en: {
         yourOrder: 'Your order', menu: '🍕 Menu', noOrder: 'No active order',
@@ -351,7 +381,10 @@ const translations = {
         payTitle: '💳 Pay the bill', payChoose: 'Choose payment method',
         cash: 'Cash', card: 'Card', inPrep: '⏳ preparing', served: '✓ served',
         live: 'live', viewOrder: '🛒 View order', total: 'Total', sending: 'Sending...',
-        noProducts: 'No products added.', pieces: 'pcs', unavailable: 'Unavailable'
+        noProducts: 'No products added.', pieces: 'pcs', unavailable: 'Unavailable',
+        ratingTitle: '⭐ How was it?', ratingComment: 'Tell us more (optional)',
+        ratingName: 'Your name (optional)', ratingSend: 'Send feedback',
+        ratingThanks: '🙏 Thanks for your feedback!', ratingPick: 'Please pick a rating (1-5 stars).'
     }
 };
 let _t = translations.ro;
@@ -385,6 +418,12 @@ function applyLang(limba) {
     if (drawerMeniuH) drawerMeniuH.textContent = _t.menu;
     const btnVezi = document.querySelector('.btn-vezi-comanda');
     if (btnVezi) btnVezi.firstChild.textContent = _t.viewOrder + ' ';
+    s('ratingTitlu', _t.ratingTitle);
+    p('#ratingComent', _t.ratingComment);
+    p('#ratingNume', _t.ratingName);
+    const btnRating = document.getElementById('ratingTrimite');
+    if (btnRating && !btnRating.disabled) btnRating.textContent = _t.ratingSend;
+    s('ratingMultumim', _t.ratingThanks);
 }
 
 function schimbaLimba(limba) {
@@ -413,6 +452,7 @@ async function incarcaSumar() {
                 (_t.payWaiter || 'Un ospătar vine imediat să încaseze') + (met ? ' · ' + met : '');
             const pb = document.getElementById('plataBtns');
             if (pb) pb.style.display = 'none';
+            afiseazaRatingWidget();
             document.getElementById('modalPlataOverlay').classList.add('open');
             gol.style.display = 'none';
             sumar.style.display = 'none';
@@ -487,6 +527,11 @@ function solicitaNota() {
     document.getElementById('modalPlataSubtitle').textContent = _t.payChoose || 'Alegeți metoda de plată';
     const pb = document.getElementById('plataBtns');
     if (pb) pb.style.display = '';
+    // Chooser mode: hide the feedback widget (it only belongs to the "plată aleasă" confirmation).
+    const rw = document.getElementById('ratingWidget');
+    const rm = document.getElementById('ratingMultumim');
+    if (rw) rw.style.display = 'none';
+    if (rm) rm.style.display = 'none';
     document.getElementById('modalPlataOverlay').classList.add('open');
 }
 
@@ -501,6 +546,63 @@ async function alegePlata(metoda) {
     // Refresh immediately: status is now 'plata_aleasa' → shows the confirmation
     // screen (no chooser), so the picker doesn't pop back up on the next poll.
     incarcaSumar();
+}
+
+// === RATING / RECENZII ===
+let ratingSelectat = 0;
+
+function pictStele(n) {
+    document.querySelectorAll('#ratingStele span').forEach(s => {
+        s.classList.toggle('activ', Number(s.dataset.val) <= n);
+    });
+}
+function setRating(val) { ratingSelectat = val; pictStele(val); }
+function hoverRating(val) { pictStele(val || ratingSelectat); }
+
+function recenzieTrimisa() {
+    try { return localStorage.getItem('recenzie_' + token) === '1'; } catch(e) { return false; }
+}
+
+// Decide whether to show the feedback form or the "mulțumim" state (don't nag).
+function afiseazaRatingWidget() {
+    const widget = document.getElementById('ratingWidget');
+    const multumim = document.getElementById('ratingMultumim');
+    if (!widget || !multumim) return;
+    if (recenzieTrimisa()) {
+        widget.style.display = 'none';
+        multumim.style.display = 'block';
+    } else {
+        widget.style.display = 'block';
+        multumim.style.display = 'none';
+    }
+}
+
+async function trimiteRecenzie() {
+    if (!ratingSelectat) { alert(_t.ratingPick || 'Alege un rating (1-5 stele).'); return; }
+    const btn = document.getElementById('ratingTrimite');
+    btn.disabled = true;
+    btn.textContent = _t.sending;
+    try {
+        const r = await fetch('/api/table/recenzie', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                token,
+                rating: ratingSelectat,
+                comentariu: document.getElementById('ratingComent').value,
+                nume: document.getElementById('ratingNume').value
+            })
+        });
+        const d = await r.json();
+        if (d.ok) {
+            try { localStorage.setItem('recenzie_' + token, '1'); } catch(e) {}
+            document.getElementById('ratingWidget').style.display = 'none';
+            document.getElementById('ratingMultumim').style.display = 'block';
+            return;
+        }
+    } catch(e) {}
+    btn.disabled = false;
+    btn.textContent = _t.ratingSend;
 }
 
 async function incarcaMeniu() {
