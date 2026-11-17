@@ -294,7 +294,7 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
         <h2 id="modalPlataTitle">💳 Achitați nota</h2>
         <p id="modalPlataSubtitle">Alegeți metoda de plată</p>
         <div class="modal-plata-total" id="modalPlatTotal">0.00 lei</div>
-        <div class="plata-btns">
+        <div class="plata-btns" id="plataBtns">
             <button class="btn-plata cash" onclick="alegePlata('cash')">
                 <span class="plata-icon">💵</span><span id="btnCashLabel">Cash</span>
             </button>
@@ -403,7 +403,16 @@ async function incarcaSumar() {
         const sumar = document.getElementById('sumarContent');
 
         if (d.status === 'plata_aleasa') {
+            // Payment method already chosen — show a confirmation/waiting screen,
+            // NOT the method chooser (hide the buttons so it doesn't reopen as a picker).
+            const met = d.metoda_plata === 'cash' ? (_t.payCash || 'Cash')
+                      : d.metoda_plata === 'card' ? (_t.payCard || 'Card') : '';
             document.getElementById('modalPlatTotal').textContent = parseFloat(d.total || 0).toFixed(2) + ' lei';
+            document.getElementById('modalPlataTitle').textContent = '✅ ' + (_t.payChosen || 'Plată aleasă');
+            document.getElementById('modalPlataSubtitle').textContent =
+                (_t.payWaiter || 'Un ospătar vine imediat să încaseze') + (met ? ' · ' + met : '');
+            const pb = document.getElementById('plataBtns');
+            if (pb) pb.style.display = 'none';
             document.getElementById('modalPlataOverlay').classList.add('open');
             gol.style.display = 'none';
             sumar.style.display = 'none';
@@ -473,6 +482,11 @@ async function incarcaSumar() {
 function solicitaNota() {
     const total = document.getElementById('totalComanda').textContent;
     document.getElementById('modalPlatTotal').textContent = total;
+    // Reset the modal to the method CHOOSER (title, subtitle, buttons visible).
+    document.getElementById('modalPlataTitle').textContent = _t.payTitle || '💳 Achitați nota';
+    document.getElementById('modalPlataSubtitle').textContent = _t.payChoose || 'Alegeți metoda de plată';
+    const pb = document.getElementById('plataBtns');
+    if (pb) pb.style.display = '';
     document.getElementById('modalPlataOverlay').classList.add('open');
 }
 
@@ -482,11 +496,11 @@ async function alegePlata(metoda) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ actiune: 'alege_plata', token, metoda })
     });
-    document.getElementById('modalPlataOverlay').classList.remove('open');
-    document.getElementById('golComanda').style.display = 'block';
-    document.getElementById('sumarContent').style.display = 'none';
     cos = {};
     updateBadge();
+    // Refresh immediately: status is now 'plata_aleasa' → shows the confirmation
+    // screen (no chooser), so the picker doesn't pop back up on the next poll.
+    incarcaSumar();
 }
 
 async function incarcaMeniu() {
