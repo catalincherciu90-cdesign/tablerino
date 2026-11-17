@@ -41,6 +41,19 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 .field textarea { resize: none; }
 .row2 { display: flex; gap: 12px; }
 .row2 .field { flex: 1; }
+.sloturi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-top: 2px; }
+.slot-chip {
+    padding: 11px 6px; border: 1.5px solid #e2e2ec; border-radius: 12px; background: #fff; color: #111;
+    font-size: 15px; font-weight: 700; cursor: pointer; text-align: center; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 2px; transition: border-color .15s, background .15s;
+}
+.slot-chip:active { transform: scale(0.98); }
+.slot-chip.ales { border-color: var(--primar); background: rgba(108,71,255,0.10); color: var(--primar); }
+.slot-chip.complet { opacity: .55; cursor: default; background: #f5f5fa; color: var(--text-sub); }
+.slot-ramase { font-size: 11px; font-weight: 600; color: var(--text-sub); }
+.slot-chip.ales .slot-ramase { color: var(--primar); }
+.slot-complet-lbl { font-size: 11px; font-weight: 600; }
+.sloturi-hint { font-size: 13px; color: var(--text-sub); padding: 8px 0 2px; line-height: 1.4; }
 .eroare { background: #fee2e2; color: #c62828; border-radius: 12px; padding: 11px 14px; font-size: 13.5px; font-weight: 600; margin-bottom: 14px; display: none; }
 .eroare.vizibil { display: block; }
 .btn-trimite {
@@ -104,18 +117,6 @@ function escapeHtml(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
 
-// Build time-slot options 12:00 → 23:00 at :00 / :30.
-function sloturiOra() {
-    let html = '<option value="">Alege ora</option>';
-    for (let h = 12; h <= 23; h++) {
-        for (const m of ['00', '30']) {
-            const v = (h < 10 ? '0' + h : h) + ':' + m;
-            html += '<option value="' + v + '">' + v + '</option>';
-        }
-    }
-    return html;
-}
-
 let maxPersoane = null;
 
 function optiuniPersoane() {
@@ -167,19 +168,21 @@ function randeazaForm(rest) {
                 '<div class="row2">' +
                     '<div class="field">' +
                         '<label>Data</label>' +
-                        '<input type="date" id="data" min="' + azi + '" value="' + azi + '">' +
+                        '<input type="date" id="data" min="' + azi + '" value="' + azi + '" oninput="incarcaDisponibilitate()">' +
                     '</div>' +
                     '<div class="field">' +
-                        '<label>Ora</label>' +
-                        '<select id="ora">' + sloturiOra() + '</select>' +
+                        '<label>Număr persoane</label>' +
+                        '<select id="nrPersoane" onchange="incarcaDisponibilitate()">' + optiuniPersoane() + '</select>' +
                     '</div>' +
                 '</div>' +
+                (typeof maxPersoane === 'number' && maxPersoane > 0
+                    ? '<div style="font-size:12px;color:var(--text-sub);margin:-8px 0 14px">Pentru grupuri mai mari, sună restaurantul.</div>'
+                    : '') +
                 '<div class="field">' +
-                    '<label>Număr persoane</label>' +
-                    '<select id="nrPersoane">' + optiuniPersoane() + '</select>' +
-                    (typeof maxPersoane === 'number' && maxPersoane > 0
-                        ? '<div style="font-size:12px;color:var(--text-sub);margin-top:6px">Pentru grupuri mai mari, sună restaurantul.</div>'
-                        : '') +
+                    '<label>Ora</label>' +
+                    '<input type="hidden" id="ora" value="">' +
+                    '<div class="sloturi-grid" id="sloturiGrid" style="display:none"></div>' +
+                    '<div class="sloturi-hint" id="sloturiHint">Alege data și numărul de persoane ca să vezi orele disponibile.</div>' +
                 '</div>' +
                 '<div class="field">' +
                     '<label>Observații <span class="opt">(opțional)</span></label>' +
@@ -189,6 +192,77 @@ function randeazaForm(rest) {
                 '<div class="nota">Vei fi contactat telefonic pentru confirmare.</div>' +
             '</div>' +
         '</div>';
+
+    incarcaDisponibilitate();
+}
+
+let sloturiCerere = 0;
+
+function incarcaDisponibilitate() {
+    const oraInput = document.getElementById('ora');
+    if (oraInput) oraInput.value = '';
+    const grid = document.getElementById('sloturiGrid');
+    const hint = document.getElementById('sloturiHint');
+    if (!grid || !hint) return;
+    const data = document.getElementById('data').value;
+    const nr = Number(document.getElementById('nrPersoane').value) || 0;
+    const azi = new Date().toISOString().slice(0, 10);
+
+    function aratHint(txt) {
+        grid.style.display = 'none';
+        grid.innerHTML = '';
+        hint.style.display = 'block';
+        hint.textContent = txt;
+    }
+
+    if (!data || !nr || data < azi) {
+        aratHint('Alege data și numărul de persoane ca să vezi orele disponibile.');
+        return;
+    }
+
+    aratHint('Se încarcă orele disponibile...');
+    const cerere = ++sloturiCerere;
+    fetch('/api/rezervare/disponibilitate?token=' + encodeURIComponent(token) + '&data=' + encodeURIComponent(data) + '&nr=' + encodeURIComponent(nr))
+        .then(r => r.json().catch(() => ({})))
+        .then(d => {
+            if (cerere !== sloturiCerere) return; // răspuns învechit
+            if (!d || !d.ok || !Array.isArray(d.sloturi) || !d.sloturi.length) {
+                aratHint('Nu există ore disponibile pentru această zi.');
+                return;
+            }
+            randeazaSloturi(d.sloturi, d.total);
+        })
+        .catch(() => {
+            if (cerere !== sloturiCerere) return;
+            aratHint('Eroare la încărcarea orelor. Te rugăm încearcă din nou.');
+        });
+}
+
+function randeazaSloturi(sloturi, total) {
+    const grid = document.getElementById('sloturiGrid');
+    const hint = document.getElementById('sloturiHint');
+    const totalNull = (total === null || total === undefined);
+    grid.innerHTML = sloturi.map(s => {
+        const ora = escapeHtml(s.ora);
+        const liber = totalNull ? true : !!s.liber;
+        if (!liber) {
+            return '<div class="slot-chip complet"><span>' + ora + '</span><span class="slot-complet-lbl">complet</span></div>';
+        }
+        const ramaseHtml = (!totalNull && typeof s.ramase === 'number')
+            ? '<span class="slot-ramase">' + s.ramase + ' locuri</span>'
+            : '';
+        return '<button type="button" class="slot-chip" onclick="alegeOra(this, \'' + ora + '\')"><span>' + ora + '</span>' + ramaseHtml + '</button>';
+    }).join('');
+    grid.style.display = 'grid';
+    hint.style.display = 'none';
+}
+
+function alegeOra(el, ora) {
+    document.getElementById('ora').value = ora;
+    document.querySelectorAll('#sloturiGrid .slot-chip').forEach(c => c.classList.remove('ales'));
+    el.classList.add('ales');
+    const eroare = document.getElementById('eroare');
+    if (eroare) eroare.classList.remove('vizibil');
 }
 
 async function trimite() {
@@ -211,7 +285,7 @@ async function trimite() {
     if (!nume) return aratEroare('Te rugăm introdu numele.');
     if (!telefon) return aratEroare('Te rugăm introdu numărul de telefon.');
     if (!data) return aratEroare('Te rugăm alege data.');
-    if (!ora) return aratEroare('Te rugăm alege ora.');
+    if (!ora) return aratEroare('Alege o oră disponibilă.');
 
     const btn = document.getElementById('btnTrimite');
     btn.disabled = true;
@@ -228,7 +302,12 @@ async function trimite() {
             randeazaConfirmare({ nume, data, ora, nr_persoane });
             return;
         }
-        aratEroare((d && d.msg) || 'A apărut o eroare. Te rugăm încearcă din nou.');
+        if (r.status === 409) {
+            aratEroare((d && d.msg) || 'Această oră tocmai s-a ocupat. Te rugăm alege alta.');
+            incarcaDisponibilitate();
+        } else {
+            aratEroare((d && d.msg) || 'A apărut o eroare. Te rugăm încearcă din nou.');
+        }
     } catch (e) {
         aratEroare('Eroare de conexiune. Te rugăm încearcă din nou.');
     }

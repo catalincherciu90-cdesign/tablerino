@@ -134,6 +134,16 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
         </div>
     </div>
 
+    <!-- Capacitate rezervări -->
+    <div class="card-box">
+        <h3>👥 Capacitate totală pentru rezervări</h3>
+        <p class="hint" id="capHint">Se încarcă...</p>
+        <div class="link-row">
+            <input type="number" id="capInput" min="0" placeholder="ex: 40" style="flex:0 1 160px;min-width:140px">
+            <button class="btn-add" onclick="salveazaCapacitate()">💾 Salvează</button>
+        </div>
+    </div>
+
     <!-- Adaugă rezervare manuală -->
     <div class="card-box adauga-form">
         <h3>➕ Adaugă rezervare</h3>
@@ -275,6 +285,41 @@ function copiazaLink() {
     const val = document.getElementById('linkRezervare').value;
     if (!val || val === 'Se încarcă...') return;
     navigator.clipboard.writeText(val).then(() => showToast('Link copiat!'));
+}
+
+let capacitateMese = null;
+
+function actualizeazaCapHint() {
+    const hint = document.getElementById('capHint');
+    if (typeof capacitateMese === 'number') {
+        hint.textContent = 'Gol = suma locurilor meselor (' + capacitateMese + ' locuri)';
+    } else {
+        hint.textContent = 'Setează capacitatea totală de locuri pe care le poți primi într-un interval.';
+    }
+}
+
+async function incarcaCapacitate() {
+    try {
+        const r = await fetch('/api/admin/rezervare_setari');
+        const d = await r.json();
+        if (d.ok) {
+            document.getElementById('capInput').value = (d.rez_capacitate != null) ? d.rez_capacitate : '';
+            capacitateMese = (typeof d.capacitate_mese === 'number') ? d.capacitate_mese : null;
+            actualizeazaCapHint();
+        }
+    } catch (e) {}
+}
+
+async function salveazaCapacitate() {
+    const val = document.getElementById('capInput').value;
+    const r = await fetch('/api/admin/salveaza_rezervare_setari', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rez_capacitate: Number(val) || 0 })
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) { showToast('Capacitate salvată!'); incarcaCapacitate(); }
+    else { showToast(d.msg || 'Eroare', 'err'); }
 }
 
 async function incarcaMese() {
@@ -423,6 +468,7 @@ fetch('/api/admin/me').then(function (r) {
     if (!me) return;
     if (me.role === 'ospatar') { location.href = '/admin/index.html'; return; }
     incarcaLink();
+    incarcaCapacitate();
     incarcaMese().then(incarcaRezervari);
 });
 </script>
