@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS mese (
     nume          TEXT NOT NULL,
     token         TEXT NOT NULL UNIQUE,
     capacitate    INTEGER,                       -- max persons per table (NULL = unspecified)
+    ospatar_id    INTEGER,                       -- responsible waiter (NULL = none); new orders are reserved for them 2 min
     activa        INTEGER DEFAULT 1,
     created_at    TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE

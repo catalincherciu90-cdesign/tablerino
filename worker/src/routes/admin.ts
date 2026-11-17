@@ -146,9 +146,13 @@ admin.get('/sumar_zi', requireOwner, async (c) => {
 admin.get('/comenzi', async (c) => {
   const comenzi = await all<Record<string, unknown>>(
     c.env.DB,
-    `SELECT c.*, m.nume AS masa_nume, o.nume AS preluat_de_nume FROM comenzi c
+    `SELECT c.*, m.nume AS masa_nume, o.nume AS preluat_de_nume,
+            m.ospatar_id AS masa_ospatar_id, om.nume AS masa_ospatar_nume,
+            (strftime('%s','now') - strftime('%s', c.created_at)) AS varsta_sec
+     FROM comenzi c
      JOIN mese m ON m.id = c.masa_id
      LEFT JOIN ospatari o ON o.id = c.preluat_de
+     LEFT JOIN ospatari om ON om.id = m.ospatar_id
      WHERE c.restaurant_id = ? AND c.status NOT IN ('servita')
      ORDER BY CASE c.status WHEN 'noua' THEN 0 WHEN 'in_pregatire' THEN 1 WHEN 'plata_aleasa' THEN 2 ELSE 3 END, c.created_at DESC`,
     rid(c)
@@ -281,6 +285,30 @@ admin.post('/preia_comanda', async (c) => {
   }
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.comanda_id ?? 0);
+
+  // Escalation rule: if the order's table has a responsible waiter, only they can
+  // claim it for the first 2 minutes. After that (or with no responsible waiter)
+  // any waiter may claim it.
+  const ESCALARE_SEC = 120;
+  const info = await one<{ preluat_de: number | null; masa_osp: number | null; varsta: number }>(
+    c.env.DB,
+    `SELECT c.preluat_de, m.ospatar_id AS masa_osp,
+            (strftime('%s','now') - strftime('%s', c.created_at)) AS varsta
+     FROM comenzi c JOIN mese m ON m.id = c.masa_id
+     WHERE c.id = ? AND c.restaurant_id = ?`,
+    id,
+    sess.rid
+  );
+  if (!info) return c.json({ ok: false, msg: 'Comanda nu există.' }, 404);
+  if (info.preluat_de != null) return c.json({ ok: false, msg: 'Comanda a fost deja preluată.' }, 409);
+  if (info.masa_osp != null && info.masa_osp !== sess.uid && info.varsta < ESCALARE_SEC) {
+    const ramase = ESCALARE_SEC - info.varsta;
+    return c.json(
+      { ok: false, msg: `Comanda e rezervată pentru ospătarul mesei încă ${ramase}s.`, rezervat_sec: ramase },
+      409
+    );
+  }
+
   const res = await run(
     c.env.DB,
     'UPDATE comenzi SET preluat_de = ? WHERE id = ? AND restaurant_id = ? AND preluat_de IS NULL',
@@ -435,7 +463,13 @@ admin.post('/reordoneaza_categorii', requireOwner, async (c) => {
 // ── Tables ──
 
 admin.get('/mese', async (c) => {
-  const mese = await all(c.env.DB, 'SELECT * FROM mese WHERE restaurant_id = ? ORDER BY id', rid(c));
+  const mese = await all(
+    c.env.DB,
+    `SELECT m.*, o.nume AS ospatar_nume
+     FROM mese m LEFT JOIN ospatari o ON o.id = m.ospatar_id
+     WHERE m.restaurant_id = ? ORDER BY m.id`,
+    rid(c)
+  );
   return c.json({ ok: true, mese });
 });
 
@@ -482,6 +516,26 @@ admin.post('/sterge_masa', requireOwner, async (c) => {
   const mid = Number(body.masa_id ?? 0);
   await run(c.env.DB, 'DELETE FROM mese WHERE id = ? AND restaurant_id = ?', mid, rid(c));
   return c.json({ ok: true });
+});
+
+// Assign (or clear) the waiter responsible for a table. New orders at this table
+// are reserved for that waiter for ~2 min; after that any waiter may claim them.
+admin.post('/set_ospatar_masa', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const mid = Number(body.masa_id ?? 0);
+  if (!mid) return c.json({ ok: false }, 400);
+  let ospatarId: number | null = Number(body.ospatar_id ?? 0) || null;
+  if (ospatarId != null) {
+    const o = await one<{ id: number }>(
+      c.env.DB,
+      'SELECT id FROM ospatari WHERE id = ? AND restaurant_id = ?',
+      ospatarId,
+      rid(c)
+    );
+    if (!o) return c.json({ ok: false, msg: 'Ospătar invalid.' }, 400);
+  }
+  await run(c.env.DB, 'UPDATE mese SET ospatar_id = ? WHERE id = ? AND restaurant_id = ?', ospatarId, mid, rid(c));
+  return c.json({ ok: true, ospatar_id: ospatarId });
 });
 
 // ── Visual profile / social ──
