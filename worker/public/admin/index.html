@@ -50,6 +50,8 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
 .card-preluat { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; margin-top: 6px; display: inline-block; }
 .card-preluat.da { background: #ede9fe; color: #5b21b6; }
 .card-preluat.nu { background: #f3f4f6; color: #999; }
+.card-preluat.rezervat { background: #fff4e5; color: #b45309; }
+.card-preluat.rezervat .cd { font-variant-numeric: tabular-nums; }
 .btn-preia { background: #6c47ff; color: #fff; flex: 1; }
 .btn-renunta { background: #fff; color: #6c47ff; border: 2px solid #6c47ff; flex: 1; }
 .card-status { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
@@ -169,6 +171,27 @@ let masaDefaultId = null;
 let masaDefaultNume = null;
 let filtruMasa = 'ale_mele'; // 'ale_mele' | 'nepreluate' | 'toate' (waiter order filter)
 let comenziToate = [];       // full orders array from the last fetch (filtered at render time)
+let comenziFetchedAt = Date.now(); // client time of last fetch (for live order-age / countdown)
+const ESCALARE_SEC = 120;    // reserved window: order stays with the table's waiter 2 min
+
+function escHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function fmtMMSS(sec) {
+    sec = Math.max(0, Math.ceil(sec));
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return m > 0 ? `${m}:${String(s).padStart(2, '0')}` : `${s}s`;
+}
+// Real order age = server-measured age at fetch + time elapsed on the client since.
+function orderAgeSec(c) {
+    return (Number(c.varsta_sec) || 0) + (Date.now() - comenziFetchedAt) / 1000;
+}
+// Seconds remaining while an order is reserved for the table's waiter (0 = anyone may claim).
+function reservedRemaining(c) {
+    if (c.preluat_de != null) return 0;
+    if (c.masa_ospatar_id == null || c.masa_ospatar_id === ospatarId) return 0;
+    return Math.max(0, ESCALARE_SEC - orderAgeSec(c));
+}
 const _t = {
     noOrders:     'Nicio comandă momentan.',
     loading:      'Se încarcă...',
@@ -196,6 +219,9 @@ const _t = {
     unclaimed:    'Nepreluată',
     btnClaim:     'Preia',
     btnDrop:      'Renunță',
+    btnReserved:  '🔒 Rezervată',
+    reservedFor:  'Rezervată pentru',
+    responsible:  'Responsabil',
     connError:    'Eroare conexiune, reîncearcă...',
     fullscreen:   'Full Screen',
     exitFS:       'Ieși Full Screen',
@@ -226,7 +252,10 @@ function renderComenzi(comenzi) {
         if (filtruMasa === 'ale_mele') {
             // Their default table + any orders they personally claimed. With no
             // default table, this is just the orders they claimed.
-            baza = baza.filter(c => (masaDefaultId && c.masa_id === masaDefaultId) || c.preluat_de === ospatarId);
+            baza = baza.filter(c =>
+                (masaDefaultId && c.masa_id === masaDefaultId) ||
+                c.masa_ospatar_id === ospatarId ||
+                c.preluat_de === ospatarId);
         } else if (filtruMasa === 'nepreluate') {
             baza = baza.filter(c => c.preluat_de == null);
         }
@@ -283,15 +312,27 @@ function renderComenzi(comenzi) {
 
         // Claim status badge (shown for owners and waiters alike).
         const preluat = c.preluat_de != null;
-        const badgePreluat = preluat
-            ? `<div class="card-preluat da">👤 ${_t.claimed}: ${c.preluat_de_nume || ''}</div>`
-            : `<div class="card-preluat nu">${_t.unclaimed}</div>`;
+        const rezRem = reservedRemaining(c);
+        let badgePreluat;
+        if (preluat) {
+            badgePreluat = `<div class="card-preluat da">👤 ${_t.claimed}: ${escHtml(c.preluat_de_nume)}</div>`;
+        } else if (rezRem > 0) {
+            // Reserved for the table's responsible waiter — live countdown until it opens up.
+            badgePreluat = `<div class="card-preluat rezervat" data-exp="${Date.now() + rezRem * 1000}">🔒 ${_t.reservedFor} ${escHtml(c.masa_ospatar_nume)} · <span class="cd">${fmtMMSS(rezRem)}</span></div>`;
+        } else if (c.masa_ospatar_nume) {
+            badgePreluat = `<div class="card-preluat nu">${_t.unclaimed} · 👤 ${escHtml(c.masa_ospatar_nume)}</div>`;
+        } else {
+            badgePreluat = `<div class="card-preluat nu">${_t.unclaimed}</div>`;
+        }
 
-        // Waiter claim/release action: claim if unclaimed, release if it's theirs.
+        // Waiter claim/release action: claim if unclaimed & not reserved for someone else,
+        // release if it's theirs. A reserved order shows a disabled lock for other waiters.
         let actiuneClaim = '';
         if (esteOspatar) {
             if (!preluat) {
-                actiuneClaim = `<button class="btn btn-preia" onclick="preiaComanda(${c.id})">${_t.btnClaim}</button>`;
+                actiuneClaim = rezRem > 0
+                    ? `<button class="btn btn-preia" disabled style="opacity:.45;cursor:not-allowed">${_t.btnReserved}</button>`
+                    : `<button class="btn btn-preia" onclick="preiaComanda(${c.id})">${_t.btnClaim}</button>`;
             } else if (c.preluat_de === ospatarId) {
                 actiuneClaim = `<button class="btn btn-renunta" onclick="renuntaComanda(${c.id})">${_t.btnDrop}</button>`;
             }
@@ -346,6 +387,7 @@ async function incarcaComenzi() {
         }
         data.comenzi.forEach(c => comenziCunoscute.add(c.id));
         comenziToate = data.comenzi;
+        comenziFetchedAt = Date.now();
         renderComenzi(comenziToate);
         incarcaSumarZi();
 
@@ -446,6 +488,20 @@ document.querySelectorAll('.filtre:not(.filtre-masa) .filtru-btn').forEach(btn =
         renderComenzi(comenziToate);
     });
 });
+
+// Live countdown for reserved orders: tick the visible timer each second and, when
+// a reservation window closes, re-render so the order becomes claimable by anyone.
+function tickReservari() {
+    let expired = false;
+    document.querySelectorAll('.card-preluat.rezervat[data-exp]').forEach(el => {
+        const rem = (Number(el.dataset.exp) - Date.now()) / 1000;
+        if (rem <= 0) { expired = true; return; }
+        const cd = el.querySelector('.cd');
+        if (cd) cd.textContent = fmtMMSS(rem);
+    });
+    if (expired && comenziToate.length) renderComenzi(comenziToate);
+}
+setInterval(tickReservari, 1000);
 
 function toggleFullscreen() {
     const btn = document.getElementById('btnFS');

@@ -122,11 +122,27 @@ const _mt = {
     copyLink:    'Copiază link tabletă',
     deleteConf:  'Ștergi masa? Comenzile asociate vor fi pierdute.',
     delete:      'Șterge',
+    responsible: 'Ospătar responsabil',
+    none:        '— fără —',
 };
 
+function escHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
 let meseList = [];
+let ospatariList = [];
+
+async function incarcaOspatari() {
+    try {
+        const r = await fetch('/api/admin/ospatari');
+        const d = await r.json();
+        ospatariList = d.ospatari || [];
+    } catch (e) { ospatariList = []; }
+}
 
 async function incarcaMese() {
+    if (!ospatariList.length) await incarcaOspatari();
     const r = await fetch('/api/admin/mese');
     const d = await r.json();
     meseList = d.mese || [];
@@ -135,6 +151,9 @@ async function incarcaMese() {
     grid.innerHTML = meseList.map(m => {
         const url = `${baseUrl}/masa/?token=${m.token}`;
         const capText = (m.capacitate != null) ? `👥 ${m.capacitate} persoane` : '👥 nespecificat';
+        const optiuni = [`<option value="">${_mt.none}</option>`].concat(
+            ospatariList.map(o => `<option value="${o.id}" ${o.id === m.ospatar_id ? 'selected' : ''}>${escHtml(o.nume)}</option>`)
+        ).join('');
         return `
         <div class="masa-card">
             <h3>🪑 ${m.nume}</h3>
@@ -144,6 +163,10 @@ async function incarcaMese() {
                 <span style="flex:1">${capText}</span>
                 <input type="number" min="1" max="50" value="${m.capacitate != null ? m.capacitate : ''}" id="cap_${m.id}" placeholder="ex: 4" style="width:70px;padding:6px 8px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none">
                 <button class="btn-copie" style="flex:0 0 auto;padding:7px 10px" onclick="salveazaCapacitate(${m.id})">💾 Salvează</button>
+            </div>
+            <div style="margin-bottom:16px">
+                <label style="display:block;font-size:12px;color:#888;margin-bottom:5px">👤 ${_mt.responsible}</label>
+                <select id="osp_${m.id}" onchange="setOspatarMasa(${m.id}, this)" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;background:#fff">${optiuni}</select>
             </div>
             <div class="masa-actiuni">
                 <button class="btn-copie" onclick="copiazaLink('${url}')">📋 ${_mt.copyLink}</button>
@@ -168,6 +191,21 @@ async function salveazaCapacitate(id) {
     await fetch('/api/admin/editeaza_masa', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ masa_id: id, nume: m.nume, capacitate }) });
     showToast('Capacitate salvată!');
     incarcaMese();
+}
+
+async function setOspatarMasa(masaId, sel) {
+    const ospatarId = Number(sel.value) || null;
+    try {
+        const r = await fetch('/api/admin/set_ospatar_masa', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ masa_id: masaId, ospatar_id: ospatarId }) });
+        const d = await r.json().catch(() => ({}));
+        if (d.ok) {
+            const m = meseList.find(x => x.id === masaId);
+            if (m) m.ospatar_id = ospatarId;
+            showToast('Ospătar actualizat!');
+        } else {
+            showToast(d.msg || 'Eroare');
+        }
+    } catch (e) { showToast('Eroare conexiune'); }
 }
 
 async function adaugaMasa() {
