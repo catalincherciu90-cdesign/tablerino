@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16.png">
+<link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablerino - Rezervări</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #1a1a2e; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; }
+.sidebar .logo { margin-bottom: 20px; padding: 4px; display: flex; align-items: center; justify-content: center; }
+.sidebar .logo img { height: 64px; width: auto; object-fit: contain; background: #fff; border-radius: 10px; padding: 6px; }
+.sidebar a { color: #aaa; text-decoration: none; padding: 10px 12px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; transition: background .15s, color .15s; }
+.sidebar a:hover, .sidebar a.activ { background: #6c47ff; color: #fff; }
+.sidebar .logout { margin-top: auto; }
+.main { margin-left: 220px; padding: 32px; max-width: 1100px; }
+.main h2 { font-size: 20px; margin-bottom: 8px; }
+.main p.sub { color: #888; font-size: 14px; margin-bottom: 24px; }
+
+.card-box { background: #fff; border-radius: 14px; padding: 22px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); margin-bottom: 24px; }
+.card-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.card-box .hint { color: #888; font-size: 13px; margin-bottom: 14px; }
+
+.link-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.link-row input { flex: 1; min-width: 220px; padding: 11px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: #f8f8fc; color: #333; outline: none; }
+.btn-copie { padding: 11px 16px; background: #ede9ff; color: #6c47ff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.btn-copie:hover { opacity: .85; }
+
+.filtre-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.filtre-bar .field { display: flex; flex-direction: column; gap: 5px; }
+.filtre-bar label { font-size: 12px; font-weight: 600; color: #555; }
+.filtre-bar input, .filtre-bar select { padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; background: #fff; }
+.filtre-bar input:focus, .filtre-bar select:focus { border-color: #6c47ff; }
+.btn-cauta { padding: 10px 20px; background: #6c47ff; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-cauta:hover { background: #5a38e0; }
+
+.adauga-form .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.adauga-form .field { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 5px; }
+.adauga-form label { font-size: 13px; font-weight: 600; color: #333; }
+.adauga-form input, .adauga-form select, .adauga-form textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; background: #fff; font-family: inherit; }
+.adauga-form input:focus, .adauga-form select:focus, .adauga-form textarea:focus { border-color: #6c47ff; }
+.btn-add { padding: 10px 18px; background: #6c47ff; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn-add:hover { background: #5a38e0; }
+
+.rez-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.rez-card { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); border-left: 4px solid #ddd; }
+.rez-card.noua { border-left-color: #f59e0b; }
+.rez-card.confirmata { border-left-color: #10b981; }
+.rez-card.anulata { border-left-color: #9ca3af; }
+.rez-card.onorata { border-left-color: #3b82f6; }
+.rez-card.no_show { border-left-color: #991b1b; }
+.rez-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.rez-nume { font-weight: 700; font-size: 16px; }
+.rez-dataora { font-size: 13px; color: #6c47ff; font-weight: 700; margin-top: 2px; }
+.badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap; }
+.badge.noua { background: #fef3c7; color: #92400e; }
+.badge.confirmata { background: #d1fae5; color: #065f46; }
+.badge.anulata { background: #f3f4f6; color: #6b7280; }
+.badge.onorata { background: #dbeafe; color: #1e40af; }
+.badge.no_show { background: #fee2e2; color: #991b1b; }
+.rez-linii { font-size: 13px; color: #444; margin-bottom: 12px; }
+.rez-linii div { padding: 3px 0; display: flex; gap: 6px; align-items: center; }
+.rez-linii a { color: #6c47ff; text-decoration: none; font-weight: 600; }
+.rez-linii .obs { color: #888; font-style: italic; }
+.rez-controale { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.rez-controale select { flex: 1; min-width: 110px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 7px; font-size: 13px; outline: none; background: #fff; }
+.rez-controale select:focus { border-color: #6c47ff; }
+.btn-sterge { padding: 8px 12px; background: #ffebee; color: #c62828; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-sterge:hover { opacity: .85; }
+.lbl-mic { font-size: 11px; color: #999; font-weight: 600; margin-bottom: 3px; display: block; }
+
+.gol { color: #aaa; font-size: 14px; padding: 40px; text-align: center; grid-column: 1 / -1; }
+.toast { position: fixed; bottom: 24px; right: 24px; background: #10b981; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 13px; display: none; z-index: 999; }
+.toast.err { background: #e53e3e; }
+
+@media (max-width: 768px) {
+    .header-mobil { display: flex !important; }
+    .sidebar { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: 100%; height: 62px; flex-direction: row; padding: 0; justify-content: space-around; align-items: center; border-top: 1px solid #2a2a3e; z-index: 100; overflow-x: auto; }
+    .sidebar .logo { display: none; }
+    .sidebar .logout { margin-top: 0; }
+    .sidebar a { flex-direction: column; gap: 2px; font-size: 10px; padding: 6px 8px; border-radius: 6px; flex: 1; justify-content: center; text-align: center; font-weight: 600; }
+    .main { margin-left: 0 !important; padding: 14px 12px 80px !important; }
+    .main h2 { font-size: 18px !important; }
+    .rez-grid { grid-template-columns: 1fr !important; }
+    .adauga-form .row { flex-direction: column; align-items: stretch; }
+    .filtre-bar { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="logo"><img src="/uploads/logo-tablerino.png" alt="Tablerino" style="height:190px;width:auto;object-fit:contain;display:block;"></div>
+    <a href="/admin/index.html">📋 Comenzi</a>
+    <a href="/admin/meniu.html">🍕 Meniu</a>
+    <a href="/admin/mese.html">🪑 Mese</a>
+    <a href="/admin/istoric.html">📂 Istoric</a>
+    <a href="/admin/rezervari.html" class="activ">📅 Rezervări</a>
+    <a href="/admin/raport.html">📊 Rapoarte</a>
+    <a href="/admin/setari.html">🎨 Design</a>
+    <a href="/admin/reclame.html">📢 Reclame</a>
+    <a href="/admin/audit.html">🔍 Audit</a>
+    <a href="/admin/ospatari.html">👤 Ospătari</a>
+    <div style="margin-top:auto;padding:8px 4px;display:flex;gap:6px;justify-content:center">
+        <a href="?lang=ro" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;background:#6c47ff;color:#fff">🇷🇴 RO</a>
+        <a href="?lang=en" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#aaa">🇬🇧 EN</a>
+    </div>
+    <a href="#" class="logout" onclick="logout(event)">🚪 Ieșire</a>
+</div>
+
+<!-- Header mobil -->
+<div class="header-mobil" style="display:none;background:#1a1a2e;color:#fff;padding:12px 16px;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50;">
+    <span>🍽️ <strong>Tablerino</strong></span>
+    <div style="display:flex;gap:8px;align-items:center">
+        <a href="?lang=ro" style="color:#fff;font-size:13px;font-weight:700;text-decoration:none;padding:4px 8px;border-radius:6px;background:#6c47ff">🇷🇴 RO</a>
+        <a href="?lang=en" style="color:#aaa;font-size:13px;font-weight:700;text-decoration:none;padding:4px 8px;border-radius:6px;">🇬🇧 EN</a>
+    </div>
+</div>
+
+<div class="main">
+    <h2>Rezervări</h2>
+    <p class="sub">Primește rezervări online și gestionează-le dintr-un singur loc.</p>
+
+    <!-- Link public -->
+    <div class="card-box">
+        <h3>🔗 Link public de rezervare</h3>
+        <p class="hint">Pune-l pe site, pe Google, pe social — clienții rezervă de aici.</p>
+        <div class="link-row">
+            <input type="text" id="linkRezervare" readonly value="Se încarcă...">
+            <button class="btn-copie" onclick="copiazaLink()">📋 Copiază link</button>
+        </div>
+    </div>
+
+    <!-- Adaugă rezervare manuală -->
+    <div class="card-box adauga-form">
+        <h3>➕ Adaugă rezervare</h3>
+        <p class="hint">Pentru rezervările primite la telefon.</p>
+        <div class="row">
+            <div class="field">
+                <label>Nume</label>
+                <input type="text" id="aNume" placeholder="Nume client">
+            </div>
+            <div class="field">
+                <label>Telefon</label>
+                <input type="tel" id="aTelefon" placeholder="07xx xxx xxx">
+            </div>
+            <div class="field">
+                <label>Email</label>
+                <input type="email" id="aEmail" placeholder="opțional">
+            </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+            <div class="field" style="max-width:160px">
+                <label>Data</label>
+                <input type="date" id="aData">
+            </div>
+            <div class="field" style="max-width:130px">
+                <label>Ora</label>
+                <input type="time" id="aOra">
+            </div>
+            <div class="field" style="max-width:120px">
+                <label>Persoane</label>
+                <select id="aNrPersoane"></select>
+            </div>
+            <div class="field" style="max-width:180px">
+                <label>Masă</label>
+                <select id="aMasa"></select>
+            </div>
+            <div class="field">
+                <label>Observații</label>
+                <input type="text" id="aObservatii" placeholder="opțional">
+            </div>
+            <button class="btn-add" onclick="adaugaRezervare()">+ Adaugă</button>
+        </div>
+    </div>
+
+    <!-- Filtre -->
+    <div class="card-box">
+        <h3>Filtre</h3>
+        <div class="filtre-bar">
+            <div class="field">
+                <label>Data</label>
+                <input type="date" id="fData">
+            </div>
+            <div class="field">
+                <label>Status</label>
+                <select id="fStatus">
+                    <option value="">Toate</option>
+                    <option value="noua">Nouă</option>
+                    <option value="confirmata">Confirmată</option>
+                    <option value="anulata">Anulată</option>
+                    <option value="onorata">Onorată</option>
+                    <option value="no_show">No-show</option>
+                </select>
+            </div>
+            <button class="btn-cauta" onclick="incarcaRezervari()">🔍 Caută</button>
+        </div>
+    </div>
+
+    <!-- Listă -->
+    <div class="rez-grid" id="rezGrid">
+        <div class="gol">Se încarcă...</div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function logout(e) {
+    if (e) e.preventDefault();
+    fetch('/api/admin/logout', { method: 'POST' }).finally(function () {
+        location.href = '/admin/login.html';
+    });
+}
+
+function showToast(msg, tip) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (tip === 'err' ? ' err' : '');
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 2500);
+}
+
+function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+const STATUS_LABELS = { noua: 'Nouă', confirmata: 'Confirmată', anulata: 'Anulată', onorata: 'Onorată', no_show: 'No-show' };
+const STATUS_ORDINE = ['noua', 'confirmata', 'anulata', 'onorata', 'no_show'];
+
+let mese = [];
+
+// "— fără masă —" first, then one option per table; preselect selectedId.
+function optiuniMasa(selectedId) {
+    let html = '<option value="">— fără masă —</option>';
+    html += mese.map(m =>
+        '<option value="' + m.id + '"' + (String(m.id) === String(selectedId) ? ' selected' : '') + '>' + escapeHtml(m.nume) + '</option>'
+    ).join('');
+    return html;
+}
+
+function optiuniStatus(selected) {
+    return STATUS_ORDINE.map(s =>
+        '<option value="' + s + '"' + (s === selected ? ' selected' : '') + '>' + STATUS_LABELS[s] + '</option>'
+    ).join('');
+}
+
+function optiuniPersoane() {
+    let html = '';
+    for (let i = 1; i <= 20; i++) {
+        html += '<option value="' + i + '"' + (i === 2 ? ' selected' : '') + '>' + i + '</option>';
+    }
+    return html;
+}
+
+function formatData(d) {
+    try {
+        return new Date(d + 'T00:00:00').toLocaleDateString('ro-RO', { weekday: 'short', day: 'numeric', month: 'short' });
+    } catch (e) { return d; }
+}
+
+async function incarcaLink() {
+    try {
+        const r = await fetch('/api/admin/rezervare_link');
+        const d = await r.json();
+        if (d.ok) document.getElementById('linkRezervare').value = location.origin + d.cale;
+    } catch (e) {}
+}
+
+function copiazaLink() {
+    const val = document.getElementById('linkRezervare').value;
+    if (!val || val === 'Se încarcă...') return;
+    navigator.clipboard.writeText(val).then(() => showToast('Link copiat!'));
+}
+
+async function incarcaMese() {
+    try {
+        const r = await fetch('/api/admin/mese');
+        const d = await r.json();
+        if (d.ok) mese = d.mese || [];
+    } catch (e) { mese = []; }
+    const sel = document.getElementById('aMasa');
+    if (sel) sel.innerHTML = optiuniMasa('');
+}
+
+async function incarcaRezervari() {
+    const data = document.getElementById('fData').value;
+    const status = document.getElementById('fStatus').value;
+    const params = new URLSearchParams();
+    if (data) params.set('data', data);
+    if (status) params.set('status', status);
+    const grid = document.getElementById('rezGrid');
+    try {
+        const r = await fetch('/api/admin/rezervari?' + params.toString());
+        const d = await r.json();
+        if (!d.ok) { grid.innerHTML = '<div class="gol">Eroare la încărcare.</div>'; return; }
+        if (!d.rezervari.length) { grid.innerHTML = '<div class="gol">Nicio rezervare.</div>'; return; }
+        grid.innerHTML = d.rezervari.map(randeazaCard).join('');
+    } catch (e) {
+        grid.innerHTML = '<div class="gol">Eroare de conexiune.</div>';
+    }
+}
+
+function randeazaCard(rez) {
+    const st = STATUS_ORDINE.includes(rez.status) ? rez.status : 'noua';
+    const telHtml = rez.telefon
+        ? '<div>📞 <a href="tel:' + escapeHtml(rez.telefon) + '">' + escapeHtml(rez.telefon) + '</a></div>'
+        : '';
+    const emailHtml = rez.email ? '<div>✉️ ' + escapeHtml(rez.email) + '</div>' : '';
+    const obsHtml = rez.observatii ? '<div class="obs">📝 ' + escapeHtml(rez.observatii) + '</div>' : '';
+    const masaHtml = '<div>🪑 ' + (rez.masa_nume ? escapeHtml(rez.masa_nume) : '—') + '</div>';
+
+    return '' +
+        '<div class="rez-card ' + st + '">' +
+            '<div class="rez-head">' +
+                '<div>' +
+                    '<div class="rez-nume">' + escapeHtml(rez.nume_client) + '</div>' +
+                    '<div class="rez-dataora">📅 ' + escapeHtml(formatData(rez.data)) + ' · ' + escapeHtml(rez.ora) + '</div>' +
+                '</div>' +
+                '<span class="badge ' + st + '">' + STATUS_LABELS[st] + '</span>' +
+            '</div>' +
+            '<div class="rez-linii">' +
+                '<div>👥 ' + escapeHtml(rez.nr_persoane) + ' persoane</div>' +
+                telHtml +
+                emailHtml +
+                masaHtml +
+                obsHtml +
+            '</div>' +
+            '<div class="rez-controale">' +
+                '<div style="flex:1;min-width:110px">' +
+                    '<span class="lbl-mic">Status</span>' +
+                    '<select onchange="schimbaStatus(' + rez.id + ', this.value)" style="width:100%">' + optiuniStatus(st) + '</select>' +
+                '</div>' +
+                '<div style="flex:1;min-width:110px">' +
+                    '<span class="lbl-mic">Masă</span>' +
+                    '<select onchange="schimbaMasa(' + rez.id + ', \'' + st + '\', this.value)" style="width:100%">' + optiuniMasa(rez.masa_id) + '</select>' +
+                '</div>' +
+                '<div>' +
+                    '<span class="lbl-mic">&nbsp;</span>' +
+                    '<button class="btn-sterge" onclick="stergeRezervare(' + rez.id + ')">🗑 Șterge</button>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+}
+
+async function schimbaStatus(id, status) {
+    const r = await fetch('/api/admin/rezervare_status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status })
+    });
+    const d = await r.json();
+    if (d.ok) { showToast('Status actualizat!'); incarcaRezervari(); }
+    else showToast(d.msg || 'Eroare', 'err');
+}
+
+async function schimbaMasa(id, status, value) {
+    const masa_id = Number(value) || null;
+    const r = await fetch('/api/admin/rezervare_status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status, masa_id })
+    });
+    const d = await r.json();
+    if (d.ok) { showToast('Masă actualizată!'); incarcaRezervari(); }
+    else showToast(d.msg || 'Eroare', 'err');
+}
+
+async function stergeRezervare(id) {
+    if (!confirm('Ștergi această rezervare?')) return;
+    const r = await fetch('/api/admin/sterge_rezervare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    });
+    const d = await r.json();
+    if (d.ok) { showToast('Rezervare ștearsă'); incarcaRezervari(); }
+    else showToast(d.msg || 'Eroare', 'err');
+}
+
+async function adaugaRezervare() {
+    const nume = document.getElementById('aNume').value.trim();
+    const telefon = document.getElementById('aTelefon').value.trim();
+    const email = document.getElementById('aEmail').value.trim();
+    const data = document.getElementById('aData').value;
+    const ora = document.getElementById('aOra').value;
+    const nr_persoane = Number(document.getElementById('aNrPersoane').value) || 2;
+    const observatii = document.getElementById('aObservatii').value.trim();
+    const masa_id = Number(document.getElementById('aMasa').value) || null;
+    if (!nume || !telefon || !data || !ora) { showToast('Completează nume, telefon, dată și oră.', 'err'); return; }
+    const r = await fetch('/api/admin/adauga_rezervare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nume, telefon, email, data, ora, nr_persoane, observatii, masa_id })
+    });
+    const d = await r.json();
+    if (d.ok) {
+        document.getElementById('aNume').value = '';
+        document.getElementById('aTelefon').value = '';
+        document.getElementById('aEmail').value = '';
+        document.getElementById('aData').value = '';
+        document.getElementById('aOra').value = '';
+        document.getElementById('aNrPersoane').value = '2';
+        document.getElementById('aObservatii').value = '';
+        document.getElementById('aMasa').value = '';
+        showToast('Rezervare adăugată!');
+        incarcaRezervari();
+    } else {
+        showToast(d.msg || 'Eroare', 'err');
+    }
+}
+
+document.getElementById('aNrPersoane').innerHTML = optiuniPersoane();
+
+fetch('/api/admin/me').then(function (r) {
+    if (!r.ok) { location.href = '/admin/login.html'; return; }
+    return r.json();
+}).then(function (me) {
+    if (!me) return;
+    if (me.role === 'ospatar') { location.href = '/admin/index.html'; return; }
+    incarcaLink();
+    incarcaMese().then(incarcaRezervari);
+});
+</script>
+</body>
+</html>
