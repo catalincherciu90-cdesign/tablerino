@@ -908,6 +908,30 @@ admin.post('/sterge_rezervare', requireOwner, async (c) => {
   return c.json({ ok: true });
 });
 
+// Reservation capacity setting (total seats). GET shows the current override and
+// the sum of table capacities (the default when no override is set).
+admin.get('/rezervare_setari', requireOwner, async (c) => {
+  const row = await one<{ rez_capacitate: number | null }>(c.env.DB, 'SELECT rez_capacitate FROM restaurante WHERE id = ?', rid(c));
+  const sum = await one<{ s: number; n: number }>(
+    c.env.DB,
+    'SELECT COALESCE(SUM(capacitate),0) AS s, COUNT(capacitate) AS n FROM mese WHERE restaurant_id = ? AND activa = 1',
+    rid(c)
+  );
+  return c.json({
+    ok: true,
+    rez_capacitate: row?.rez_capacitate ?? null,
+    capacitate_mese: sum && sum.n > 0 ? sum.s : null,
+  });
+});
+
+admin.post('/salveaza_rezervare_setari', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const n = Number(body.rez_capacitate ?? 0);
+  const val = n >= 1 && n <= 1000 ? Math.floor(n) : null; // empty/0 → use table-capacity sum
+  await run(c.env.DB, 'UPDATE restaurante SET rez_capacitate = ? WHERE id = ?', val, rid(c));
+  return c.json({ ok: true, rez_capacitate: val });
+});
+
 // ── Reviews (recenzii) — owner only ──
 
 admin.get('/recenzii', requireOwner, async (c) => {

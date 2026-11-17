@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS restaurante (
     limba           TEXT DEFAULT 'ro',
     parola_reset    TEXT,                          -- bcrypt hash for audit actions
     rezervare_token TEXT,                          -- public token for the reservation link
+    rez_capacitate  INTEGER,                       -- total seats for reservations (NULL = sum of table capacities)
     activ           INTEGER DEFAULT 1,             -- 0 = pending approval
     created_at      TEXT DEFAULT CURRENT_TIMESTAMP
 );
