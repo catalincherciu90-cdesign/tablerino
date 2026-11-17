@@ -761,4 +761,97 @@ admin.post('/sterge_ospatar', requireOwner, async (c) => {
   return c.json({ ok: true });
 });
 
+// ── Reservations (rezervari) — owner only ──
+
+const REZ_STATUSES = ['noua', 'confirmata', 'anulata', 'onorata', 'no_show'];
+
+// Public reservation link for this restaurant (lazily generates the token).
+admin.get('/rezervare_link', requireOwner, async (c) => {
+  const row = await one<{ rezervare_token: string | null }>(
+    c.env.DB,
+    'SELECT rezervare_token FROM restaurante WHERE id = ?',
+    rid(c)
+  );
+  let token = row?.rezervare_token || null;
+  if (!token) {
+    token = generateToken();
+    await run(c.env.DB, 'UPDATE restaurante SET rezervare_token = ? WHERE id = ?', token, rid(c));
+  }
+  return c.json({ ok: true, token, cale: `/rezervare/?token=${token}` });
+});
+
+admin.get('/rezervari', requireOwner, async (c) => {
+  const data = c.req.query('data') ?? '';
+  const status = c.req.query('status') ?? '';
+  let where = 'r.restaurant_id = ?';
+  const params: unknown[] = [rid(c)];
+  if (data) {
+    where += ' AND r.data = ?';
+    params.push(data);
+  } else {
+    where += " AND r.data >= DATE('now')"; // upcoming by default
+  }
+  if (REZ_STATUSES.includes(status)) {
+    where += ' AND r.status = ?';
+    params.push(status);
+  }
+  const rezervari = await all(
+    c.env.DB,
+    `SELECT r.*, m.nume AS masa_nume FROM rezervari r
+     LEFT JOIN mese m ON m.id = r.masa_id
+     WHERE ${where} ORDER BY r.data, r.ora`,
+    ...params
+  );
+  return c.json({ ok: true, rezervari });
+});
+
+admin.post('/rezervare_status', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  const status = body.status ?? '';
+  if (!REZ_STATUSES.includes(status)) return c.json({ ok: false, msg: 'Status invalid' }, 400);
+  if ('masa_id' in body) {
+    const masaId = await validMasaId(c, body.masa_id);
+    await run(c.env.DB, 'UPDATE rezervari SET status = ?, masa_id = ? WHERE id = ? AND restaurant_id = ?', status, masaId, id, rid(c));
+  } else {
+    await run(c.env.DB, 'UPDATE rezervari SET status = ? WHERE id = ? AND restaurant_id = ?', status, id, rid(c));
+  }
+  return c.json({ ok: true });
+});
+
+admin.post('/adauga_rezervare', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const nume = (body.nume ?? '').trim();
+  const telefon = (body.telefon ?? '').trim();
+  const email = (body.email ?? '').trim();
+  const data = (body.data ?? '').trim();
+  const ora = (body.ora ?? '').trim();
+  const nr = Number(body.nr_persoane ?? 2);
+  const obs = (body.observatii ?? '').trim();
+  if (!nume || !telefon || !data || !ora) return c.json({ ok: false, msg: 'Date incomplete' }, 400);
+  const masaId = await validMasaId(c, body.masa_id);
+  const res = await run(
+    c.env.DB,
+    `INSERT INTO rezervari (restaurant_id, nume_client, telefon, email, data, ora, nr_persoane, observatii, masa_id, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmata')`,
+    rid(c),
+    nume,
+    telefon,
+    email || null,
+    data,
+    ora,
+    nr >= 1 ? nr : 2,
+    obs || null,
+    masaId
+  );
+  return c.json({ ok: true, id: res.meta.last_row_id });
+});
+
+admin.post('/sterge_rezervare', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  await run(c.env.DB, 'DELETE FROM rezervari WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return c.json({ ok: true });
+});
+
 export default admin;

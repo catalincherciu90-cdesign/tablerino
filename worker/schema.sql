@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS restaurante (
     whatsapp        TEXT,
     limba           TEXT DEFAULT 'ro',
     parola_reset    TEXT,                          -- bcrypt hash for audit actions
+    rezervare_token TEXT,                          -- public token for the reservation link
     activ           INTEGER DEFAULT 1,             -- 0 = pending approval
     created_at      TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -141,6 +142,25 @@ CREATE TABLE IF NOT EXISTS landing_settings (
     valoare TEXT
 );
 
+-- Table reservations made through the public reservation link (inspired by ialoc.ro).
+CREATE TABLE IF NOT EXISTS rezervari (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER NOT NULL,
+    nume_client   TEXT NOT NULL,
+    telefon       TEXT NOT NULL,
+    email         TEXT,
+    data          TEXT NOT NULL,                 -- YYYY-MM-DD
+    ora           TEXT NOT NULL,                 -- HH:MM
+    nr_persoane   INTEGER NOT NULL DEFAULT 2,
+    observatii    TEXT,
+    masa_id       INTEGER,                       -- assigned table (optional)
+    status        TEXT DEFAULT 'noua'
+                    CHECK (status IN ('noua','confirmata','anulata','onorata','no_show')),
+    created_at    TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE,
+    FOREIGN KEY (masa_id) REFERENCES mese(id) ON DELETE SET NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_comenzi_masa ON comenzi(masa_id, status);
 CREATE INDEX IF NOT EXISTS idx_comenzi_restaurant ON comenzi(restaurant_id, status);
 CREATE INDEX IF NOT EXISTS idx_produse_categorie ON meniu_produse(categorie_id);
@@ -148,3 +168,4 @@ CREATE INDEX IF NOT EXISTS idx_categorii_restaurant ON meniu_categorii(restauran
 CREATE INDEX IF NOT EXISTS idx_mese_restaurant ON mese(restaurant_id);
 CREATE INDEX IF NOT EXISTS idx_reclame_restaurant ON reclame(restaurant_id);
 CREATE INDEX IF NOT EXISTS idx_comanda_produse_comanda ON comanda_produse(comanda_id);
+CREATE INDEX IF NOT EXISTS idx_rezervari_restaurant ON rezervari(restaurant_id, data);

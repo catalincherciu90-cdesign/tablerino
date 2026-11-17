@@ -5,6 +5,7 @@ import table from './routes/table';
 import admin from './routes/admin';
 import master from './routes/master';
 import register from './routes/register';
+import rezervare from './routes/rezervari';
 import upload from './routes/upload';
 import ai from './routes/ai';
 
@@ -38,6 +39,7 @@ app.route('/api/table', table); // masa/api.php
 app.route('/api/admin', admin); // admin/api.php + admin/login.php
 app.route('/api/master', master); // master/api.php + master/login.php
 app.route('/api/register', register); // api/inregistrare.php
+app.route('/api/rezervare', rezervare); // public reservations
 app.route('/api/upload', upload); // admin/upload_*.php
 app.route('/api/ai', ai); // admin/ai_meniu.php
 
