@@ -235,9 +235,10 @@ let mese = [];
 // "— fără masă —" first, then one option per table; preselect selectedId.
 function optiuniMasa(selectedId) {
     let html = '<option value="">— fără masă —</option>';
-    html += mese.map(m =>
-        '<option value="' + m.id + '"' + (String(m.id) === String(selectedId) ? ' selected' : '') + '>' + escapeHtml(m.nume) + '</option>'
-    ).join('');
+    html += mese.map(m => {
+        const eticheta = m.capacitate != null ? m.nume + ' (' + m.capacitate + ' loc)' : m.nume;
+        return '<option value="' + m.id + '"' + (String(m.id) === String(selectedId) ? ' selected' : '') + '>' + escapeHtml(eticheta) + '</option>';
+    }).join('');
     return html;
 }
 
@@ -351,9 +352,9 @@ async function schimbaStatus(id, status) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status })
     });
-    const d = await r.json();
-    if (d.ok) { showToast('Status actualizat!'); incarcaRezervari(); }
-    else showToast(d.msg || 'Eroare', 'err');
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) { showToast('Status actualizat!'); incarcaRezervari(); }
+    else { showToast(d.msg || 'Eroare', 'err'); incarcaRezervari(); }
 }
 
 async function schimbaMasa(id, status, value) {
@@ -363,9 +364,9 @@ async function schimbaMasa(id, status, value) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status, masa_id })
     });
-    const d = await r.json();
-    if (d.ok) { showToast('Masă actualizată!'); incarcaRezervari(); }
-    else showToast(d.msg || 'Eroare', 'err');
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) { showToast('Masă actualizată!'); incarcaRezervari(); }
+    else { showToast(d.msg || 'Eroare', 'err'); incarcaRezervari(); }
 }
 
 async function stergeRezervare(id) {

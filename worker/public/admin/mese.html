@@ -96,6 +96,7 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
 
     <div class="adauga-form">
         <input type="text" id="numeMasa" placeholder="Ex: Masa 1, Terasă 3...">
+        <input type="number" id="capacitateMasa" min="1" max="50" placeholder="ex: 4" style="width:140px" title="Capacitate (persoane)">
         <button class="btn-add" onclick="adaugaMasa()">+ Adaugă masă</button>
     </div>
 
@@ -122,18 +123,27 @@ const _mt = {
     delete:      'Șterge',
 };
 
+let meseList = [];
+
 async function incarcaMese() {
     const r = await fetch('/api/admin/mese');
     const d = await r.json();
+    meseList = d.mese || [];
     const grid = document.getElementById('meseGrid');
-    if (!d.mese.length) { grid.innerHTML = `<div class="gol">${_mt.noTables}</div>`; return; }
-    grid.innerHTML = d.mese.map(m => {
+    if (!meseList.length) { grid.innerHTML = `<div class="gol">${_mt.noTables}</div>`; return; }
+    grid.innerHTML = meseList.map(m => {
         const url = `${baseUrl}/masa/?token=${m.token}`;
+        const capText = (m.capacitate != null) ? `👥 ${m.capacitate} persoane` : '👥 nespecificat';
         return `
         <div class="masa-card">
             <h3>🪑 ${m.nume}</h3>
             <div class="masa-token">${_mt.token}: ${m.token}</div>
             <div class="masa-url">${url}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:13px;color:#555">
+                <span style="flex:1">${capText}</span>
+                <input type="number" min="1" max="50" value="${m.capacitate != null ? m.capacitate : ''}" id="cap_${m.id}" placeholder="ex: 4" style="width:70px;padding:6px 8px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none">
+                <button class="btn-copie" style="flex:0 0 auto;padding:7px 10px" onclick="salveazaCapacitate(${m.id})">💾 Salvează</button>
+            </div>
             <div class="masa-actiuni">
                 <button class="btn-copie" onclick="copiazaLink('${url}')">📋 ${_mt.copyLink}</button>
                 <button class="btn-sterge" onclick="stergeMasa(${m.id})">${_mt.delete}</button>
@@ -142,11 +152,33 @@ async function incarcaMese() {
     }).join('');
 }
 
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 2000);
+}
+
+async function salveazaCapacitate(id) {
+    const m = meseList.find(x => String(x.id) === String(id));
+    if (!m) return;
+    const val = document.getElementById('cap_' + id).value;
+    const capacitate = Number(val) || null;
+    await fetch('/api/admin/editeaza_masa', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ masa_id: id, nume: m.nume, capacitate }) });
+    showToast('Capacitate salvată!');
+    incarcaMese();
+}
+
 async function adaugaMasa() {
     const nume = document.getElementById('numeMasa').value.trim();
     if (!nume) return;
-    await fetch('/api/admin/adauga_masa', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ actiune: 'adauga_masa', nume }) });
+    const capVal = document.getElementById('capacitateMasa').value;
+    const body = { actiune: 'adauga_masa', nume };
+    const capacitate = Number(capVal) || null;
+    if (capacitate) body.capacitate = capacitate;
+    await fetch('/api/admin/adauga_masa', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
     document.getElementById('numeMasa').value = '';
+    document.getElementById('capacitateMasa').value = '';
     incarcaMese();
 }
 
@@ -158,9 +190,7 @@ async function stergeMasa(id) {
 
 function copiazaLink(url) {
     navigator.clipboard.writeText(url).then(() => {
-        const t = document.getElementById('toast');
-        t.style.display = 'block';
-        setTimeout(() => t.style.display = 'none', 2000);
+        showToast('Link copiat!');
     });
 }
 

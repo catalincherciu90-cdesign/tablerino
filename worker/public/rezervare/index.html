@@ -116,10 +116,14 @@ function sloturiOra() {
     return html;
 }
 
+let maxPersoane = null;
+
 function optiuniPersoane() {
+    const max = (typeof maxPersoane === 'number' && maxPersoane > 0) ? maxPersoane : 20;
+    const def = Math.min(2, max);
     let html = '';
-    for (let i = 1; i <= 20; i++) {
-        html += '<option value="' + i + '"' + (i === 2 ? ' selected' : '') + '>' + i + (i === 1 ? ' persoană' : ' persoane') + '</option>';
+    for (let i = 1; i <= max; i++) {
+        html += '<option value="' + i + '"' + (i === def ? ' selected' : '') + '>' + i + (i === 1 ? ' persoană' : ' persoane') + '</option>';
     }
     return html;
 }
@@ -173,6 +177,9 @@ function randeazaForm(rest) {
                 '<div class="field">' +
                     '<label>Număr persoane</label>' +
                     '<select id="nrPersoane">' + optiuniPersoane() + '</select>' +
+                    (typeof maxPersoane === 'number' && maxPersoane > 0
+                        ? '<div style="font-size:12px;color:var(--text-sub);margin-top:6px">Pentru grupuri mai mari, sună restaurantul.</div>'
+                        : '') +
                 '</div>' +
                 '<div class="field">' +
                     '<label>Observații <span class="opt">(opțional)</span></label>' +
@@ -257,6 +264,7 @@ async function init() {
         const r = await fetch('/api/rezervare/info?token=' + encodeURIComponent(token));
         const d = await r.json().catch(() => ({}));
         if (!r.ok || !d || !d.ok || !d.restaurant) { linkInvalid(); return; }
+        maxPersoane = (typeof d.max_persoane === 'number' && d.max_persoane > 0) ? d.max_persoane : null;
         aplicaTema(d.restaurant.tema_cfg);
         randeazaForm(d.restaurant);
     } catch (e) {
