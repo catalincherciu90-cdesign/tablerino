@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="apple-touch-icon" href="/uploads/icon-192.png">
+<title>Profil restaurant</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+    --primar: #6c47ff;
+    --secundar: #27ae60;
+    --accent: #f39c12;
+    --bg: #f5f5fa;
+    --card-bg: #fff;
+    --header-bg: #1a1a2e;
+    --header-text: #fff;
+    --border-r: 14px;
+    --text: #111;
+    --text-sub: #666;
+}
+html, body { min-height: 100%; }
+body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding-bottom: 90px; }
+
+/* === HERO === */
+.hero { width: 100%; position: relative; background: var(--header-bg); color: var(--header-text); overflow: hidden; }
+.hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center; }
+.hero-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.65) 100%); }
+.hero-inner { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 40px 20px 34px; max-width: 640px; margin: 0 auto; }
+.hero-logo { width: 88px; height: 88px; border-radius: 20px; object-fit: contain; background: #fff; padding: 8px; box-shadow: 0 6px 22px rgba(0,0,0,0.28); }
+.hero-nume { font-size: 28px; font-weight: 800; line-height: 1.15; color: var(--header-text); text-shadow: 0 2px 10px rgba(0,0,0,0.25); }
+.hero-tagline { font-size: 15px; opacity: .92; line-height: 1.5; max-width: 460px; color: var(--header-text); }
+.hero-rating { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.16); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.22); padding: 7px 16px; border-radius: 30px; font-size: 14px; font-weight: 700; color: var(--header-text); }
+.hero-rating .stea { color: #f5c518; font-size: 16px; }
+
+/* === CTA === */
+.cta-wrap { width: 100%; max-width: 640px; padding: 18px 16px 4px; }
+.cta-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 17px; background: var(--primar); color: #fff; border: none; border-radius: var(--border-r); font-size: 17px; font-weight: 800; cursor: pointer; text-decoration: none; box-shadow: 0 6px 20px rgba(0,0,0,0.18); transition: transform .12s, opacity .15s; }
+.cta-btn:active { transform: scale(0.99); opacity: .92; }
+
+/* sticky bottom CTA (mobile) */
+.cta-sticky { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(0,0,0,0) 0%, var(--bg) 42%); display: flex; justify-content: center; pointer-events: none; }
+.cta-sticky .cta-btn { max-width: 608px; pointer-events: auto; margin: 0; }
+
+/* === SECTIONS === */
+.wrap { width: 100%; max-width: 640px; padding: 16px; }
+.sectiune-titlu { font-size: 13px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: .6px; margin: 18px 2px 12px; }
+
+/* === MENU === */
+.cat-block { margin-bottom: 26px; }
+.cat-nume { font-size: 20px; font-weight: 800; color: var(--text); padding-bottom: 8px; margin-bottom: 14px; border-bottom: 2px solid rgba(128,128,128,0.16); }
+.produs { display: flex; gap: 14px; background: var(--card-bg); border-radius: var(--border-r); padding: 12px; margin-bottom: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); align-items: flex-start; }
+.produs-poza { width: 92px; height: 92px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: linear-gradient(135deg, rgba(128,128,128,0.10), rgba(128,128,128,0.18)); display: flex; align-items: center; justify-content: center; font-size: 34px; }
+.produs-poza img { width: 100%; height: 100%; object-fit: cover; }
+.produs-info { flex: 1; min-width: 0; }
+.produs-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+.produs-nume { font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.25; }
+.produs-pret { font-size: 16px; font-weight: 800; color: var(--primar); white-space: nowrap; flex-shrink: 0; }
+.produs-desc { font-size: 13.5px; color: var(--text-sub); line-height: 1.45; margin-bottom: 6px; }
+.produs-alergeni { font-size: 11.5px; color: var(--text-sub); opacity: .85; font-style: italic; }
+
+/* === REVIEWS === */
+.recenzie { background: var(--card-bg); border-radius: var(--border-r); padding: 15px 16px; margin-bottom: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+.recenzie-stele { color: #e2e2ea; font-size: 15px; letter-spacing: 2px; margin-bottom: 7px; }
+.recenzie-stele b { color: #f5c518; font-weight: 400; }
+.recenzie-coment { font-size: 14px; color: var(--text); line-height: 1.5; margin-bottom: 7px; }
+.recenzie-nume { font-size: 12.5px; color: var(--text-sub); font-weight: 700; }
+
+/* === SOCIAL === */
+.social-bar { display: flex; justify-content: center; gap: 14px; padding: 8px 0 20px; flex-wrap: wrap; }
+.social-btn { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: transform .15s, opacity .15s; }
+.social-btn:active { transform: scale(0.9); opacity: .85; }
+.social-btn svg { width: 25px; height: 25px; }
+.social-btn.facebook { background: #1877f2; }
+.social-btn.instagram { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
+.social-btn.tiktok { background: #010101; }
+.social-btn.whatsapp { background: #25d366; }
+
+.footer-nota { text-align: center; font-size: 12px; color: var(--text-sub); opacity: .75; padding: 4px 16px 10px; }
+
+/* === STATES === */
+.stare { text-align: center; padding: 80px 24px; color: var(--text-sub); }
+.stare .icon { font-size: 52px; margin-bottom: 14px; }
+.stare h2 { font-size: 20px; font-weight: 800; margin-bottom: 8px; color: var(--text); }
+.stare p { font-size: 14px; }
+
+@media (min-width: 560px) {
+    .hero-nume { font-size: 32px; }
+    .cta-sticky { display: none; }
+    body { padding-bottom: 0; }
+}
+</style>
+</head>
+<body>
+
+<div id="continut" style="width:100%;display:flex;flex-direction:column;align-items:center;flex:1">
+    <div class="stare" style="padding-top:90px">
+        <div class="icon">⏳</div>
+        <h2>Se încarcă...</h2>
+    </div>
+</div>
+
+<script>
+const token = new URLSearchParams(window.location.search).get('token');
+const continut = document.getElementById('continut');
+
+function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+function stareRea(titlu, msg, icon) {
+    continut.innerHTML =
+        '<div class="stare">' +
+        '<div class="icon">' + (icon || '🔗') + '</div>' +
+        '<h2>' + escapeHtml(titlu) + '</h2>' +
+        (msg ? '<p>' + escapeHtml(msg) + '</p>' : '') +
+        '</div>';
+}
+
+function aplicaTema(t) {
+    if (!t) return;
+    const root = document.documentElement;
+    if (t.primar) root.style.setProperty('--primar', t.primar);
+    if (t.secundar) root.style.setProperty('--secundar', t.secundar);
+    if (t.accent) root.style.setProperty('--accent', t.accent);
+    if (t.bg) root.style.setProperty('--bg', t.bg);
+    if (t.card_bg) root.style.setProperty('--card-bg', t.card_bg);
+    if (t.header_bg) root.style.setProperty('--header-bg', t.header_bg);
+    if (t.header_text) root.style.setProperty('--header-text', t.header_text);
+    if (t.border_r) root.style.setProperty('--border-r', t.border_r);
+    root.style.setProperty('--text', t.dark ? '#e0e0e0' : '#111');
+    root.style.setProperty('--text-sub', t.dark ? '#aaa' : '#666');
+    if (t.font) document.body.style.fontFamily = t.font;
+    if (t.bg) document.body.style.background = t.bg;
+}
+
+// SVG icons for social buttons (same set used on the table page).
+const SOCIAL_SVG = {
+    facebook: '<svg viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
+    instagram: '<svg viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>',
+    tiktok: '<svg viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.27 8.27 0 004.84 1.55V6.79a4.85 4.85 0 01-1.07-.1z"/></svg>',
+    whatsapp: '<svg viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>'
+};
+
+function renderHero(rest, recenzii, rezervareToken) {
+    const bg = rest.bg_imagine
+        ? '<div class="hero-bg" style="background-image:url(\'/' + escapeHtml(rest.bg_imagine) + '\')"></div>'
+        : '';
+    const logo = rest.logo
+        ? '<img class="hero-logo" src="/' + escapeHtml(rest.logo) + '" alt="Logo" onerror="this.style.display=\'none\'">'
+        : '';
+    const tagline = rest.text_bun_venit
+        ? '<div class="hero-tagline">' + escapeHtml(rest.text_bun_venit) + '</div>'
+        : '';
+    let rating = '';
+    if (recenzii && recenzii.total > 0) {
+        const medie = (typeof recenzii.medie === 'number') ? recenzii.medie.toFixed(1) : '—';
+        rating = '<div class="hero-rating"><span class="stea">★</span> ' + medie +
+            ' · ' + recenzii.total + ' ' + (recenzii.total === 1 ? 'recenzie' : 'recenzii') + '</div>';
+    }
+    const rezHref = rezervareToken
+        ? '/rezervare/?token=' + encodeURIComponent(rezervareToken)
+        : null;
+    const cta = rezHref
+        ? '<a class="cta-btn" href="' + rezHref + '">📅 Rezervă o masă</a>'
+        : '';
+    const ctaSticky = rezHref
+        ? '<div class="cta-sticky"><a class="cta-btn" href="' + rezHref + '">📅 Rezervă o masă</a></div>'
+        : '';
+
+    return '' +
+        '<div class="hero">' + bg +
+            '<div class="hero-inner">' +
+                logo +
+                '<h1 class="hero-nume">' + escapeHtml(rest.nume || 'Restaurant') + '</h1>' +
+                tagline +
+                rating +
+            '</div>' +
+        '</div>' +
+        (cta ? '<div class="cta-wrap">' + cta + '</div>' : '') +
+        ctaSticky;
+}
+
+function renderMeniu(categorii) {
+    const cuProduse = (categorii || []).filter(c => c.produse && c.produse.length);
+    if (!cuProduse.length) return '';
+    const blocuri = cuProduse.map(cat => {
+        const produse = cat.produse.map(p => {
+            const poza = p.poza
+                ? '<div class="produs-poza"><img src="/' + escapeHtml(p.poza) + '" alt="" onerror="this.parentNode.innerHTML=\'🍽️\'"></div>'
+                : '<div class="produs-poza">🍽️</div>';
+            const pret = (p.pret != null && p.pret !== '')
+                ? '<span class="produs-pret">' + parseFloat(p.pret).toFixed(2) + ' lei</span>'
+                : '';
+            const desc = p.descriere
+                ? '<div class="produs-desc">' + escapeHtml(p.descriere) + '</div>'
+                : '';
+            const alergeni = p.alergeni
+                ? '<div class="produs-alergeni">Alergeni: ' + escapeHtml(p.alergeni) + '</div>'
+                : '';
+            return '' +
+                '<div class="produs">' +
+                    poza +
+                    '<div class="produs-info">' +
+                        '<div class="produs-top">' +
+                            '<span class="produs-nume">' + escapeHtml(p.nume) + '</span>' +
+                            pret +
+                        '</div>' +
+                        desc +
+                        alergeni +
+                    '</div>' +
+                '</div>';
+        }).join('');
+        return '<div class="cat-block"><div class="cat-nume">' + escapeHtml(cat.nume) + '</div>' + produse + '</div>';
+    }).join('');
+    return '<div class="wrap"><div class="sectiune-titlu">🍽️ Meniu</div>' + blocuri + '</div>';
+}
+
+function renderRecenzii(recenzii) {
+    const recente = (recenzii && recenzii.recente) ? recenzii.recente : [];
+    if (!recente.length) return '';
+    const carduri = recente.map(rec => {
+        const n = Math.max(0, Math.min(5, Number(rec.rating) || 0));
+        const stele = '<b>' + '★'.repeat(n) + '</b>' + '★'.repeat(5 - n);
+        const coment = rec.comentariu
+            ? '<div class="recenzie-coment">' + escapeHtml(rec.comentariu) + '</div>'
+            : '';
+        const nume = escapeHtml(rec.nume || 'Anonim');
+        return '' +
+            '<div class="recenzie">' +
+                '<div class="recenzie-stele">' + stele + '</div>' +
+                coment +
+                '<div class="recenzie-nume">— ' + nume + '</div>' +
+            '</div>';
+    }).join('');
+    return '<div class="wrap"><div class="sectiune-titlu">⭐ Ce spun clienții</div>' + carduri + '</div>';
+}
+
+function renderSocial(social) {
+    if (!social) return '';
+    const btns = [];
+    if (social.facebook)  btns.push('<a class="social-btn facebook" href="' + escapeHtml(social.facebook) + '" target="_blank" rel="noopener">' + SOCIAL_SVG.facebook + '</a>');
+    if (social.instagram) btns.push('<a class="social-btn instagram" href="' + escapeHtml(social.instagram) + '" target="_blank" rel="noopener">' + SOCIAL_SVG.instagram + '</a>');
+    if (social.tiktok)    btns.push('<a class="social-btn tiktok" href="' + escapeHtml(social.tiktok) + '" target="_blank" rel="noopener">' + SOCIAL_SVG.tiktok + '</a>');
+    if (social.whatsapp) {
+        const digits = String(social.whatsapp).replace(/\D/g, '');
+        if (digits) btns.push('<a class="social-btn whatsapp" href="https://wa.me/' + digits + '" target="_blank" rel="noopener">' + SOCIAL_SVG.whatsapp + '</a>');
+    }
+    if (!btns.length) return '';
+    return '<div class="wrap" style="padding-top:4px"><div class="social-bar">' + btns.join('') + '</div></div>';
+}
+
+async function init() {
+    if (!token) { stareRea('Link invalid', 'Linkul nu conține un token valid.', '🔗'); return; }
+    try {
+        const r = await fetch('/api/local?token=' + encodeURIComponent(token));
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || !d || !d.ok || !d.restaurant) {
+            stareRea('Restaurant indisponibil', 'Restaurantul nu a fost găsit sau nu este activ.', '🍽️');
+            return;
+        }
+        const rest = d.restaurant;
+        aplicaTema(rest.tema_cfg);
+        document.title = (rest.nume || 'Restaurant');
+
+        continut.innerHTML =
+            renderHero(rest, d.recenzii, d.rezervare_token) +
+            renderMeniu(d.categorii) +
+            renderRecenzii(d.recenzii) +
+            renderSocial(rest.social) +
+            '<div class="footer-nota">Powered by Tablerino</div>';
+    } catch (e) {
+        stareRea('Restaurant indisponibil', 'A apărut o eroare. Te rugăm încearcă mai târziu.', '🍽️');
+    }
+}
+
+init();
+</script>
+</body>
+</html>

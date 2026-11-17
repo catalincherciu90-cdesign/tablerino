@@ -7,6 +7,7 @@
 <link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tablerino - Rezervări</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
@@ -131,6 +132,23 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
         <div class="link-row">
             <input type="text" id="linkRezervare" readonly value="Se încarcă...">
             <button class="btn-copie" onclick="copiazaLink()">📋 Copiază link</button>
+        </div>
+    </div>
+
+    <!-- Profil public & QR -->
+    <div class="card-box">
+        <h3>🌐 Profil public &amp; QR</h3>
+        <p class="hint">Pune codul QR la intrare sau pe masă — clienții văd meniul și rezervă.</p>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center">
+            <div style="flex-shrink:0">
+                <canvas id="qrProfil" width="180" height="180" style="border-radius:10px;background:#fff;display:block"></canvas>
+            </div>
+            <div style="flex:1;min-width:220px">
+                <div class="link-row">
+                    <input type="text" id="linkProfil" readonly value="Se încarcă...">
+                    <button class="btn-copie" onclick="copiazaProfil()">📋 Copiază</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -277,12 +295,33 @@ async function incarcaLink() {
     try {
         const r = await fetch('/api/admin/rezervare_link');
         const d = await r.json();
-        if (d.ok) document.getElementById('linkRezervare').value = location.origin + d.cale;
+        if (d.ok) {
+            document.getElementById('linkRezervare').value = location.origin + d.cale;
+            if (d.token) randeazaProfil(d.token);
+        }
+    } catch (e) {}
+}
+
+// Public profile URL uses the SAME rezervare_token, pointed at /local/.
+function randeazaProfil(token) {
+    const profileUrl = location.origin + '/local/?token=' + token;
+    const input = document.getElementById('linkProfil');
+    if (input) input.value = profileUrl;
+    try {
+        if (typeof QRious !== 'undefined') {
+            new QRious({ element: document.getElementById('qrProfil'), value: profileUrl, size: 180 });
+        }
     } catch (e) {}
 }
 
 function copiazaLink() {
     const val = document.getElementById('linkRezervare').value;
+    if (!val || val === 'Se încarcă...') return;
+    navigator.clipboard.writeText(val).then(() => showToast('Link copiat!'));
+}
+
+function copiazaProfil() {
+    const val = document.getElementById('linkProfil').value;
     if (!val || val === 'Se încarcă...') return;
     navigator.clipboard.writeText(val).then(() => showToast('Link copiat!'));
 }
