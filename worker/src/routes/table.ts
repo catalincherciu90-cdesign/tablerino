@@ -197,4 +197,25 @@ table.get('/reclame', async (c) => {
   return c.json({ ok: true, reclame });
 });
 
+// POST /api/table/recenzie  — a customer at a table leaves a verified review
+table.post('/recenzie', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const masa = await getMasa(c.env.DB, body.token ?? '');
+  if (!masa) return c.json({ ok: false, msg: 'Masă invalidă' }, 404);
+  const rating = Number(body.rating ?? 0);
+  if (!(rating >= 1 && rating <= 5)) return c.json({ ok: false, msg: 'Rating invalid' }, 400);
+  const comentariu = (body.comentariu ?? '').trim().slice(0, 500);
+  const nume = (body.nume ?? '').trim().slice(0, 80);
+  await run(
+    c.env.DB,
+    'INSERT INTO recenzii (restaurant_id, masa_id, rating, comentariu, nume) VALUES (?, ?, ?, ?, ?)',
+    masa.restaurant_id,
+    masa.id,
+    Math.round(rating),
+    comentariu || null,
+    nume || null
+  );
+  return c.json({ ok: true });
+});
+
 export default table;

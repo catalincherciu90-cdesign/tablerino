@@ -170,3 +170,17 @@ CREATE INDEX IF NOT EXISTS idx_mese_restaurant ON mese(restaurant_id);
 CREATE INDEX IF NOT EXISTS idx_reclame_restaurant ON reclame(restaurant_id);
 CREATE INDEX IF NOT EXISTS idx_comanda_produse_comanda ON comanda_produse(comanda_id);
 CREATE INDEX IF NOT EXISTS idx_rezervari_restaurant ON rezervari(restaurant_id, data);
+
+-- Verified reviews left from the tablet by a customer who ordered at a table.
+CREATE TABLE IF NOT EXISTS recenzii (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER NOT NULL,
+    masa_id       INTEGER,
+    rating        INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comentariu    TEXT,
+    nume          TEXT,
+    created_at    TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE,
+    FOREIGN KEY (masa_id) REFERENCES mese(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_recenzii_restaurant ON recenzii(restaurant_id);

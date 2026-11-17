@@ -908,4 +908,29 @@ admin.post('/sterge_rezervare', requireOwner, async (c) => {
   return c.json({ ok: true });
 });
 
+// ── Reviews (recenzii) — owner only ──
+
+admin.get('/recenzii', requireOwner, async (c) => {
+  const recenzii = await all(
+    c.env.DB,
+    `SELECT r.*, m.nume AS masa_nume FROM recenzii r
+     LEFT JOIN mese m ON m.id = r.masa_id
+     WHERE r.restaurant_id = ? ORDER BY r.created_at DESC`,
+    rid(c)
+  );
+  const agg = await one<{ medie: number | null; total: number }>(
+    c.env.DB,
+    'SELECT AVG(rating) AS medie, COUNT(*) AS total FROM recenzii WHERE restaurant_id = ?',
+    rid(c)
+  );
+  return c.json({ ok: true, recenzii, medie: agg?.medie ?? null, total: agg?.total ?? 0 });
+});
+
+admin.post('/sterge_recenzie', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  await run(c.env.DB, 'DELETE FROM recenzii WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return c.json({ ok: true });
+});
+
 export default admin;
