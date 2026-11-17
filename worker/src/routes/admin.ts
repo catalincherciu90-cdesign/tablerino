@@ -439,13 +439,42 @@ admin.get('/mese', async (c) => {
   return c.json({ ok: true, mese });
 });
 
+// Parse an optional capacity value (1..50) → number or null.
+function parseCapacitate(v: unknown): number | null {
+  const n = Number(v ?? 0);
+  return n >= 1 && n <= 50 ? Math.floor(n) : null;
+}
+
 admin.post('/adauga_masa', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const nume = (body.nume ?? '').trim();
   if (!nume) return c.json({ ok: false }, 400);
+  const capacitate = parseCapacitate(body.capacitate);
   const token = generateToken();
-  const res = await run(c.env.DB, 'INSERT INTO mese (restaurant_id, nume, token) VALUES (?, ?, ?)', rid(c), nume, token);
+  const res = await run(
+    c.env.DB,
+    'INSERT INTO mese (restaurant_id, nume, token, capacitate) VALUES (?, ?, ?, ?)',
+    rid(c),
+    nume,
+    token,
+    capacitate
+  );
   return c.json({ ok: true, id: res.meta.last_row_id, token });
+});
+
+// Edit a table's name and/or capacity.
+admin.post('/editeaza_masa', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const mid = Number(body.masa_id ?? 0);
+  const nume = (body.nume ?? '').trim();
+  const capacitate = parseCapacitate(body.capacitate);
+  if (!mid) return c.json({ ok: false }, 400);
+  if (nume) {
+    await run(c.env.DB, 'UPDATE mese SET nume = ?, capacitate = ? WHERE id = ? AND restaurant_id = ?', nume, capacitate, mid, rid(c));
+  } else {
+    await run(c.env.DB, 'UPDATE mese SET capacitate = ? WHERE id = ? AND restaurant_id = ?', capacitate, mid, rid(c));
+  }
+  return c.json({ ok: true });
 });
 
 admin.post('/sterge_masa', requireOwner, async (c) => {
@@ -700,6 +729,22 @@ async function validMasaId(c: import('../types').AppContext, masaId: unknown): P
   return m ? id : null;
 }
 
+// Does a table fit a party of `nrPersoane`? A table with no capacity set always fits.
+async function masaIncape(
+  c: import('../types').AppContext,
+  masaId: number,
+  nrPersoane: number
+): Promise<{ ok: boolean; cap?: number }> {
+  const m = await one<{ capacitate: number | null }>(
+    c.env.DB,
+    'SELECT capacitate FROM mese WHERE id = ? AND restaurant_id = ?',
+    masaId,
+    rid(c)
+  );
+  if (!m || m.capacitate == null) return { ok: true };
+  return { ok: nrPersoane <= m.capacitate, cap: m.capacitate };
+}
+
 // Set/clear a waiter's default table.
 admin.post('/set_masa_ospatar', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
@@ -812,6 +857,11 @@ admin.post('/rezervare_status', requireOwner, async (c) => {
   if (!REZ_STATUSES.includes(status)) return c.json({ ok: false, msg: 'Status invalid' }, 400);
   if ('masa_id' in body) {
     const masaId = await validMasaId(c, body.masa_id);
+    if (masaId) {
+      const rez = await one<{ nr_persoane: number }>(c.env.DB, 'SELECT nr_persoane FROM rezervari WHERE id = ? AND restaurant_id = ?', id, rid(c));
+      const chk = await masaIncape(c, masaId, rez?.nr_persoane ?? 0);
+      if (!chk.ok) return c.json({ ok: false, msg: `Masa are capacitate ${chk.cap} persoane, dar rezervarea e pentru ${rez?.nr_persoane}.` }, 400);
+    }
     await run(c.env.DB, 'UPDATE rezervari SET status = ?, masa_id = ? WHERE id = ? AND restaurant_id = ?', status, masaId, id, rid(c));
   } else {
     await run(c.env.DB, 'UPDATE rezervari SET status = ? WHERE id = ? AND restaurant_id = ?', status, id, rid(c));
@@ -830,6 +880,10 @@ admin.post('/adauga_rezervare', requireOwner, async (c) => {
   const obs = (body.observatii ?? '').trim();
   if (!nume || !telefon || !data || !ora) return c.json({ ok: false, msg: 'Date incomplete' }, 400);
   const masaId = await validMasaId(c, body.masa_id);
+  if (masaId) {
+    const chk = await masaIncape(c, masaId, nr >= 1 ? nr : 2);
+    if (!chk.ok) return c.json({ ok: false, msg: `Masa are capacitate ${chk.cap} persoane, dar rezervarea e pentru ${nr}.` }, 400);
+  }
   const res = await run(
     c.env.DB,
     `INSERT INTO rezervari (restaurant_id, nume_client, telefon, email, data, ora, nr_persoane, observatii, masa_id, status)

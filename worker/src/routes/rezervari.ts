@@ -29,8 +29,15 @@ async function restByToken(db: D1Database, token: string): Promise<Rest | null> 
 rezervare.get('/info', async (c) => {
   const r = await restByToken(c.env.DB, c.req.query('token') ?? '');
   if (!r) return c.json({ ok: false, msg: 'Link invalid' }, 404);
+  // Largest table capacity (so the form can cap the party size); null = no limit set.
+  const capRow = await one<{ max_persoane: number | null }>(
+    c.env.DB,
+    'SELECT MAX(capacitate) AS max_persoane FROM mese WHERE restaurant_id = ? AND activa = 1',
+    r.id
+  );
   return c.json({
     ok: true,
+    max_persoane: capRow?.max_persoane ?? null,
     restaurant: {
       nume: r.nume,
       logo: r.logo,
