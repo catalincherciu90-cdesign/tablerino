@@ -66,6 +66,26 @@ function occupiedAt(rezRows: { ora: string; nr_persoane: number }[], targetMin: 
   return sum;
 }
 
+// GET /api/rezervare/restaurante  — public directory of restaurants that opted in
+// to the Tablerino public reservations page.
+rezervare.get('/restaurante', async (c) => {
+  const rows = await all<{ nume: string; logo: string | null; tema: string; rezervare_token: string }>(
+    c.env.DB,
+    `SELECT nume, logo, tema, rezervare_token
+     FROM restaurante
+     WHERE rezervari_publice = 1 AND activ = 1 AND rezervare_token IS NOT NULL
+     ORDER BY nume COLLATE NOCASE`
+  );
+  const restaurante = rows.map((r) => ({
+    nume: r.nume,
+    logo: r.logo,
+    tema: r.tema,
+    tema_cfg: getTheme(r.tema),
+    token: r.rezervare_token,
+  }));
+  return c.json({ ok: true, restaurante });
+});
+
 // GET /api/rezervare/info?token=  — branding for the public reservation form
 rezervare.get('/info', async (c) => {
   const r = await restByToken(c.env.DB, c.req.query('token') ?? '');

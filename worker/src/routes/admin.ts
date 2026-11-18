@@ -1126,7 +1126,9 @@ admin.post('/sterge_rezervare', requireOwner, async (c) => {
 // Reservation capacity setting (total seats). GET shows the current override and
 // the sum of table capacities (the default when no override is set).
 admin.get('/rezervare_setari', requireOwner, async (c) => {
-  const row = await one<{ rez_capacitate: number | null }>(c.env.DB, 'SELECT rez_capacitate FROM restaurante WHERE id = ?', rid(c));
+  const row = await one<{ rez_capacitate: number | null; rezervari_publice: number }>(
+    c.env.DB, 'SELECT rez_capacitate, rezervari_publice FROM restaurante WHERE id = ?', rid(c)
+  );
   const sum = await one<{ s: number; n: number }>(
     c.env.DB,
     'SELECT COALESCE(SUM(capacitate),0) AS s, COUNT(capacitate) AS n FROM mese WHERE restaurant_id = ? AND activa = 1',
@@ -1135,6 +1137,7 @@ admin.get('/rezervare_setari', requireOwner, async (c) => {
   return c.json({
     ok: true,
     rez_capacitate: row?.rez_capacitate ?? null,
+    rezervari_publice: row?.rezervari_publice ? 1 : 0,
     capacitate_mese: sum && sum.n > 0 ? sum.s : null,
   });
 });
@@ -1143,8 +1146,18 @@ admin.post('/salveaza_rezervare_setari', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const n = Number(body.rez_capacitate ?? 0);
   const val = n >= 1 && n <= 1000 ? Math.floor(n) : null; // empty/0 → use table-capacity sum
-  await run(c.env.DB, 'UPDATE restaurante SET rez_capacitate = ? WHERE id = ?', val, rid(c));
-  return c.json({ ok: true, rez_capacitate: val });
+  const publice = body.rezervari_publice ? 1 : 0;
+  // Enabling public reservations requires a reservation token — create one if missing.
+  if (publice) {
+    const row = await one<{ rezervare_token: string | null }>(
+      c.env.DB, 'SELECT rezervare_token FROM restaurante WHERE id = ?', rid(c)
+    );
+    if (!row?.rezervare_token) {
+      await run(c.env.DB, 'UPDATE restaurante SET rezervare_token = ? WHERE id = ?', generateToken(), rid(c));
+    }
+  }
+  await run(c.env.DB, 'UPDATE restaurante SET rez_capacitate = ?, rezervari_publice = ? WHERE id = ?', val, publice, rid(c));
+  return c.json({ ok: true, rez_capacitate: val, rezervari_publice: publice });
 });
 
 // ── Reviews (recenzii) — owner only ──

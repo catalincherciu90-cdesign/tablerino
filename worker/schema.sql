@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS restaurante (
     parola_reset    TEXT,                          -- bcrypt hash for audit actions
     rezervare_token TEXT,                          -- public token for the reservation link
     rez_capacitate  INTEGER,                       -- total seats for reservations (NULL = sum of table capacities)
+    rezervari_publice INTEGER DEFAULT 0,           -- 1 = listed on the public Tablerino reservations directory
     escalare_sec    INTEGER,                       -- seconds an order stays reserved for the table's waiter (NULL = default 120)
     activ           INTEGER DEFAULT 1,             -- 0 = pending approval
     created_at      TEXT DEFAULT CURRENT_TIMESTAMP

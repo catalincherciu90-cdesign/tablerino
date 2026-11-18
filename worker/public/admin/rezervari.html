@@ -162,6 +162,19 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
         </div>
     </div>
 
+    <!-- Listare în pagina publică Tablerino -->
+    <div class="card-box">
+        <h3>🌍 Rezervări pe pagina publică Tablerino</h3>
+        <p class="hint">Dacă activezi, restaurantul tău apare în pagina publică de rezervări Tablerino, unde clienții pot găsi restaurante și rezerva o masă. Rezervările ajung tot la tine, în această pagină.</p>
+        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-size:14px;font-weight:600;color:#333;margin-top:6px">
+            <input type="checkbox" id="rezPublice" onchange="salveazaRezPublice()" style="width:20px;height:20px;cursor:pointer">
+            <span>Afișează restaurantul în pagina publică de rezervări</span>
+        </label>
+        <div id="rezPubliceLink" style="display:none;margin-top:12px;font-size:13px;color:#555">
+            Pagina publică: <a href="/rezerva/" target="_blank" style="color:#6c47ff;font-weight:600">tablerino.ro/rezerva</a>
+        </div>
+    </div>
+
     <!-- Adaugă rezervare manuală -->
     <div class="card-box adauga-form">
         <h3>➕ Adaugă rezervare</h3>
@@ -344,21 +357,44 @@ async function incarcaCapacitate() {
         if (d.ok) {
             document.getElementById('capInput').value = (d.rez_capacitate != null) ? d.rez_capacitate : '';
             capacitateMese = (typeof d.capacitate_mese === 'number') ? d.capacitate_mese : null;
+            const pub = !!d.rezervari_publice;
+            document.getElementById('rezPublice').checked = pub;
+            document.getElementById('rezPubliceLink').style.display = pub ? 'block' : 'none';
             actualizeazaCapHint();
         }
     } catch (e) {}
 }
 
+function rezPayload() {
+    return {
+        rez_capacitate: Number(document.getElementById('capInput').value) || 0,
+        rezervari_publice: document.getElementById('rezPublice').checked ? 1 : 0,
+    };
+}
+
 async function salveazaCapacitate() {
-    const val = document.getElementById('capInput').value;
     const r = await fetch('/api/admin/salveaza_rezervare_setari', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rez_capacitate: Number(val) || 0 })
+        body: JSON.stringify(rezPayload())
     });
     const d = await r.json().catch(() => ({}));
     if (r.ok && d.ok) { showToast('Capacitate salvată!'); incarcaCapacitate(); }
     else { showToast(d.msg || 'Eroare', 'err'); }
+}
+
+async function salveazaRezPublice() {
+    const on = document.getElementById('rezPublice').checked;
+    const r = await fetch('/api/admin/salveaza_rezervare_setari', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rezPayload())
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) {
+        document.getElementById('rezPubliceLink').style.display = on ? 'block' : 'none';
+        showToast(on ? 'Restaurantul apare acum în pagina publică!' : 'Scos din pagina publică.');
+    } else { showToast(d.msg || 'Eroare', 'err'); }
 }
 
 async function incarcaMese() {
