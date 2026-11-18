@@ -15,7 +15,9 @@ if (!email || !password) {
 
 const hash = bcrypt.hashSync(password, 10);
 const esc = (s) => s.replace(/'/g, "''");
+// Seed the master user ONCE. Do NOT overwrite an existing password on every
+// deploy — otherwise a manual password change gets reset on the next deploy.
 console.log(
   `INSERT INTO master_users (email, parola) VALUES ('${esc(email)}', '${esc(hash)}')\n` +
-    `  ON CONFLICT(email) DO UPDATE SET parola = excluded.parola;`
+    `  ON CONFLICT(email) DO NOTHING;`
 );
