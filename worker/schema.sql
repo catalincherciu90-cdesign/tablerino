@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS restaurante (
     rezervari_publice INTEGER DEFAULT 0,           -- 1 = listed on the public Tablerino reservations directory
     descriere       TEXT,                          -- short public description (shown on the reservations directory)
     categorie       TEXT,                          -- restaurant type (e.g. Pizzerie, Cafenea), for the public directory
+    oras            TEXT,                          -- city (for search/filter on the public portal)
+    promovat        INTEGER DEFAULT 0,             -- 1 = featured/promoted on the portal (set by platform admin)
     escalare_sec    INTEGER,                       -- seconds an order stays reserved for the table's waiter (NULL = default 120)
     activ           INTEGER DEFAULT 1,             -- 0 = pending approval
     created_at      TEXT DEFAULT CURRENT_TIMESTAMP
@@ -226,3 +228,15 @@ CREATE TABLE IF NOT EXISTS fcm_tokens (
     FOREIGN KEY (ospatar_id) REFERENCES ospatari(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_fcm_ospatar ON fcm_tokens(ospatar_id);
+
+-- Offers/promotions shown on the public Tablerino portal (per restaurant).
+CREATE TABLE IF NOT EXISTS oferte (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER NOT NULL,
+    titlu         TEXT NOT NULL,                   -- e.g. "-20% la prânz"
+    detaliu       TEXT,                            -- e.g. "Luni–Vineri, 12:00–16:00"
+    activa        INTEGER DEFAULT 1,
+    created_at    TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_oferte_restaurant ON oferte(restaurant_id);

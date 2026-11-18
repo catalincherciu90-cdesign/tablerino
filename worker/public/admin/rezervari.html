@@ -171,11 +171,17 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
             <span>Afișează restaurantul în pagina publică de rezervări</span>
         </label>
 
-        <div style="margin-top:18px">
-            <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Tip restaurant</label>
-            <select id="rezCategorie" style="width:100%;max-width:320px;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;background:#fff">
-                <option value="">— alege —</option>
-            </select>
+        <div style="margin-top:18px;display:flex;gap:16px;flex-wrap:wrap">
+            <div style="flex:1;min-width:200px">
+                <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Tip restaurant</label>
+                <select id="rezCategorie" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;background:#fff">
+                    <option value="">— alege —</option>
+                </select>
+            </div>
+            <div style="flex:1;min-width:200px">
+                <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Oraș</label>
+                <input type="text" id="rezOras" maxlength="80" placeholder="Ex: Suceava" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none">
+            </div>
         </div>
         <div style="margin-top:14px">
             <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Descriere scurtă <span style="color:#aaa;font-weight:400">(apare pe pagina publică)</span></label>
@@ -186,6 +192,24 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
         <div id="rezPubliceLink" style="display:none;margin-top:14px;font-size:13px;color:#555">
             Pagina publică: <a href="/rezerva/" target="_blank" style="color:#6c47ff;font-weight:600">tablerino.ro/rezerva</a>
         </div>
+    </div>
+
+    <!-- Oferte / promoții pe portal -->
+    <div class="card-box">
+        <h3>🔥 Oferte &amp; promoții</h3>
+        <p class="hint">Ofertele apar pe portalul public Tablerino (pe cardul tău și în secțiunea de oferte) — un motiv în plus pentru clienți să te aleagă.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:6px">
+            <div style="flex:1;min-width:180px">
+                <label style="display:block;font-size:12px;font-weight:600;color:#666;margin-bottom:5px">Ofertă</label>
+                <input type="text" id="ofTitlu" maxlength="80" placeholder="Ex: -20% la prânz" style="width:100%;padding:9px 11px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none">
+            </div>
+            <div style="flex:1;min-width:180px">
+                <label style="display:block;font-size:12px;font-weight:600;color:#666;margin-bottom:5px">Detaliu <span style="color:#aaa;font-weight:400">(opțional)</span></label>
+                <input type="text" id="ofDetaliu" maxlength="160" placeholder="Ex: Luni–Vineri, 12:00–16:00" style="width:100%;padding:9px 11px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none">
+            </div>
+            <button class="btn-add" onclick="adaugaOferta()">+ Adaugă</button>
+        </div>
+        <div id="oferteList" style="margin-top:14px"></div>
     </div>
 
     <!-- Adaugă rezervare manuală -->
@@ -384,6 +408,7 @@ async function incarcaCapacitate() {
             document.getElementById('rezPubliceLink').style.display = pub ? 'block' : 'none';
             document.getElementById('rezCategorie').value = d.categorie || '';
             document.getElementById('rezDescriere').value = d.descriere || '';
+            document.getElementById('rezOras').value = d.oras || '';
             actualizeazaCapHint();
         }
     } catch (e) {}
@@ -395,7 +420,45 @@ function rezPayload() {
         rezervari_publice: document.getElementById('rezPublice').checked ? 1 : 0,
         categorie: document.getElementById('rezCategorie').value,
         descriere: document.getElementById('rezDescriere').value,
+        oras: document.getElementById('rezOras').value,
     };
+}
+
+async function incarcaOferte() {
+    const wrap = document.getElementById('oferteList');
+    try {
+        const r = await fetch('/api/admin/oferte');
+        const d = await r.json();
+        if (!d.ok || !d.oferte.length) { wrap.innerHTML = '<div style="font-size:13px;color:#aaa;padding:6px 0">Nicio ofertă adăugată.</div>'; return; }
+        wrap.innerHTML = d.oferte.map(o => `
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #eee;border-radius:10px;margin-bottom:8px;${o.activa ? '' : 'opacity:.55'}">
+                <div style="flex:1">
+                    <div style="font-weight:700;font-size:14px">🔥 ${escapeHtml(o.titlu)}</div>
+                    ${o.detaliu ? `<div style="font-size:12px;color:#888">${escapeHtml(o.detaliu)}</div>` : ''}
+                </div>
+                <button onclick="toggleOferta(${o.id})" style="background:#f3f4f6;border:none;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:600;cursor:pointer;color:#555">${o.activa ? 'Dezactivează' : 'Activează'}</button>
+                <button onclick="stergeOferta(${o.id})" style="background:#ffebee;border:none;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:600;cursor:pointer;color:#c62828">Șterge</button>
+            </div>`).join('');
+    } catch (e) { wrap.innerHTML = '<div style="font-size:13px;color:#c62828">Eroare la încărcare.</div>'; }
+}
+
+async function adaugaOferta() {
+    const titlu = document.getElementById('ofTitlu').value.trim();
+    const detaliu = document.getElementById('ofDetaliu').value.trim();
+    if (!titlu) { showToast('Scrie textul ofertei.', 'err'); return; }
+    const r = await fetch('/api/admin/adauga_oferta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ titlu, detaliu }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) { document.getElementById('ofTitlu').value = ''; document.getElementById('ofDetaliu').value = ''; showToast('Ofertă adăugată!'); incarcaOferte(); }
+    else showToast(d.msg || 'Eroare', 'err');
+}
+async function toggleOferta(id) {
+    await fetch('/api/admin/toggle_oferta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    incarcaOferte();
+}
+async function stergeOferta(id) {
+    if (!confirm('Ștergi oferta?')) return;
+    await fetch('/api/admin/sterge_oferta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    incarcaOferte();
 }
 
 async function salveazaRezProfil() {
@@ -581,6 +644,7 @@ fetch('/api/admin/me').then(function (r) {
     if (me.role === 'ospatar') { location.href = '/admin/index.html'; return; }
     incarcaLink();
     incarcaCapacitate();
+    incarcaOferte();
     incarcaMese().then(incarcaRezervari);
 });
 </script>

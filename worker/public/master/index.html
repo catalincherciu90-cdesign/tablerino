@@ -88,6 +88,15 @@ tr:hover td { background: rgba(108,71,255,0.05); }
     <h2>Panou Master</h2>
     <p class="sub">Vizualizare și administrare toate restaurantele din platformă.</p>
 
+    <div id="portalCard" style="background:#1f1b2e;border:1px solid #2a2a3e;border-radius:14px;padding:18px 20px;margin-bottom:22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="flex:1;min-width:260px">
+            <div style="font-size:15px;font-weight:700;color:#e2c48a">🌍 Portal public pentru clienți</div>
+            <div style="font-size:13px;color:#999;margin-top:4px">Când e PORNIT, pagina principală (tablerino.ro) devine portalul unde clienții descoperă restaurante și rezervă. Când e OPRIT, se afișează landing-ul pentru restaurante (recomandat până ai suficiente restaurante pe platformă).</div>
+            <div id="portalStare" style="font-size:13px;margin-top:6px;font-weight:600"></div>
+        </div>
+        <button id="portalBtn" class="btn-add" onclick="togglePortal()" style="min-width:150px">...</button>
+    </div>
+
     <div class="stats-grid" id="statsGrid">
         <div class="stat-card"><div class="val alb">—</div><div class="lbl">Total restaurante</div></div>
         <div class="stat-card"><div class="val verde">—</div><div class="lbl">Active</div></div>
@@ -194,6 +203,7 @@ async function incarcaRestaurante() {
                     <button class="btn-sm btn-vezi" onclick="window.open('/master/meniu.html?id=${r.id}','_blank')" style="background:rgba(16,185,129,0.15);color:#10b981">Meniu</button>
                     <button class="btn-sm btn-edit" onclick="deschideModalEditare(${r.id},'${r.nume.replace(/'/g,"\\'")}','${r.email}','${r.telefon||''}')">Editează</button>
                     <button class="btn-sm ${r.activ == 1 ? 'btn-toggle-on' : 'btn-toggle-off'}" onclick="toggleActiv(${r.id})">${r.activ == 1 ? 'Dezactivează' : 'Activează'}</button>
+                    <button class="btn-sm" onclick="togglePromovat(${r.id})" style="background:${r.promovat == 1 ? 'rgba(201,166,107,0.3)' : 'rgba(255,255,255,0.08)'};color:${r.promovat == 1 ? '#e2c48a' : '#888'}">${r.promovat == 1 ? '★ Promovat' : '☆ Promovează'}</button>
                 </div>
             </td>
         </tr>
@@ -265,10 +275,42 @@ async function toggleActiv(id) {
     incarcaStats();
 }
 
+async function togglePromovat(id) {
+    await fetch('/api/master/toggle_promovat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id })
+    });
+    incarcaRestaurante();
+}
+
+function afiseazaPortal(on) {
+    document.getElementById('portalStare').innerHTML = on
+        ? '<span style="color:#10b981">● PORNIT</span> — pagina principală afișează portalul pentru clienți.'
+        : '<span style="color:#ef4444">● OPRIT</span> — pagina principală afișează landing-ul pentru restaurante.';
+    const btn = document.getElementById('portalBtn');
+    btn.textContent = on ? 'Oprește portalul' : 'Pornește portalul';
+    btn.style.background = on ? '#ef4444' : '#10b981';
+    btn.dataset.on = on ? '1' : '0';
+}
+async function incarcaPortal() {
+    try {
+        const d = await fetch('/api/master/portal_setari').then(r => r.json());
+        afiseazaPortal(!!d.portal_activ);
+    } catch (e) {}
+}
+async function togglePortal() {
+    const on = document.getElementById('portalBtn').dataset.on === '1';
+    if (!on && !confirm('Pornești portalul public? Pagina principală va deveni portalul pentru clienți. Asigură-te că ai restaurante cu rezervări publice active.')) return;
+    try {
+        const d = await fetch('/api/master/toggle_portal', { method: 'POST' }).then(r => r.json());
+        afiseazaPortal(!!d.portal_activ);
+    } catch (e) {}
+}
+
 fetch('/api/master/me').then(function (r) {
     if (!r.ok) { location.href = '/master/login.html'; return; }
     incarcaStats();
     incarcaRestaurante();
+    incarcaPortal();
     setInterval(function () { incarcaStats(); incarcaRestaurante(); }, 30000);
 });
 </script>

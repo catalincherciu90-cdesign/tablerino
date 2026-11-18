@@ -45,6 +45,16 @@ app.route('/api/local', local); // public restaurant profile
 app.route('/api/upload', upload); // admin/upload_*.php
 app.route('/api/ai', ai); // admin/ai_meniu.php
 
+// ── Root: serve the diner portal when enabled, else the B2B landing ──
+app.get('/', async (c) => {
+  const { one } = await import('./db');
+  const row = await one<{ valoare: string }>(c.env.DB, "SELECT valoare FROM app_config WHERE cheie = 'portal_activ'");
+  const file = row?.valoare === '1' ? '/portal.html' : '/index.html';
+  const url = new URL(c.req.url);
+  url.pathname = file;
+  return c.env.ASSETS.fetch(new Request(url.toString(), { headers: c.req.raw.headers }));
+});
+
 // ── Everything else falls through to the static frontend in ./public ──
 app.all('*', (c) => c.env.ASSETS.fetch(c.req.raw));
 

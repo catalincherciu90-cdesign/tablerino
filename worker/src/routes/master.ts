@@ -126,6 +126,32 @@ master.post('/toggle_activ', async (c) => {
   return c.json({ ok: true });
 });
 
+// Feature/un-feature a restaurant on the public portal (promovat).
+master.post('/toggle_promovat', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  await run(c.env.DB, 'UPDATE restaurante SET promovat = 1 - promovat WHERE id = ?', id);
+  const row = await one<{ promovat: number }>(c.env.DB, 'SELECT promovat FROM restaurante WHERE id = ?', id);
+  return c.json({ ok: true, promovat: row?.promovat ? 1 : 0 });
+});
+
+// Global toggle: is the public diner portal shown at "/" (ON) or the B2B landing (OFF)?
+master.get('/portal_setari', async (c) => {
+  const row = await one<{ valoare: string }>(c.env.DB, "SELECT valoare FROM app_config WHERE cheie = 'portal_activ'");
+  return c.json({ ok: true, portal_activ: row?.valoare === '1' ? 1 : 0 });
+});
+
+master.post('/toggle_portal', async (c) => {
+  const row = await one<{ valoare: string }>(c.env.DB, "SELECT valoare FROM app_config WHERE cheie = 'portal_activ'");
+  const nou = row?.valoare === '1' ? '0' : '1';
+  await run(
+    c.env.DB,
+    "INSERT INTO app_config (cheie, valoare) VALUES ('portal_activ', ?) ON CONFLICT(cheie) DO UPDATE SET valoare = excluded.valoare",
+    nou
+  );
+  return c.json({ ok: true, portal_activ: nou === '1' ? 1 : 0 });
+});
+
 // Registration requests (master/cereri.php) — approve or reject a pending account.
 master.post('/accepta', async (c) => {
   const body = await c.req.json().catch(() => ({}));

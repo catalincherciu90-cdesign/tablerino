@@ -1126,8 +1126,8 @@ admin.post('/sterge_rezervare', requireOwner, async (c) => {
 // Reservation capacity setting (total seats). GET shows the current override and
 // the sum of table capacities (the default when no override is set).
 admin.get('/rezervare_setari', requireOwner, async (c) => {
-  const row = await one<{ rez_capacitate: number | null; rezervari_publice: number; descriere: string | null; categorie: string | null }>(
-    c.env.DB, 'SELECT rez_capacitate, rezervari_publice, descriere, categorie FROM restaurante WHERE id = ?', rid(c)
+  const row = await one<{ rez_capacitate: number | null; rezervari_publice: number; descriere: string | null; categorie: string | null; oras: string | null }>(
+    c.env.DB, 'SELECT rez_capacitate, rezervari_publice, descriere, categorie, oras FROM restaurante WHERE id = ?', rid(c)
   );
   const sum = await one<{ s: number; n: number }>(
     c.env.DB,
@@ -1140,6 +1140,7 @@ admin.get('/rezervare_setari', requireOwner, async (c) => {
     rezervari_publice: row?.rezervari_publice ? 1 : 0,
     descriere: row?.descriere ?? '',
     categorie: row?.categorie ?? '',
+    oras: row?.oras ?? '',
     capacitate_mese: sum && sum.n > 0 ? sum.s : null,
   });
 });
@@ -1151,6 +1152,7 @@ admin.post('/salveaza_rezervare_setari', requireOwner, async (c) => {
   const publice = body.rezervari_publice ? 1 : 0;
   const descriere = (body.descriere ?? '').toString().trim().slice(0, 500) || null;
   const categorie = (body.categorie ?? '').toString().trim().slice(0, 60) || null;
+  const oras = (body.oras ?? '').toString().trim().slice(0, 80) || null;
   // Enabling public reservations requires a reservation token — create one if missing.
   if (publice) {
     const row = await one<{ rezervare_token: string | null }>(
@@ -1162,10 +1164,40 @@ admin.post('/salveaza_rezervare_setari', requireOwner, async (c) => {
   }
   await run(
     c.env.DB,
-    'UPDATE restaurante SET rez_capacitate = ?, rezervari_publice = ?, descriere = ?, categorie = ? WHERE id = ?',
-    val, publice, descriere, categorie, rid(c)
+    'UPDATE restaurante SET rez_capacitate = ?, rezervari_publice = ?, descriere = ?, categorie = ?, oras = ? WHERE id = ?',
+    val, publice, descriere, categorie, oras, rid(c)
   );
-  return c.json({ ok: true, rez_capacitate: val, rezervari_publice: publice, descriere, categorie });
+  return c.json({ ok: true, rez_capacitate: val, rezervari_publice: publice, descriere, categorie, oras });
+});
+
+// ── Offers (oferte) for the public portal ──
+
+admin.get('/oferte', requireOwner, async (c) => {
+  const oferte = await all(c.env.DB, 'SELECT id, titlu, detaliu, activa, created_at FROM oferte WHERE restaurant_id = ? ORDER BY created_at DESC', rid(c));
+  return c.json({ ok: true, oferte });
+});
+
+admin.post('/adauga_oferta', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const titlu = (body.titlu ?? '').toString().trim().slice(0, 80);
+  const detaliu = (body.detaliu ?? '').toString().trim().slice(0, 160) || null;
+  if (!titlu) return c.json({ ok: false, msg: 'Scrie textul ofertei.' }, 400);
+  const res = await run(c.env.DB, 'INSERT INTO oferte (restaurant_id, titlu, detaliu) VALUES (?, ?, ?)', rid(c), titlu, detaliu);
+  return c.json({ ok: true, id: res.meta.last_row_id });
+});
+
+admin.post('/toggle_oferta', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  await run(c.env.DB, 'UPDATE oferte SET activa = 1 - activa WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return c.json({ ok: true });
+});
+
+admin.post('/sterge_oferta', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  await run(c.env.DB, 'DELETE FROM oferte WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return c.json({ ok: true });
 });
 
 // ── Reviews (recenzii) — owner only ──

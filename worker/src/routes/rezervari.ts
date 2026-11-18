@@ -69,12 +69,27 @@ function occupiedAt(rezRows: { ora: string; nr_persoane: number }[], targetMin: 
 // GET /api/rezervare/restaurante  — public directory of restaurants that opted in
 // to the Tablerino public reservations page.
 rezervare.get('/restaurante', async (c) => {
-  const rows = await all<{ nume: string; logo: string | null; tema: string; rezervare_token: string; descriere: string | null; categorie: string | null }>(
+  const oras = (c.req.query('oras') ?? '').trim();
+  const tip = (c.req.query('tip') ?? '').trim();
+  const params: unknown[] = [];
+  let filtre = '';
+  if (oras) { filtre += ' AND r.oras LIKE ?'; params.push(`%${oras}%`); }
+  if (tip) { filtre += ' AND r.categorie = ?'; params.push(tip); }
+
+  const rows = await all<{
+    nume: string; logo: string | null; tema: string; rezervare_token: string;
+    descriere: string | null; categorie: string | null; oras: string | null;
+    promovat: number; rating: number | null; nr_recenzii: number; oferta: string | null;
+  }>(
     c.env.DB,
-    `SELECT nume, logo, tema, rezervare_token, descriere, categorie
-     FROM restaurante
-     WHERE rezervari_publice = 1 AND activ = 1 AND rezervare_token IS NOT NULL
-     ORDER BY nume COLLATE NOCASE`
+    `SELECT r.nume, r.logo, r.tema, r.rezervare_token, r.descriere, r.categorie, r.oras, r.promovat,
+            (SELECT AVG(rating) FROM recenzii WHERE restaurant_id = r.id) AS rating,
+            (SELECT COUNT(*) FROM recenzii WHERE restaurant_id = r.id) AS nr_recenzii,
+            (SELECT titlu FROM oferte WHERE restaurant_id = r.id AND activa = 1 ORDER BY created_at DESC LIMIT 1) AS oferta
+     FROM restaurante r
+     WHERE r.rezervari_publice = 1 AND r.activ = 1 AND r.rezervare_token IS NOT NULL${filtre}
+     ORDER BY r.promovat DESC, rating DESC, r.nume COLLATE NOCASE`,
+    ...params
   );
   const restaurante = rows.map((r) => ({
     nume: r.nume,
@@ -84,8 +99,26 @@ rezervare.get('/restaurante', async (c) => {
     token: r.rezervare_token,
     descriere: r.descriere ?? null,
     categorie: r.categorie ?? null,
+    oras: r.oras ?? null,
+    promovat: r.promovat ? 1 : 0,
+    rating: r.rating != null ? Math.round(r.rating * 10) / 10 : null,
+    nr_recenzii: r.nr_recenzii ?? 0,
+    oferta: r.oferta ?? null,
   }));
   return c.json({ ok: true, restaurante });
+});
+
+// GET /api/rezervare/oferte  — active offers from public restaurants (portal deals feed)
+rezervare.get('/oferte', async (c) => {
+  const rows = await all<{ titlu: string; detaliu: string | null; restaurant: string; token: string; categorie: string | null; oras: string | null }>(
+    c.env.DB,
+    `SELECT o.titlu, o.detaliu, r.nume AS restaurant, r.rezervare_token AS token, r.categorie, r.oras
+     FROM oferte o JOIN restaurante r ON r.id = o.restaurant_id
+     WHERE o.activa = 1 AND r.rezervari_publice = 1 AND r.activ = 1 AND r.rezervare_token IS NOT NULL
+     ORDER BY r.promovat DESC, o.created_at DESC
+     LIMIT 12`
+  );
+  return c.json({ ok: true, oferte: rows });
 });
 
 // GET /api/rezervare/info?token=  — branding for the public reservation form
