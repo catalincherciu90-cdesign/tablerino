@@ -133,8 +133,39 @@ table.post('/trimite_comanda', async (c) => {
     await run(c.env.DB, "UPDATE comenzi SET status = 'noua' WHERE id = ?", comandaId);
   }
 
+  // Notify waiters (fire-and-forget) only for a brand-new order.
+  if (!existing) {
+    c.executionCtx.waitUntil(notifyNewOrder(c.env.DB, rid, masa.id, masa.nume, comandaId));
+  }
+
   return c.json({ ok: true, comanda_id: comandaId });
 });
+
+// Push a "new order" notification to the table's responsible waiter, or to all
+// active waiters when the table has none assigned.
+async function notifyNewOrder(db: D1Database, restaurantId: number, masaId: number, masaNume: string, comandaId: number): Promise<void> {
+  try {
+    const { getVapidConfig, pushToOspatari } = await import('../webpush');
+    const cfg = await getVapidConfig(db);
+    if (!cfg) return;
+    const masa = await one<{ ospatar_id: number | null }>(db, 'SELECT ospatar_id FROM mese WHERE id = ?', masaId);
+    let targets: number[];
+    if (masa?.ospatar_id) {
+      targets = [masa.ospatar_id];
+    } else {
+      const rows = await all<{ id: number }>(db, 'SELECT id FROM ospatari WHERE restaurant_id = ? AND activ = 1', restaurantId);
+      targets = rows.map((r) => r.id);
+    }
+    await pushToOspatari(db, cfg, targets, {
+      type: 'nou',
+      title: '🔔 Comandă nouă',
+      body: `${masaNume} are o comandă nouă`,
+      url: '/ospatar/',
+      tag: `comanda-${comandaId}`,
+    });
+    await run(db, 'UPDATE comenzi SET push_nou_trimis = 1 WHERE id = ?', comandaId);
+  } catch (e) { /* best-effort */ }
+}
 
 // GET /api/table/sumar_comanda?token=  — current order summary for the table
 table.get('/sumar_comanda', async (c) => {

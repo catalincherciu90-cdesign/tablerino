@@ -392,6 +392,44 @@ admin.post('/salveaza_escalare', requireOwner, async (c) => {
   return c.json({ ok: true, escalare_sec: sec });
 });
 
+// ── Web Push (waiter notifications) ──
+
+// Public VAPID key the waiter app needs to subscribe.
+admin.get('/push_public_key', async (c) => {
+  const { getVapidConfig } = await import('../webpush');
+  const cfg = await getVapidConfig(c.env.DB);
+  return c.json({ ok: true, key: cfg?.publicKey ?? null });
+});
+
+// A waiter registers this device for push notifications.
+admin.post('/push_subscribe', async (c) => {
+  const sess = c.get('restaurant')!;
+  if (sess.role !== 'ospatar' || !sess.uid) return c.json({ ok: false, msg: 'Doar ospătarii pot primi notificări.' }, 400);
+  const body = await c.req.json().catch(() => ({}));
+  const s = body.subscription ?? body;
+  const endpoint = s?.endpoint;
+  const p256dh = s?.keys?.p256dh;
+  const auth = s?.keys?.auth;
+  if (!endpoint || !p256dh || !auth) return c.json({ ok: false, msg: 'Abonament invalid.' }, 400);
+  await run(
+    c.env.DB,
+    `INSERT INTO push_subscriptions (restaurant_id, ospatar_id, endpoint, p256dh, auth)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(endpoint) DO UPDATE SET ospatar_id = excluded.ospatar_id,
+       restaurant_id = excluded.restaurant_id, p256dh = excluded.p256dh, auth = excluded.auth`,
+    sess.rid, sess.uid, endpoint, p256dh, auth
+  );
+  return c.json({ ok: true });
+});
+
+// Remove a device subscription (on logout / disable).
+admin.post('/push_unsubscribe', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const endpoint = body.endpoint;
+  if (endpoint) await run(c.env.DB, 'DELETE FROM push_subscriptions WHERE endpoint = ?', endpoint);
+  return c.json({ ok: true });
+});
+
 // ── Menu: categories & products ──
 
 admin.get('/categorii', async (c) => {

@@ -48,4 +48,11 @@ app.route('/api/ai', ai); // admin/ai_meniu.php
 // ── Everything else falls through to the static frontend in ./public ──
 app.all('*', (c) => c.env.ASSETS.fetch(c.req.raw));
 
-export default app;
+export default {
+  fetch: app.fetch,
+  // Cron: every minute, warn waiters about orders about to escalate.
+  async scheduled(_event: ScheduledEvent, env: HonoEnv['Bindings'], ctx: ExecutionContext) {
+    const { notifyEscalations } = await import('./webpush');
+    ctx.waitUntil(notifyEscalations(env.DB));
+  },
+};

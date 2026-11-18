@@ -62,6 +62,10 @@ jobs:
             --command "ALTER TABLE restaurante ADD COLUMN escalare_sec INTEGER" || true
           npx wrangler d1 execute tablerino --remote --yes \
             --command "ALTER TABLE comenzi ADD COLUMN preluat_la TEXT" || true
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE comenzi ADD COLUMN push_nou_trimis INTEGER DEFAULT 0" || true
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE comenzi ADD COLUMN push_escalare_trimis INTEGER DEFAULT 0" || true
 
       - name: Deploy Worker
         run: npx wrangler deploy

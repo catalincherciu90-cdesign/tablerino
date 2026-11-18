@@ -80,6 +80,8 @@ CREATE TABLE IF NOT EXISTS comenzi (
     observatii    TEXT,
     preluat_de    INTEGER,                 -- waiter (ospatari.id) who claimed it, or NULL
     preluat_la    TEXT,                    -- when it was claimed (for time-to-claim stats)
+    push_nou_trimis     INTEGER DEFAULT 0, -- new-order push already sent
+    push_escalare_trimis INTEGER DEFAULT 0,-- escalation-warning push already sent
     created_at    TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at    TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (masa_id) REFERENCES mese(id) ON DELETE CASCADE,
@@ -188,3 +190,24 @@ CREATE TABLE IF NOT EXISTS recenzii (
     FOREIGN KEY (masa_id) REFERENCES mese(id) ON DELETE SET NULL
 );
 CREATE INDEX IF NOT EXISTS idx_recenzii_restaurant ON recenzii(restaurant_id);
+
+-- Key/value app configuration (e.g. VAPID keys for Web Push). Values are secrets
+-- kept in the database rather than in source.
+CREATE TABLE IF NOT EXISTS app_config (
+    cheie   TEXT PRIMARY KEY,
+    valoare TEXT NOT NULL
+);
+
+-- Web Push subscriptions, one row per waiter device/browser.
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER NOT NULL,
+    ospatar_id    INTEGER NOT NULL,
+    endpoint      TEXT NOT NULL UNIQUE,
+    p256dh        TEXT NOT NULL,
+    auth          TEXT NOT NULL,
+    created_at    TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE,
+    FOREIGN KEY (ospatar_id) REFERENCES ospatari(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_push_ospatar ON push_subscriptions(ospatar_id);
