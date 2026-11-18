@@ -264,3 +264,30 @@ CREATE TABLE IF NOT EXISTS evenimente (
     FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_evenimente_restaurant ON evenimente(restaurant_id);
+
+-- Event halls / spaces catalog (per restaurant) — shown on the public event form.
+CREATE TABLE IF NOT EXISTS sali (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id  INTEGER NOT NULL,
+    nume           TEXT NOT NULL,                   -- e.g. "Salonul Mare"
+    capacitate     INTEGER,                         -- max guests for this hall
+    descriere      TEXT,
+    poza           TEXT,                            -- R2 image path
+    ordine         INTEGER DEFAULT 0,
+    activa         INTEGER DEFAULT 1,
+    created_at     TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_sali_restaurant ON sali(restaurant_id);
+
+-- Owner-side web-push subscriptions (new event requests land as push for the owner).
+CREATE TABLE IF NOT EXISTS owner_push_subscriptions (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER NOT NULL,
+    endpoint      TEXT NOT NULL UNIQUE,
+    p256dh        TEXT NOT NULL,
+    auth          TEXT NOT NULL,
+    created_at    TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_owner_push_restaurant ON owner_push_subscriptions(restaurant_id);

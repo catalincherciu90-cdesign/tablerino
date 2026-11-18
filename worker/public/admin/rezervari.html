@@ -235,10 +235,35 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
         <button class="btn-add" style="margin-top:14px" onclick="salveazaEvProfil()">💾 Salvează detaliile pentru evenimente</button>
     </div>
 
+    <!-- Catalog de săli -->
+    <div class="card-box" id="cardSali">
+        <h3>🏛️ Sălile tale</h3>
+        <p class="hint">Adaugă sălile de evenimente cu poză și capacitate. Apar pe formularul public, iar clientul poate alege sala dorită.</p>
+        <div id="saliList"><div style="font-size:13px;color:#aaa;padding:4px 0">Se încarcă...</div></div>
+        <div style="margin-top:14px;border-top:1px solid #eee;padding-top:14px">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+                <div style="flex:2;min-width:180px">
+                    <label style="display:block;font-size:12px;font-weight:600;color:#666;margin-bottom:5px">Nume sală</label>
+                    <input type="text" id="salaNume" maxlength="100" placeholder="Ex: Salonul Mare" style="width:100%;padding:9px 11px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none">
+                </div>
+                <div style="flex:1;min-width:120px">
+                    <label style="display:block;font-size:12px;font-weight:600;color:#666;margin-bottom:5px">Capacitate</label>
+                    <input type="number" id="salaCap" min="1" max="10000" placeholder="Ex: 150" style="width:100%;padding:9px 11px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none">
+                </div>
+            </div>
+            <div style="margin-top:10px">
+                <label style="display:block;font-size:12px;font-weight:600;color:#666;margin-bottom:5px">Descriere <span style="color:#aaa;font-weight:400">(opțional)</span></label>
+                <input type="text" id="salaDesc" maxlength="500" placeholder="Ex: Luminoasă, ring de dans, acces terasă" style="width:100%;padding:9px 11px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none">
+            </div>
+            <button class="btn-add" style="margin-top:12px" onclick="adaugaSala()">+ Adaugă sală</button>
+        </div>
+    </div>
+
     <!-- Cereri de evenimente primite -->
     <div class="card-box" id="cardEvCereri">
         <h3>📥 Cereri de evenimente <span id="evBadge" style="display:none;background:#e53e3e;color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:6px"></span></h3>
         <p class="hint">Cererile trimise de clienți pentru evenimente. Marchează-le pe măsură ce le gestionezi.</p>
+        <button id="btnNotifOwner" class="btn-add" style="background:#6c47ff;margin-bottom:12px" onclick="toggleNotificariOwner()">🔔 Activează notificările</button>
         <div style="margin:10px 0 4px">
             <select id="evFiltruStatus" onchange="incarcaEvenimente()" style="padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;background:#fff">
                 <option value="">Toate</option>
@@ -554,6 +579,7 @@ function aplicaVizibilitateServicii() {
     show('cardPortalProfil', normale || ev);
     show('cardCapMese', normale);
     show('cardEvSetari', ev);
+    show('cardSali', ev);
     show('cardEvCereri', ev);
     const link = document.getElementById('rezPubliceLink');
     if (link) link.style.display = (normale || ev) ? 'block' : 'none';
@@ -616,6 +642,7 @@ async function incarcaEvenimente() {
             const meta = [];
             if (ev.data_eveniment) meta.push('📅 ' + evDataFmt(ev.data_eveniment));
             if (ev.nr_invitati) meta.push('👥 ' + ev.nr_invitati + ' invitați');
+            if (ev.sala) meta.push('🏛️ ' + escapeHtml(ev.sala));
             const optStatus = EV_STATUS.map(s => '<option value="' + s[0] + '"' + (s[0] === ev.status ? ' selected' : '') + '>' + s[1] + '</option>').join('');
             return '<div style="border:1px solid #eee;border-radius:12px;padding:14px;margin-bottom:10px">' +
                 '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">' +
@@ -648,6 +675,113 @@ async function stergeEveniment(id) {
     if (!confirm('Ștergi această cerere de eveniment?')) return;
     await fetch('/api/admin/sterge_eveniment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
     incarcaEvenimente();
+}
+
+// ── Catalog de săli ──
+let saliCache = [];
+async function incarcaSali() {
+    const wrap = document.getElementById('saliList');
+    try {
+        const d = await (await fetch('/api/admin/sali')).json();
+        saliCache = (d.ok && d.sali) ? d.sali : [];
+        if (!saliCache.length) { wrap.innerHTML = '<div style="font-size:13px;color:#aaa;padding:4px 0">Nicio sală adăugată încă.</div>'; return; }
+        wrap.innerHTML = saliCache.map(salaCardHtml).join('');
+    } catch (e) { wrap.innerHTML = '<div style="color:#c62828;font-size:13px">Eroare la încărcare.</div>'; }
+}
+function salaCardHtml(s) {
+    const poza = s.poza
+        ? '<img src="/' + escapeHtml(s.poza) + '" style="width:84px;height:84px;object-fit:cover;border-radius:10px;flex-shrink:0">'
+        : '<div style="width:84px;height:84px;border-radius:10px;background:#f0f0f5;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0">🏛️</div>';
+    return '<div style="display:flex;gap:12px;align-items:center;border:1px solid #eee;border-radius:12px;padding:12px;margin-bottom:10px">' +
+        poza +
+        '<div style="flex:1;min-width:0">' +
+            '<div style="font-weight:700;font-size:14px">' + escapeHtml(s.nume) + (s.capacitate ? ' <span style="color:#6c47ff;font-weight:600">· ' + s.capacitate + ' loc.</span>' : '') + '</div>' +
+            (s.descriere ? '<div style="font-size:12.5px;color:#777;margin-top:2px">' + escapeHtml(s.descriere) + '</div>' : '') +
+            '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">' +
+                '<label style="background:#f3f4f6;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;color:#555">📷 Poză<input type="file" accept="image/*" style="display:none" onchange="uploadPozaSala(' + s.id + ', this)"></label>' +
+                '<button onclick="editeazaSala(' + s.id + ')" style="background:#f3f4f6;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;color:#555">✏️ Editează</button>' +
+                '<button onclick="stergeSala(' + s.id + ')" style="background:#ffebee;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;color:#c62828">Șterge</button>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+}
+async function adaugaSala() {
+    const nume = document.getElementById('salaNume').value.trim();
+    const capacitate = Number(document.getElementById('salaCap').value) || 0;
+    const descriere = document.getElementById('salaDesc').value.trim();
+    if (!nume) { showToast('Scrie numele sălii.', 'err'); return; }
+    const d = await (await fetch('/api/admin/adauga_sala', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nume, capacitate, descriere }) })).json().catch(() => ({}));
+    if (d.ok) { document.getElementById('salaNume').value = ''; document.getElementById('salaCap').value = ''; document.getElementById('salaDesc').value = ''; showToast('Sală adăugată!'); incarcaSali(); }
+    else showToast(d.msg || 'Eroare', 'err');
+}
+async function editeazaSala(id) {
+    const s = saliCache.find(x => x.id === id) || {};
+    const nume = prompt('Nume sală:', s.nume || ''); if (nume === null) return;
+    const cap = prompt('Capacitate (număr, gol = fără):', s.capacitate || '');
+    const desc = prompt('Descriere (opțional):', s.descriere || '');
+    const d = await (await fetch('/api/admin/editeaza_sala', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, nume: nume.trim(), capacitate: Number(cap) || 0, descriere: (desc || '').trim() }) })).json().catch(() => ({}));
+    if (d.ok) { showToast('Salvat!'); incarcaSali(); } else showToast(d.msg || 'Eroare', 'err');
+}
+async function stergeSala(id) {
+    if (!confirm('Ștergi sala?')) return;
+    await fetch('/api/admin/sterge_sala', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    incarcaSali();
+}
+async function uploadPozaSala(id, input) {
+    const file = input.files && input.files[0]; if (!file) return;
+    const fd = new FormData(); fd.append('imagine', file); fd.append('sala_id', id);
+    showToast('Se încarcă poza...');
+    const d = await (await fetch('/api/upload/sala', { method: 'POST', body: fd })).json().catch(() => ({}));
+    if (d.ok) { showToast('Poză încărcată!'); incarcaSali(); } else showToast(d.msg || 'Eroare la încărcare', 'err');
+}
+
+// ── Notificări owner (web push) ──
+function urlB64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const arr = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+}
+function actualizeazaButonNotif(on) {
+    const btn = document.getElementById('btnNotifOwner');
+    if (!btn) return;
+    btn.textContent = on ? '🔕 Dezactivează notificările' : '🔔 Activează notificările';
+    btn.style.background = on ? '#888' : '#6c47ff';
+}
+function notifActiv() { try { return localStorage.getItem('tablerino_owner_push') === '1'; } catch (e) { return false; } }
+function toggleNotificariOwner() { notifActiv() ? dezactiveazaNotificariOwner() : activeazaNotificariOwner(false); }
+async function activeazaNotificariOwner(silent) {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { if (!silent) showToast('Notificările nu sunt suportate pe acest dispozitiv.', 'err'); return; }
+    try {
+        if (silent) {
+            if (Notification.permission !== 'granted') return; // don't prompt on load
+        } else {
+            const perm = await Notification.requestPermission();
+            if (perm !== 'granted') { showToast('Permisiune refuzată pentru notificări.', 'err'); return; }
+        }
+        const reg = await navigator.serviceWorker.register('/admin/sw.js');
+        await navigator.serviceWorker.ready;
+        const kr = await fetch('/api/admin/push_public_key').then(r => r.json()).catch(() => null);
+        if (!kr || !kr.key) { if (!silent) showToast('Notificările nu sunt configurate.', 'err'); return; }
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(kr.key) });
+        await fetch('/api/admin/owner_push_subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
+        try { localStorage.setItem('tablerino_owner_push', '1'); } catch (e) {}
+        actualizeazaButonNotif(true);
+        if (!silent) showToast('Notificări activate! Primești o alertă la fiecare cerere nouă.');
+    } catch (e) { if (!silent) showToast('Nu am putut activa notificările.', 'err'); }
+}
+async function dezactiveazaNotificariOwner() {
+    try {
+        const reg = await navigator.serviceWorker.getRegistration('/admin/sw.js') || await navigator.serviceWorker.getRegistration();
+        const sub = reg && await reg.pushManager.getSubscription();
+        if (sub) { await fetch('/api/admin/owner_push_unsubscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) }); await sub.unsubscribe(); }
+    } catch (e) {}
+    try { localStorage.removeItem('tablerino_owner_push'); } catch (e) {}
+    actualizeazaButonNotif(false);
+    showToast('Notificări dezactivate.');
 }
 
 async function incarcaMese() {
@@ -799,6 +933,9 @@ fetch('/api/admin/me').then(function (r) {
     incarcaCapacitate();
     incarcaOferte();
     incarcaEvenimente();
+    incarcaSali();
+    actualizeazaButonNotif(notifActiv());
+    if (notifActiv()) activeazaNotificariOwner(true);  // refresh subscription silently
     incarcaMese().then(incarcaRezervari);
 });
 </script>

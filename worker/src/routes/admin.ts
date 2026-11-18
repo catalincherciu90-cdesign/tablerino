@@ -1202,7 +1202,7 @@ admin.get('/evenimente', requireOwner, async (c) => {
   }
   const evenimente = await all(
     c.env.DB,
-    `SELECT id, tip, data_eveniment, nr_invitati, nume, telefon, email, mesaj, status, creat_la
+    `SELECT id, tip, data_eveniment, nr_invitati, nume, telefon, email, mesaj, sala, status, creat_la
      FROM evenimente WHERE ${where}
      ORDER BY (status = 'nou') DESC, COALESCE(data_eveniment, creat_la) DESC, id DESC`,
     ...params
@@ -1224,6 +1224,82 @@ admin.post('/sterge_eveniment', requireOwner, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.id ?? 0);
   await run(c.env.DB, 'DELETE FROM evenimente WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return c.json({ ok: true });
+});
+
+// ── Event halls (săli) ──
+admin.get('/sali', requireOwner, async (c) => {
+  const sali = await all(
+    c.env.DB,
+    'SELECT id, nume, capacitate, descriere, poza, ordine, activa FROM sali WHERE restaurant_id = ? ORDER BY ordine, id',
+    rid(c)
+  );
+  return c.json({ ok: true, sali });
+});
+
+admin.post('/adauga_sala', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const nume = (body.nume ?? '').toString().trim().slice(0, 100);
+  if (!nume) return c.json({ ok: false, msg: 'Numele sălii e obligatoriu.' }, 400);
+  const capN = Number(body.capacitate ?? 0);
+  const capacitate = capN >= 1 && capN <= 10000 ? Math.floor(capN) : null;
+  const descriere = (body.descriere ?? '').toString().trim().slice(0, 500) || null;
+  const res = await run(
+    c.env.DB,
+    'INSERT INTO sali (restaurant_id, nume, capacitate, descriere) VALUES (?, ?, ?, ?)',
+    rid(c), nume, capacitate, descriere
+  );
+  return c.json({ ok: true, id: res.meta.last_row_id });
+});
+
+admin.post('/editeaza_sala', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  const nume = (body.nume ?? '').toString().trim().slice(0, 100);
+  if (!id || !nume) return c.json({ ok: false, msg: 'Date incomplete.' }, 400);
+  const capN = Number(body.capacitate ?? 0);
+  const capacitate = capN >= 1 && capN <= 10000 ? Math.floor(capN) : null;
+  const descriere = (body.descriere ?? '').toString().trim().slice(0, 500) || null;
+  await run(
+    c.env.DB,
+    'UPDATE sali SET nume = ?, capacitate = ?, descriere = ? WHERE id = ? AND restaurant_id = ?',
+    nume, capacitate, descriere, id, rid(c)
+  );
+  return c.json({ ok: true });
+});
+
+admin.post('/sterge_sala', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  const sala = await one<{ poza: string | null }>(c.env.DB, 'SELECT poza FROM sali WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  if (sala?.poza && c.env.UPLOADS) { try { await deleteUpload(c.env.UPLOADS, sala.poza); } catch (e) { /* ignore */ } }
+  await run(c.env.DB, 'DELETE FROM sali WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return c.json({ ok: true });
+});
+
+// ── Owner web-push (new event request notifications) ──
+admin.post('/owner_push_subscribe', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const s = body.subscription ?? body;
+  const endpoint = s?.endpoint;
+  const p256dh = s?.keys?.p256dh;
+  const auth = s?.keys?.auth;
+  if (!endpoint || !p256dh || !auth) return c.json({ ok: false, msg: 'Abonament invalid.' }, 400);
+  await run(
+    c.env.DB,
+    `INSERT INTO owner_push_subscriptions (restaurant_id, endpoint, p256dh, auth)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(endpoint) DO UPDATE SET restaurant_id = excluded.restaurant_id,
+       p256dh = excluded.p256dh, auth = excluded.auth`,
+    rid(c), endpoint, p256dh, auth
+  );
+  return c.json({ ok: true });
+});
+
+admin.post('/owner_push_unsubscribe', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const endpoint = body.endpoint;
+  if (endpoint) await run(c.env.DB, 'DELETE FROM owner_push_subscriptions WHERE endpoint = ?', endpoint);
   return c.json({ ok: true });
 });
 

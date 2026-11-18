@@ -80,6 +80,15 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 .tab.ales { border-color: var(--primar); background: rgba(108,71,255,0.10); color: var(--primar); }
 .ev-hint { background: var(--card-bg); border-radius: var(--border-r); padding: 13px 15px; font-size: 13.5px; color: var(--text-sub); box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 14px; line-height: 1.5; }
 .ev-hint .cap { display: inline-block; margin-top: 7px; font-weight: 700; color: var(--primar); }
+.sali-grid { display: flex; flex-direction: column; gap: 10px; }
+.sala-card { display: flex; gap: 12px; align-items: stretch; text-align: left; width: 100%; border: 1.5px solid #e2e2ec; border-radius: 12px; background: #fff; padding: 8px; cursor: pointer; font-family: inherit; transition: border-color .15s, background .15s; }
+.sala-card.ales { border-color: var(--primar); background: rgba(108,71,255,0.07); }
+.sala-img { width: 72px; height: 72px; border-radius: 9px; background-size: cover; background-position: center; flex-shrink: 0; background-color: #eee; }
+.sala-img-ph { display: flex; align-items: center; justify-content: center; font-size: 30px; background: #f0f0f5; }
+.sala-info { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.sala-nume { font-weight: 700; font-size: 14.5px; color: var(--text); }
+.sala-cap { font-size: 12px; color: var(--primar); font-weight: 600; margin-top: 1px; }
+.sala-desc { font-size: 12px; color: var(--text-sub); margin-top: 3px; }
 </style>
 </head>
 <body>
@@ -186,6 +195,35 @@ const TIPURI_EV = [
     ['corporate', 'Eveniment corporate'], ['altul', 'Alt eveniment'],
 ];
 
+let saliRest = [];
+let salaAleasa = '';
+function jsStr(s) { return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+function saliGalerieHtml() {
+    if (!saliRest.length) return '';
+    const cards = saliRest.map(function (s) {
+        const poza = s.poza
+            ? '<div class="sala-img" style="background-image:url(/' + escapeHtml(s.poza) + ')"></div>'
+            : '<div class="sala-img sala-img-ph">🏛️</div>';
+        const cap = s.capacitate ? '<div class="sala-cap">până la ' + escapeHtml(s.capacitate) + ' invitați</div>' : '';
+        const desc = s.descriere ? '<div class="sala-desc">' + escapeHtml(s.descriere) + '</div>' : '';
+        return '<button type="button" class="sala-card" onclick="alegeSala(this, \'' + jsStr(s.nume) + '\')">' +
+            poza +
+            '<div class="sala-info"><div class="sala-nume">' + escapeHtml(s.nume) + '</div>' + cap + desc + '</div>' +
+        '</button>';
+    }).join('');
+    return '<div class="field"><label>Sala dorită <span class="opt">(opțional)</span></label>' +
+        '<div class="sali-grid">' + cards + '</div></div>';
+}
+
+function alegeSala(el, nume) {
+    const deja = el.classList.contains('ales');
+    document.querySelectorAll('.sala-card').forEach(c => c.classList.remove('ales'));
+    if (deja) { salaAleasa = ''; return; }
+    el.classList.add('ales');
+    salaAleasa = nume;
+}
+
 function cardEvenimentHtml(azi, rest) {
     const optTip = TIPURI_EV.map(t => '<option value="' + t[0] + '">' + t[1] + '</option>').join('');
     let hint = '';
@@ -204,6 +242,7 @@ function cardEvenimentHtml(azi, rest) {
                 '<label>Tip eveniment</label>' +
                 '<select id="evTip">' + optTip + '</select>' +
             '</div>' +
+            saliGalerieHtml() +
             '<div class="row2">' +
                 '<div class="field">' +
                     '<label>Data <span class="opt">(opțional)</span></label>' +
@@ -450,6 +489,7 @@ async function trimiteEveniment() {
     const telefon = document.getElementById('evTelefon').value.trim();
     const email = document.getElementById('evEmail').value.trim();
     const mesaj = document.getElementById('evMesaj').value.trim();
+    const sala = salaAleasa || '';
 
     if (!nume) return aratEroare('Te rugăm introdu numele.');
     if (!telefon) return aratEroare('Te rugăm introdu numărul de telefon.');
@@ -462,10 +502,10 @@ async function trimiteEveniment() {
         const r = await fetch('/api/rezervare/eveniment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token, tip, data, nr_invitati, nume, telefon, email, mesaj })
+            body: JSON.stringify({ token, tip, data, nr_invitati, nume, telefon, email, mesaj, sala })
         });
         const d = await r.json().catch(() => ({}));
-        if (d && d.ok) { randeazaConfirmareEveniment({ tip, data, nr_invitati, nume }); return; }
+        if (d && d.ok) { randeazaConfirmareEveniment({ tip, data, nr_invitati, nume, sala }); return; }
         aratEroare((d && d.msg) || 'A apărut o eroare. Te rugăm încearcă din nou.');
     } catch (e) {
         aratEroare('Eroare de conexiune. Te rugăm încearcă din nou.');
@@ -478,6 +518,7 @@ function randeazaConfirmareEveniment(info) {
     const card = document.getElementById('cardEveniment');
     const detData = info.data ? '<div><strong>Data:</strong> ' + escapeHtml(formatData(info.data)) + '</div>' : '';
     const detInv = info.nr_invitati ? '<div><strong>Invitați:</strong> ' + escapeHtml(info.nr_invitati) + '</div>' : '';
+    const detSala = info.sala ? '<div><strong>Sala:</strong> ' + escapeHtml(info.sala) + '</div>' : '';
     card.innerHTML =
         '<div class="confirmare vizibil">' +
             '<div class="icon">🎉</div>' +
@@ -485,7 +526,7 @@ function randeazaConfirmareEveniment(info) {
             '<p>Mulțumim, <strong>' + escapeHtml(info.nume) + '</strong>.<br>Te contactăm în curând pentru detalii și ofertă.</p>' +
             '<div class="detalii">' +
                 '<div><strong>Eveniment:</strong> ' + escapeHtml(LABEL_TIP[info.tip] || 'Eveniment') + '</div>' +
-                detData + detInv +
+                detData + detInv + detSala +
             '</div>' +
         '</div>';
 }
@@ -497,6 +538,7 @@ async function init() {
         const d = await r.json().catch(() => ({}));
         if (!r.ok || !d || !d.ok || !d.restaurant) { linkInvalid(); return; }
         maxPersoane = (typeof d.max_persoane === 'number' && d.max_persoane > 0) ? d.max_persoane : null;
+        saliRest = Array.isArray(d.sali) ? d.sali : [];
         aplicaTema(d.restaurant.tema_cfg);
         randeazaForm(d.restaurant);
     } catch (e) {

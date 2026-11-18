@@ -88,6 +88,8 @@ jobs:
             --command "ALTER TABLE restaurante ADD COLUMN evenimente_descriere TEXT" || true
           npx wrangler d1 execute tablerino --remote --yes \
             --command "ALTER TABLE restaurante ADD COLUMN evenimente_capacitate INTEGER" || true
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE evenimente ADD COLUMN sala TEXT" || true
 
       - name: Deploy Worker
         run: npx wrangler deploy

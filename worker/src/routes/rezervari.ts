@@ -141,9 +141,17 @@ rezervare.get('/info', async (c) => {
     'SELECT MAX(capacitate) AS max_persoane FROM mese WHERE restaurant_id = ? AND activa = 1',
     r.id
   );
+  const sali = r.evenimente_publice
+    ? await all<{ id: number; nume: string; capacitate: number | null; descriere: string | null; poza: string | null }>(
+        c.env.DB,
+        'SELECT id, nume, capacitate, descriere, poza FROM sali WHERE restaurant_id = ? AND activa = 1 ORDER BY ordine, id',
+        r.id
+      )
+    : [];
   return c.json({
     ok: true,
     max_persoane: capRow?.max_persoane ?? null,
+    sali,
     restaurant: {
       nume: r.nume,
       logo: r.logo,
@@ -176,6 +184,7 @@ rezervare.post('/eveniment', async (c) => {
   const tip = TIP_EVENIMENT.includes(tipRaw) ? tipRaw : 'altul';
   const data = (body.data ?? '').trim();
   const mesaj = (body.mesaj ?? '').trim();
+  const sala = (body.sala ?? '').toString().trim().slice(0, 100);
   const nrInvitati = Number(body.nr_invitati ?? 0);
 
   if (!nume || !telefon) return c.json({ ok: false, msg: 'Completează numele și telefonul.' }, 400);
@@ -185,8 +194,8 @@ rezervare.post('/eveniment', async (c) => {
 
   const res = await run(
     c.env.DB,
-    `INSERT INTO evenimente (restaurant_id, tip, data_eveniment, nr_invitati, nume, telefon, email, mesaj)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO evenimente (restaurant_id, tip, data_eveniment, nr_invitati, nume, telefon, email, mesaj, sala)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     r.id,
     tip,
     data || null,
@@ -194,8 +203,32 @@ rezervare.post('/eveniment', async (c) => {
     nume,
     telefon,
     email || null,
-    mesaj || null
+    mesaj || null,
+    sala || null
   );
+
+  // Notify the owner (web push) — fire-and-forget so the client isn't blocked.
+  const notify = (async () => {
+    try {
+      const { getVapidConfig, pushToOwner } = await import('../webpush');
+      const cfg = await getVapidConfig(c.env.DB);
+      if (!cfg) return;
+      const tipLabel: Record<string, string> = { nunta: 'Nuntă', botez: 'Botez', aniversare: 'Aniversare', corporate: 'Eveniment corporate', altul: 'Eveniment' };
+      const parts = [tipLabel[tip] || 'Eveniment'];
+      if (invitati) parts.push(`${invitati} invitați`);
+      if (data) parts.push(data);
+      await pushToOwner(c.env.DB, cfg, r.id, {
+        type: 'eveniment',
+        title: '🎉 Cerere nouă de eveniment',
+        body: `${parts.join(' · ')} — ${nume}, ${telefon}`,
+        url: '/admin/rezervari.html',
+        tag: `eveniment-${res.meta.last_row_id}`,
+      });
+    } catch (e) { /* ignore */ }
+  })();
+  if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') c.executionCtx.waitUntil(notify);
+  else await notify;
+
   return c.json({ ok: true, id: res.meta.last_row_id });
 });
 

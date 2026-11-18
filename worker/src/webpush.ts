@@ -149,6 +149,24 @@ export async function pushToOspatari(
   }
 }
 
+/** Push a message to every owner subscription of a restaurant; prunes dead ones. */
+export async function pushToOwner(
+  db: D1Database, cfg: VapidConfig, restaurantId: number, payload: unknown
+): Promise<void> {
+  const subs = await all<SubRow>(
+    db, 'SELECT id, endpoint, p256dh, auth FROM owner_push_subscriptions WHERE restaurant_id = ?',
+    restaurantId
+  );
+  for (const s of subs) {
+    try {
+      const status = await sendPush({ endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth }, payload, cfg);
+      if (status === 404 || status === 410) {
+        await db.prepare('DELETE FROM owner_push_subscriptions WHERE id = ?').bind(s.id).run();
+      }
+    } catch (e) { /* ignore a single failed endpoint */ }
+  }
+}
+
 /** Cron job: warn each responsible waiter when their unclaimed order is ~30-45s
  *  from escalating to other waiters. Runs every minute. */
 export async function notifyEscalations(db: D1Database): Promise<void> {

@@ -104,4 +104,34 @@ upload.post('/reclama', async (c) => {
   return c.json({ ok: true, cale });
 });
 
+// POST /api/upload/sala  — event hall photo (field `imagine`, `sala_id`)
+upload.post('/sala', async (c) => {
+  const form = await c.req.formData();
+  const salaId = Number(form.get('sala_id') ?? 0);
+  if (!salaId) return c.json({ ok: false, msg: 'ID sală lipsă' }, 400);
+
+  const sala = await one<{ id: number; poza: string | null }>(
+    c.env.DB,
+    'SELECT id, poza FROM sali WHERE id = ? AND restaurant_id = ?',
+    salaId,
+    rid(c)
+  );
+  if (!sala) return c.json({ ok: false, msg: 'Sală negăsită' }, 404);
+
+  const file: unknown = form.get('imagine');
+  if (!(file instanceof File) || file.size === 0) return c.json({ ok: false, msg: 'Fișier invalid' }, 400);
+  const ext = fileExt(file.name);
+  if (!['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+    return c.json({ ok: false, msg: 'Format neacceptat. Folosește JPG, PNG sau WEBP.' }, 400);
+  }
+  if (file.size > 3 * 1024 * 1024) return c.json({ ok: false, msg: 'Poza e prea mare. Maximum 3MB.' }, 400);
+
+  if (sala.poza) await deleteUpload(c.env.UPLOADS!, sala.poza);
+
+  const name = `sala_${rid(c)}_${salaId}_${now()}.${ext}`;
+  const poza = await putUpload(c.env.UPLOADS!, 'sali', name, await file.arrayBuffer(), extToContentType(ext) ?? 'image/jpeg');
+  await run(c.env.DB, 'UPDATE sali SET poza = ? WHERE id = ? AND restaurant_id = ?', poza, salaId, rid(c));
+  return c.json({ ok: true, poza });
+});
+
 export default upload;
