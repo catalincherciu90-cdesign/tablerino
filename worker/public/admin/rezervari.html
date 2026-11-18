@@ -89,6 +89,12 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
     .adauga-form .row { flex-direction: column; align-items: stretch; }
     .filtre-bar { flex-wrap: wrap; }
 }
+.svc-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.svc-opt { flex: 1; min-width: 240px; display: flex; gap: 12px; align-items: flex-start; border: 1.5px solid #e2e2ec; border-radius: 12px; padding: 14px; cursor: pointer; transition: border-color .15s, background .15s; }
+.svc-opt:has(input:checked) { border-color: #6c47ff; background: rgba(108,71,255,.06); }
+.svc-opt input { width: 20px; height: 20px; margin-top: 1px; cursor: pointer; flex-shrink: 0; }
+.svc-t { font-weight: 700; font-size: 14.5px; color: #222; }
+.svc-d { font-size: 12.5px; color: #777; margin-top: 3px; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -125,6 +131,29 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
     <h2>Rezervări</h2>
     <p class="sub">Primește rezervări online și gestionează-le dintr-un singur loc.</p>
 
+    <!-- Servicii oferite -->
+    <div class="card-box">
+        <h3>⚙️ Ce servicii oferă restaurantul?</h3>
+        <p class="hint">Alege ce prestezi. În funcție de asta apar pe pagina ta publică și în portalul Tablerino rezervările de masă, formularul de evenimente, sau ambele.</p>
+        <div class="svc-grid">
+            <label class="svc-opt">
+                <input type="checkbox" id="rezPublice" onchange="salveazaServicii()">
+                <div class="svc-txt">
+                    <div class="svc-t">🍽️ Servicii normale</div>
+                    <div class="svc-d">Meniu digital, comandă la masă și rezervări de mese online.</div>
+                </div>
+            </label>
+            <label class="svc-opt">
+                <input type="checkbox" id="evPublice" onchange="salveazaServicii()">
+                <div class="svc-txt">
+                    <div class="svc-t">🎉 Evenimente &amp; săli</div>
+                    <div class="svc-d">Nunți, botezuri, aniversări și evenimente corporate.</div>
+                </div>
+            </label>
+        </div>
+        <div id="svcNimic" class="hint" style="display:none;color:#c0392b;margin-top:10px">Momentan nu apari public. Bifează cel puțin un serviciu ca să apari pe pagina de rezervare și în portal.</div>
+    </div>
+
     <!-- Link public -->
     <div class="card-box">
         <h3>🔗 Link public de rezervare</h3>
@@ -153,7 +182,7 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
     </div>
 
     <!-- Capacitate rezervări -->
-    <div class="card-box">
+    <div class="card-box" id="cardCapMese">
         <h3>👥 Capacitate totală pentru rezervări</h3>
         <p class="hint" id="capHint">Se încarcă...</p>
         <div class="link-row">
@@ -162,16 +191,12 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
         </div>
     </div>
 
-    <!-- Listare în pagina publică Tablerino -->
-    <div class="card-box">
-        <h3>🌍 Rezervări pe pagina publică Tablerino</h3>
-        <p class="hint">Dacă activezi, restaurantul tău apare în pagina publică de rezervări Tablerino, unde clienții pot găsi restaurante și rezerva o masă. Rezervările ajung tot la tine, în această pagină.</p>
-        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-size:14px;font-weight:600;color:#333;margin-top:6px">
-            <input type="checkbox" id="rezPublice" onchange="salveazaRezPublice()" style="width:20px;height:20px;cursor:pointer">
-            <span>Afișează restaurantul în pagina publică de rezervări</span>
-        </label>
+    <!-- Profil în portalul public Tablerino -->
+    <div class="card-box" id="cardPortalProfil">
+        <h3>🌍 Cum apari în portalul Tablerino</h3>
+        <p class="hint">Datele de mai jos apar pe cardul tău din portalul public și pe pagina de rezervare — pentru oricare dintre serviciile bifate mai sus.</p>
 
-        <div style="margin-top:18px;display:flex;gap:16px;flex-wrap:wrap">
+        <div style="margin-top:4px;display:flex;gap:16px;flex-wrap:wrap">
             <div style="flex:1;min-width:200px">
                 <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Tip restaurant</label>
                 <select id="rezCategorie" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;background:#fff">
@@ -194,16 +219,12 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
         </div>
     </div>
 
-    <!-- Evenimente / săli (nunți, botezuri) -->
-    <div class="card-box">
-        <h3>🎉 Evenimente &amp; săli</h3>
-        <p class="hint">Dacă oferi săli de evenimente (nunți, botezuri, aniversări, evenimente corporate), activează mai jos. Pe pagina ta de rezervare apare un formular separat prin care clienții îți trimit cereri de ofertă, iar cererile ajung aici.</p>
-        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-size:14px;font-weight:600;color:#333;margin-top:6px">
-            <input type="checkbox" id="evPublice" onchange="salveazaEvProfil()" style="width:20px;height:20px;cursor:pointer">
-            <span>Primesc cereri pentru evenimente / săli</span>
-        </label>
+    <!-- Setări evenimente -->
+    <div class="card-box" id="cardEvSetari">
+        <h3>🎉 Setări pentru evenimente</h3>
+        <p class="hint">Apar pe formularul de evenimente de pe pagina ta publică. Cererile trimise de clienți ajung mai jos, la „Cereri de evenimente".</p>
 
-        <div style="margin-top:16px">
+        <div style="margin-top:4px">
             <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Descriere evenimente <span style="color:#aaa;font-weight:400">(apare pe formular)</span></label>
             <textarea id="evDescriere" maxlength="600" rows="3" placeholder="Ex: Sală de evenimente pentru până la 150 de invitați, meniu personalizat, ring de dans, parcare proprie. Organizăm nunți, botezuri și evenimente corporate." style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;resize:vertical;font-family:inherit"></textarea>
         </div>
@@ -215,7 +236,7 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
     </div>
 
     <!-- Cereri de evenimente primite -->
-    <div class="card-box">
+    <div class="card-box" id="cardEvCereri">
         <h3>📥 Cereri de evenimente <span id="evBadge" style="display:none;background:#e53e3e;color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:6px"></span></h3>
         <p class="hint">Cererile trimise de clienți pentru evenimente. Marchează-le pe măsură ce le gestionezi.</p>
         <div style="margin:10px 0 4px">
@@ -448,6 +469,7 @@ async function incarcaCapacitate() {
             document.getElementById('evPublice').checked = !!d.evenimente_publice;
             document.getElementById('evDescriere').value = d.evenimente_descriere || '';
             document.getElementById('evCapacitate').value = (d.evenimente_capacitate != null) ? d.evenimente_capacitate : '';
+            aplicaVizibilitateServicii();
             actualizeazaCapHint();
         }
     } catch (e) {}
@@ -525,18 +547,32 @@ async function salveazaCapacitate() {
     else { showToast(d.msg || 'Eroare', 'err'); }
 }
 
-async function salveazaRezPublice() {
-    const on = document.getElementById('rezPublice').checked;
+function aplicaVizibilitateServicii() {
+    const normale = document.getElementById('rezPublice').checked;
+    const ev = document.getElementById('evPublice').checked;
+    const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
+    show('cardPortalProfil', normale || ev);
+    show('cardCapMese', normale);
+    show('cardEvSetari', ev);
+    show('cardEvCereri', ev);
+    const link = document.getElementById('rezPubliceLink');
+    if (link) link.style.display = (normale || ev) ? 'block' : 'none';
+    const nimic = document.getElementById('svcNimic');
+    if (nimic) nimic.style.display = (normale || ev) ? 'none' : 'block';
+}
+
+async function salveazaServicii() {
+    const normale = document.getElementById('rezPublice').checked;
+    const ev = document.getElementById('evPublice').checked;
+    aplicaVizibilitateServicii();
     const r = await fetch('/api/admin/salveaza_rezervare_setari', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(rezPayload())
     });
     const d = await r.json().catch(() => ({}));
-    if (r.ok && d.ok) {
-        document.getElementById('rezPubliceLink').style.display = on ? 'block' : 'none';
-        showToast(on ? 'Restaurantul apare acum în pagina publică!' : 'Scos din pagina publică.');
-    } else { showToast(d.msg || 'Eroare', 'err'); }
+    if (r.ok && d.ok) showToast((normale || ev) ? 'Serviciile au fost salvate!' : 'Scos din portal.');
+    else showToast(d.msg || 'Eroare', 'err');
 }
 
 // ── Evenimente / săli ──
