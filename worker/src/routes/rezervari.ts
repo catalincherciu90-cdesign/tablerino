@@ -20,17 +20,22 @@ interface Rest {
   id: number; nume: string; logo: string | null; tema: string;
   bg_imagine: string | null; text_bun_venit: string | null; limba: string | null;
   rez_capacitate: number | null; descriere: string | null; categorie: string | null;
+  rezervari_publice: number; evenimente_publice: number;
+  evenimente_descriere: string | null; evenimente_capacitate: number | null;
 }
 
 async function restByToken(db: D1Database, token: string): Promise<Rest | null> {
   if (!token) return null;
   return one<Rest>(
     db,
-    `SELECT id, nume, logo, tema, bg_imagine, text_bun_venit, limba, rez_capacitate, descriere, categorie
+    `SELECT id, nume, logo, tema, bg_imagine, text_bun_venit, limba, rez_capacitate, descriere, categorie,
+            rezervari_publice, evenimente_publice, evenimente_descriere, evenimente_capacitate
      FROM restaurante WHERE rezervare_token = ? AND activ = 1`,
     token
   );
 }
+
+const TIP_EVENIMENT = ['nunta', 'botez', 'aniversare', 'corporate', 'altul'];
 
 function minutesOf(hhmm: string): number {
   const [h, m] = hhmm.split(':').map(Number);
@@ -71,23 +76,27 @@ function occupiedAt(rezRows: { ora: string; nr_persoane: number }[], targetMin: 
 rezervare.get('/restaurante', async (c) => {
   const oras = (c.req.query('oras') ?? '').trim();
   const tip = (c.req.query('tip') ?? '').trim();
+  const doarEvenimente = (c.req.query('evenimente') ?? '') === '1';
   const params: unknown[] = [];
   let filtre = '';
   if (oras) { filtre += ' AND r.oras LIKE ?'; params.push(`%${oras}%`); }
   if (tip) { filtre += ' AND r.categorie = ?'; params.push(tip); }
+  if (doarEvenimente) { filtre += ' AND r.evenimente_publice = 1'; }
 
   const rows = await all<{
     nume: string; logo: string | null; tema: string; rezervare_token: string;
     descriere: string | null; categorie: string | null; oras: string | null;
-    promovat: number; rating: number | null; nr_recenzii: number; oferta: string | null;
+    promovat: number; rezervari_publice: number; evenimente: number;
+    rating: number | null; nr_recenzii: number; oferta: string | null;
   }>(
     c.env.DB,
     `SELECT r.nume, r.logo, r.tema, r.rezervare_token, r.descriere, r.categorie, r.oras, r.promovat,
+            r.rezervari_publice, r.evenimente_publice AS evenimente,
             (SELECT AVG(rating) FROM recenzii WHERE restaurant_id = r.id) AS rating,
             (SELECT COUNT(*) FROM recenzii WHERE restaurant_id = r.id) AS nr_recenzii,
             (SELECT titlu FROM oferte WHERE restaurant_id = r.id AND activa = 1 ORDER BY created_at DESC LIMIT 1) AS oferta
      FROM restaurante r
-     WHERE r.rezervari_publice = 1 AND r.activ = 1 AND r.rezervare_token IS NOT NULL${filtre}
+     WHERE (r.rezervari_publice = 1 OR r.evenimente_publice = 1) AND r.activ = 1 AND r.rezervare_token IS NOT NULL${filtre}
      ORDER BY r.promovat DESC, rating DESC, r.nume COLLATE NOCASE`,
     ...params
   );
@@ -101,6 +110,8 @@ rezervare.get('/restaurante', async (c) => {
     categorie: r.categorie ?? null,
     oras: r.oras ?? null,
     promovat: r.promovat ? 1 : 0,
+    rezervari_publice: r.rezervari_publice ? 1 : 0,
+    evenimente: r.evenimente ? 1 : 0,
     rating: r.rating != null ? Math.round(r.rating * 10) / 10 : null,
     nr_recenzii: r.nr_recenzii ?? 0,
     oferta: r.oferta ?? null,
@@ -143,8 +154,49 @@ rezervare.get('/info', async (c) => {
       limba: r.limba ?? 'ro',
       descriere: r.descriere ?? null,
       categorie: r.categorie ?? null,
+      rezervari_publice: r.rezervari_publice ? 1 : 0,
+      evenimente_publice: r.evenimente_publice ? 1 : 0,
+      evenimente_descriere: r.evenimente_descriere ?? null,
+      evenimente_capacitate: r.evenimente_capacitate ?? null,
     },
   });
+});
+
+// POST /api/rezervare/eveniment  — submit an event-space request (wedding/baptism/etc.)
+rezervare.post('/eveniment', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const r = await restByToken(c.env.DB, body.token ?? '');
+  if (!r) return c.json({ ok: false, msg: 'Link invalid' }, 404);
+  if (!r.evenimente_publice) return c.json({ ok: false, msg: 'Acest restaurant nu primește cereri de evenimente.' }, 403);
+
+  const nume = (body.nume ?? '').trim();
+  const telefon = (body.telefon ?? '').trim();
+  const email = (body.email ?? '').trim();
+  const tipRaw = (body.tip ?? '').trim().toLowerCase();
+  const tip = TIP_EVENIMENT.includes(tipRaw) ? tipRaw : 'altul';
+  const data = (body.data ?? '').trim();
+  const mesaj = (body.mesaj ?? '').trim();
+  const nrInvitati = Number(body.nr_invitati ?? 0);
+
+  if (!nume || !telefon) return c.json({ ok: false, msg: 'Completează numele și telefonul.' }, 400);
+  if (data && (!DATE_RE.test(data) || data < new Date().toISOString().slice(0, 10)))
+    return c.json({ ok: false, msg: 'Alege o dată validă din viitor.' }, 400);
+  const invitati = nrInvitati >= 1 && nrInvitati <= 5000 ? Math.floor(nrInvitati) : null;
+
+  const res = await run(
+    c.env.DB,
+    `INSERT INTO evenimente (restaurant_id, tip, data_eveniment, nr_invitati, nume, telefon, email, mesaj)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    r.id,
+    tip,
+    data || null,
+    invitati,
+    nume,
+    telefon,
+    email || null,
+    mesaj || null
+  );
+  return c.json({ ok: true, id: res.meta.last_row_id });
 });
 
 // GET /api/rezervare/disponibilitate?token=&data=&nr=  — free slots for a date/party

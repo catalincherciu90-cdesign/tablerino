@@ -194,6 +194,42 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
         </div>
     </div>
 
+    <!-- Evenimente / săli (nunți, botezuri) -->
+    <div class="card-box">
+        <h3>🎉 Evenimente &amp; săli</h3>
+        <p class="hint">Dacă oferi săli de evenimente (nunți, botezuri, aniversări, evenimente corporate), activează mai jos. Pe pagina ta de rezervare apare un formular separat prin care clienții îți trimit cereri de ofertă, iar cererile ajung aici.</p>
+        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-size:14px;font-weight:600;color:#333;margin-top:6px">
+            <input type="checkbox" id="evPublice" onchange="salveazaEvProfil()" style="width:20px;height:20px;cursor:pointer">
+            <span>Primesc cereri pentru evenimente / săli</span>
+        </label>
+
+        <div style="margin-top:16px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Descriere evenimente <span style="color:#aaa;font-weight:400">(apare pe formular)</span></label>
+            <textarea id="evDescriere" maxlength="600" rows="3" placeholder="Ex: Sală de evenimente pentru până la 150 de invitați, meniu personalizat, ring de dans, parcare proprie. Organizăm nunți, botezuri și evenimente corporate." style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;resize:vertical;font-family:inherit"></textarea>
+        </div>
+        <div style="margin-top:14px;max-width:260px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Capacitate maximă <span style="color:#aaa;font-weight:400">(invitați, opțional)</span></label>
+            <input type="number" id="evCapacitate" min="1" max="10000" placeholder="Ex: 150" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none">
+        </div>
+        <button class="btn-add" style="margin-top:14px" onclick="salveazaEvProfil()">💾 Salvează detaliile pentru evenimente</button>
+    </div>
+
+    <!-- Cereri de evenimente primite -->
+    <div class="card-box">
+        <h3>📥 Cereri de evenimente <span id="evBadge" style="display:none;background:#e53e3e;color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:6px"></span></h3>
+        <p class="hint">Cererile trimise de clienți pentru evenimente. Marchează-le pe măsură ce le gestionezi.</p>
+        <div style="margin:10px 0 4px">
+            <select id="evFiltruStatus" onchange="incarcaEvenimente()" style="padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;background:#fff">
+                <option value="">Toate</option>
+                <option value="nou">Noi</option>
+                <option value="contactat">Contactate</option>
+                <option value="confirmat">Confirmate</option>
+                <option value="anulat">Anulate</option>
+            </select>
+        </div>
+        <div id="evList"><div class="gol">Se încarcă...</div></div>
+    </div>
+
     <!-- Oferte / promoții pe portal -->
     <div class="card-box">
         <h3>🔥 Oferte &amp; promoții</h3>
@@ -409,6 +445,9 @@ async function incarcaCapacitate() {
             document.getElementById('rezCategorie').value = d.categorie || '';
             document.getElementById('rezDescriere').value = d.descriere || '';
             document.getElementById('rezOras').value = d.oras || '';
+            document.getElementById('evPublice').checked = !!d.evenimente_publice;
+            document.getElementById('evDescriere').value = d.evenimente_descriere || '';
+            document.getElementById('evCapacitate').value = (d.evenimente_capacitate != null) ? d.evenimente_capacitate : '';
             actualizeazaCapHint();
         }
     } catch (e) {}
@@ -421,6 +460,9 @@ function rezPayload() {
         categorie: document.getElementById('rezCategorie').value,
         descriere: document.getElementById('rezDescriere').value,
         oras: document.getElementById('rezOras').value,
+        evenimente_publice: document.getElementById('evPublice').checked ? 1 : 0,
+        evenimente_descriere: document.getElementById('evDescriere').value,
+        evenimente_capacitate: Number(document.getElementById('evCapacitate').value) || 0,
     };
 }
 
@@ -495,6 +537,81 @@ async function salveazaRezPublice() {
         document.getElementById('rezPubliceLink').style.display = on ? 'block' : 'none';
         showToast(on ? 'Restaurantul apare acum în pagina publică!' : 'Scos din pagina publică.');
     } else { showToast(d.msg || 'Eroare', 'err'); }
+}
+
+// ── Evenimente / săli ──
+const EV_TIP_LABEL = { nunta: '💍 Nuntă', botez: '👶 Botez', aniversare: '🎂 Aniversare', corporate: '💼 Corporate', altul: '🎉 Eveniment' };
+const EV_STATUS = [
+    ['nou', 'Nou', '#e53e3e'], ['contactat', 'Contactat', '#d69e2e'],
+    ['confirmat', 'Confirmat', '#38a169'], ['anulat', 'Anulat', '#999'],
+];
+
+async function salveazaEvProfil() {
+    const on = document.getElementById('evPublice').checked;
+    const r = await fetch('/api/admin/salveaza_rezervare_setari', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rezPayload())
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) showToast(on ? 'Salvat! Primești acum cereri de evenimente.' : 'Salvat.');
+    else showToast(d.msg || 'Eroare', 'err');
+}
+
+function evDataFmt(s) {
+    if (!s) return '';
+    try { return new Date(s + 'T00:00:00').toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' }); }
+    catch (e) { return s; }
+}
+
+async function incarcaEvenimente() {
+    const wrap = document.getElementById('evList');
+    const status = document.getElementById('evFiltruStatus').value;
+    try {
+        const r = await fetch('/api/admin/evenimente' + (status ? '?status=' + encodeURIComponent(status) : ''));
+        const d = await r.json();
+        const badge = document.getElementById('evBadge');
+        if (d.ok && d.nou > 0) { badge.style.display = 'inline-block'; badge.textContent = d.nou + ' noi'; }
+        else badge.style.display = 'none';
+        if (!d.ok || !d.evenimente.length) { wrap.innerHTML = '<div class="gol">Nicio cerere' + (status ? ' cu acest status' : '') + '.</div>'; return; }
+        wrap.innerHTML = d.evenimente.map(ev => {
+            const st = EV_STATUS.find(s => s[0] === ev.status) || EV_STATUS[0];
+            const tip = EV_TIP_LABEL[ev.tip] || '🎉 Eveniment';
+            const meta = [];
+            if (ev.data_eveniment) meta.push('📅 ' + evDataFmt(ev.data_eveniment));
+            if (ev.nr_invitati) meta.push('👥 ' + ev.nr_invitati + ' invitați');
+            const optStatus = EV_STATUS.map(s => '<option value="' + s[0] + '"' + (s[0] === ev.status ? ' selected' : '') + '>' + s[1] + '</option>').join('');
+            return '<div style="border:1px solid #eee;border-radius:12px;padding:14px;margin-bottom:10px">' +
+                '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">' +
+                    '<span style="font-weight:800;font-size:15px">' + tip + '</span>' +
+                    '<span style="font-size:11px;font-weight:700;color:#fff;background:' + st[2] + ';padding:2px 9px;border-radius:20px">' + st[1] + '</span>' +
+                '</div>' +
+                '<div style="font-weight:700;font-size:14px">' + escapeHtml(ev.nume) + '</div>' +
+                '<div style="font-size:13px;color:#555;margin:2px 0 6px">' +
+                    '📞 <a href="tel:' + escapeHtml(ev.telefon || '') + '" style="color:#6c47ff;font-weight:600">' + escapeHtml(ev.telefon || '—') + '</a>' +
+                    (ev.email ? ' &nbsp;·&nbsp; ✉️ <a href="mailto:' + escapeHtml(ev.email) + '" style="color:#6c47ff">' + escapeHtml(ev.email) + '</a>' : '') +
+                '</div>' +
+                (meta.length ? '<div style="font-size:13px;color:#666;margin-bottom:6px">' + meta.join(' &nbsp;·&nbsp; ') + '</div>' : '') +
+                (ev.mesaj ? '<div style="font-size:13px;color:#444;background:#f7f7fb;border-radius:8px;padding:9px 11px;margin-bottom:8px;white-space:pre-wrap">' + escapeHtml(ev.mesaj) + '</div>' : '') +
+                '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+                    '<select onchange="schimbaStatusEveniment(' + ev.id + ', this.value)" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff">' + optStatus + '</select>' +
+                    '<button onclick="stergeEveniment(' + ev.id + ')" style="background:#ffebee;border:none;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:600;cursor:pointer;color:#c62828">Șterge</button>' +
+                    '<span style="margin-left:auto;font-size:11px;color:#bbb">' + escapeHtml((ev.creat_la || '').slice(0, 10)) + '</span>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+    } catch (e) { wrap.innerHTML = '<div style="font-size:13px;color:#c62828">Eroare la încărcare.</div>'; }
+}
+
+async function schimbaStatusEveniment(id, status) {
+    await fetch('/api/admin/eveniment_status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) });
+    incarcaEvenimente();
+}
+
+async function stergeEveniment(id) {
+    if (!confirm('Ștergi această cerere de eveniment?')) return;
+    await fetch('/api/admin/sterge_eveniment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    incarcaEvenimente();
 }
 
 async function incarcaMese() {
@@ -645,6 +762,7 @@ fetch('/api/admin/me').then(function (r) {
     incarcaLink();
     incarcaCapacitate();
     incarcaOferte();
+    incarcaEvenimente();
     incarcaMese().then(incarcaRezervari);
 });
 </script>

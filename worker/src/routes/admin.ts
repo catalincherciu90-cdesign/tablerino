@@ -1126,8 +1126,16 @@ admin.post('/sterge_rezervare', requireOwner, async (c) => {
 // Reservation capacity setting (total seats). GET shows the current override and
 // the sum of table capacities (the default when no override is set).
 admin.get('/rezervare_setari', requireOwner, async (c) => {
-  const row = await one<{ rez_capacitate: number | null; rezervari_publice: number; descriere: string | null; categorie: string | null; oras: string | null }>(
-    c.env.DB, 'SELECT rez_capacitate, rezervari_publice, descriere, categorie, oras FROM restaurante WHERE id = ?', rid(c)
+  const row = await one<{
+    rez_capacitate: number | null; rezervari_publice: number; descriere: string | null;
+    categorie: string | null; oras: string | null; evenimente_publice: number;
+    evenimente_descriere: string | null; evenimente_capacitate: number | null;
+  }>(
+    c.env.DB,
+    `SELECT rez_capacitate, rezervari_publice, descriere, categorie, oras,
+            evenimente_publice, evenimente_descriere, evenimente_capacitate
+     FROM restaurante WHERE id = ?`,
+    rid(c)
   );
   const sum = await one<{ s: number; n: number }>(
     c.env.DB,
@@ -1142,6 +1150,9 @@ admin.get('/rezervare_setari', requireOwner, async (c) => {
     categorie: row?.categorie ?? '',
     oras: row?.oras ?? '',
     capacitate_mese: sum && sum.n > 0 ? sum.s : null,
+    evenimente_publice: row?.evenimente_publice ? 1 : 0,
+    evenimente_descriere: row?.evenimente_descriere ?? '',
+    evenimente_capacitate: row?.evenimente_capacitate ?? null,
   });
 });
 
@@ -1153,8 +1164,12 @@ admin.post('/salveaza_rezervare_setari', requireOwner, async (c) => {
   const descriere = (body.descriere ?? '').toString().trim().slice(0, 500) || null;
   const categorie = (body.categorie ?? '').toString().trim().slice(0, 60) || null;
   const oras = (body.oras ?? '').toString().trim().slice(0, 80) || null;
-  // Enabling public reservations requires a reservation token — create one if missing.
-  if (publice) {
+  const evPublice = body.evenimente_publice ? 1 : 0;
+  const evDescriere = (body.evenimente_descriere ?? '').toString().trim().slice(0, 600) || null;
+  const evCapN = Number(body.evenimente_capacitate ?? 0);
+  const evCapacitate = evCapN >= 1 && evCapN <= 10000 ? Math.floor(evCapN) : null;
+  // Enabling any public listing (reservations or events) requires a token — create one if missing.
+  if (publice || evPublice) {
     const row = await one<{ rezervare_token: string | null }>(
       c.env.DB, 'SELECT rezervare_token FROM restaurante WHERE id = ?', rid(c)
     );
@@ -1164,10 +1179,52 @@ admin.post('/salveaza_rezervare_setari', requireOwner, async (c) => {
   }
   await run(
     c.env.DB,
-    'UPDATE restaurante SET rez_capacitate = ?, rezervari_publice = ?, descriere = ?, categorie = ?, oras = ? WHERE id = ?',
-    val, publice, descriere, categorie, oras, rid(c)
+    `UPDATE restaurante SET rez_capacitate = ?, rezervari_publice = ?, descriere = ?, categorie = ?, oras = ?,
+            evenimente_publice = ?, evenimente_descriere = ?, evenimente_capacitate = ? WHERE id = ?`,
+    val, publice, descriere, categorie, oras, evPublice, evDescriere, evCapacitate, rid(c)
   );
-  return c.json({ ok: true, rez_capacitate: val, rezervari_publice: publice, descriere, categorie, oras });
+  return c.json({
+    ok: true, rez_capacitate: val, rezervari_publice: publice, descriere, categorie, oras,
+    evenimente_publice: evPublice, evenimente_descriere: evDescriere, evenimente_capacitate: evCapacitate,
+  });
+});
+
+// ── Event-space requests (cereri de evenimente) ──
+const EV_STATUSES = ['nou', 'contactat', 'confirmat', 'anulat'];
+
+admin.get('/evenimente', requireOwner, async (c) => {
+  const status = c.req.query('status') ?? '';
+  let where = 'restaurant_id = ?';
+  const params: unknown[] = [rid(c)];
+  if (EV_STATUSES.includes(status)) {
+    where += ' AND status = ?';
+    params.push(status);
+  }
+  const evenimente = await all(
+    c.env.DB,
+    `SELECT id, tip, data_eveniment, nr_invitati, nume, telefon, email, mesaj, status, creat_la
+     FROM evenimente WHERE ${where}
+     ORDER BY (status = 'nou') DESC, COALESCE(data_eveniment, creat_la) DESC, id DESC`,
+    ...params
+  );
+  const nou = await one<{ n: number }>(c.env.DB, "SELECT COUNT(*) AS n FROM evenimente WHERE restaurant_id = ? AND status = 'nou'", rid(c));
+  return c.json({ ok: true, evenimente, nou: nou?.n ?? 0 });
+});
+
+admin.post('/eveniment_status', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  const status = body.status ?? '';
+  if (!EV_STATUSES.includes(status)) return c.json({ ok: false, msg: 'Status invalid' }, 400);
+  await run(c.env.DB, 'UPDATE evenimente SET status = ? WHERE id = ? AND restaurant_id = ?', status, id, rid(c));
+  return c.json({ ok: true });
+});
+
+admin.post('/sterge_eveniment', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  await run(c.env.DB, 'DELETE FROM evenimente WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return c.json({ ok: true });
 });
 
 // ── Offers (oferte) for the public portal ──

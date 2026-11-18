@@ -75,6 +75,11 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 .stare-rea .icon { font-size: 48px; margin-bottom: 14px; }
 .stare-rea h2 { font-size: 20px; font-weight: 800; margin-bottom: 8px; color: #111; }
 .stare-rea p { font-size: 14px; color: #888; }
+.tabbar { display: flex; gap: 8px; margin-bottom: 14px; }
+.tab { flex: 1; padding: 12px 8px; border: 1.5px solid #e2e2ec; border-radius: 12px; background: #fff; color: var(--text-sub); font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: border-color .15s, background .15s, color .15s; }
+.tab.ales { border-color: var(--primar); background: rgba(108,71,255,0.10); color: var(--primar); }
+.ev-hint { background: var(--card-bg); border-radius: var(--border-r); padding: 13px 15px; font-size: 13.5px; color: var(--text-sub); box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 14px; line-height: 1.5; }
+.ev-hint .cap { display: inline-block; margin-top: 7px; font-weight: 700; color: var(--primar); }
 </style>
 </head>
 <body>
@@ -131,6 +136,117 @@ function optiuniPersoane() {
 
 let numeRestaurant = '';
 
+function cardMasaHtml(azi) {
+    return '<div class="card" id="cardForm">' +
+        '<div class="card-titlu">Rezervare masă</div>' +
+        '<div class="card-titlu-sub">Completează datele, iar noi te contactăm pentru confirmare.</div>' +
+        '<div class="eroare" id="eroare"></div>' +
+        '<div class="field">' +
+            '<label>Nume</label>' +
+            '<input type="text" id="nume" placeholder="Numele tău" autocomplete="name">' +
+        '</div>' +
+        '<div class="field">' +
+            '<label>Telefon</label>' +
+            '<input type="tel" id="telefon" placeholder="07xx xxx xxx" autocomplete="tel">' +
+        '</div>' +
+        '<div class="field">' +
+            '<label>Email <span class="opt">(opțional)</span></label>' +
+            '<input type="email" id="email" placeholder="email@exemplu.ro" autocomplete="email">' +
+        '</div>' +
+        '<div class="row2">' +
+            '<div class="field">' +
+                '<label>Data</label>' +
+                '<input type="date" id="data" min="' + azi + '" value="' + azi + '" oninput="incarcaDisponibilitate()">' +
+            '</div>' +
+            '<div class="field">' +
+                '<label>Număr persoane</label>' +
+                '<select id="nrPersoane" onchange="incarcaDisponibilitate()">' + optiuniPersoane() + '</select>' +
+            '</div>' +
+        '</div>' +
+        (typeof maxPersoane === 'number' && maxPersoane > 0
+            ? '<div style="font-size:12px;color:var(--text-sub);margin:-8px 0 14px">Pentru grupuri mai mari, sună restaurantul.</div>'
+            : '') +
+        '<div class="field">' +
+            '<label>Ora</label>' +
+            '<input type="hidden" id="ora" value="">' +
+            '<div class="sloturi-grid" id="sloturiGrid" style="display:none"></div>' +
+            '<div class="sloturi-hint" id="sloturiHint">Alege data și numărul de persoane ca să vezi orele disponibile.</div>' +
+        '</div>' +
+        '<div class="field">' +
+            '<label>Observații <span class="opt">(opțional)</span></label>' +
+            '<textarea id="observatii" rows="2" placeholder="Preferințe, ocazie specială, alergii..."></textarea>' +
+        '</div>' +
+        '<button class="btn-trimite" id="btnTrimite" onclick="trimite()">Trimite rezervarea</button>' +
+        '<div class="nota">Vei fi contactat telefonic pentru confirmare.</div>' +
+    '</div>';
+}
+
+const TIPURI_EV = [
+    ['nunta', 'Nuntă'], ['botez', 'Botez'], ['aniversare', 'Aniversare / petrecere'],
+    ['corporate', 'Eveniment corporate'], ['altul', 'Alt eveniment'],
+];
+
+function cardEvenimentHtml(azi, rest) {
+    const optTip = TIPURI_EV.map(t => '<option value="' + t[0] + '">' + t[1] + '</option>').join('');
+    let hint = '';
+    if (rest.evenimente_descriere || rest.evenimente_capacitate) {
+        hint = '<div class="ev-hint">' +
+            (rest.evenimente_descriere ? escapeHtml(rest.evenimente_descriere) : 'Organizăm evenimente private — spune-ne ce ai în plan și te contactăm cu o ofertă.') +
+            (rest.evenimente_capacitate ? '<span class="cap">Capacitate până la ' + escapeHtml(rest.evenimente_capacitate) + ' invitați</span>' : '') +
+        '</div>';
+    }
+    return hint +
+        '<div class="card" id="cardEveniment">' +
+            '<div class="card-titlu">Cerere pentru eveniment</div>' +
+            '<div class="card-titlu-sub">Nuntă, botez, aniversare sau eveniment corporate — trimite-ne detaliile și revenim cu o ofertă.</div>' +
+            '<div class="eroare" id="eroareEv"></div>' +
+            '<div class="field">' +
+                '<label>Tip eveniment</label>' +
+                '<select id="evTip">' + optTip + '</select>' +
+            '</div>' +
+            '<div class="row2">' +
+                '<div class="field">' +
+                    '<label>Data <span class="opt">(opțional)</span></label>' +
+                    '<input type="date" id="evData" min="' + azi + '">' +
+                '</div>' +
+                '<div class="field">' +
+                    '<label>Nr. invitați <span class="opt">(aprox.)</span></label>' +
+                    '<input type="number" id="evInvitati" min="1" max="5000" placeholder="Ex: 120">' +
+                '</div>' +
+            '</div>' +
+            '<div class="field">' +
+                '<label>Nume</label>' +
+                '<input type="text" id="evNume" placeholder="Numele tău" autocomplete="name">' +
+            '</div>' +
+            '<div class="field">' +
+                '<label>Telefon</label>' +
+                '<input type="tel" id="evTelefon" placeholder="07xx xxx xxx" autocomplete="tel">' +
+            '</div>' +
+            '<div class="field">' +
+                '<label>Email <span class="opt">(opțional)</span></label>' +
+                '<input type="email" id="evEmail" placeholder="email@exemplu.ro" autocomplete="email">' +
+            '</div>' +
+            '<div class="field">' +
+                '<label>Detalii <span class="opt">(opțional)</span></label>' +
+                '<textarea id="evMesaj" rows="3" placeholder="Ex: Nuntă ~120 invitați, meniu + candy bar, muzică live..."></textarea>' +
+            '</div>' +
+            '<button class="btn-trimite" id="btnTrimiteEv" onclick="trimiteEveniment()">Trimite cererea</button>' +
+            '<div class="nota">Te contactăm pentru detalii și ofertă.</div>' +
+        '</div>';
+}
+
+function switchTab(care) {
+    const masa = document.getElementById('cardForm');
+    const ev = document.getElementById('cardEveniment');
+    const tMasa = document.getElementById('tabMasa');
+    const tEv = document.getElementById('tabEv');
+    const peMasa = care === 'masa';
+    if (masa) masa.style.display = peMasa ? '' : 'none';
+    if (ev) ev.style.display = peMasa ? 'none' : '';
+    if (tMasa) tMasa.classList.toggle('ales', peMasa);
+    if (tEv) tEv.classList.toggle('ales', !peMasa);
+}
+
 function randeazaForm(rest) {
     numeRestaurant = rest.nume || 'Restaurant';
     const azi = new Date().toISOString().slice(0, 10);
@@ -147,60 +263,36 @@ function randeazaForm(rest) {
         ? '<div class="sub" style="opacity:.85">' + escapeHtml(rest.categorie) + '</div>'
         : '';
 
+    const showEveniment = Number(rest.evenimente_publice) === 1;
+    const showMasa = Number(rest.rezervari_publice) === 1 || !showEveniment;
+    const ambele = showMasa && showEveniment;
+
+    const subLabel = ambele ? '📅 Rezervări & evenimente'
+        : (showEveniment ? '🎉 Organizează un eveniment' : '📅 Rezervă o masă');
+
+    const tabBar = ambele
+        ? '<div class="tabbar">' +
+            '<button class="tab ales" id="tabMasa" onclick="switchTab(\'masa\')">📅 Masă</button>' +
+            '<button class="tab" id="tabEv" onclick="switchTab(\'eveniment\')">🎉 Eveniment</button>' +
+          '</div>'
+        : '';
+
     continut.innerHTML =
         '<div class="header">' +
             logoHtml +
             '<h1>' + escapeHtml(numeRestaurant) + '</h1>' +
             catHtml +
-            '<div class="sub">📅 Rezervă o masă</div>' +
+            '<div class="sub">' + subLabel + '</div>' +
         '</div>' +
         bunVenitHtml +
         '<div class="wrap">' +
-            '<div class="card" id="cardForm">' +
-                '<div class="card-titlu">Rezervare masă</div>' +
-                '<div class="card-titlu-sub">Completează datele, iar noi te contactăm pentru confirmare.</div>' +
-                '<div class="eroare" id="eroare"></div>' +
-                '<div class="field">' +
-                    '<label>Nume</label>' +
-                    '<input type="text" id="nume" placeholder="Numele tău" autocomplete="name">' +
-                '</div>' +
-                '<div class="field">' +
-                    '<label>Telefon</label>' +
-                    '<input type="tel" id="telefon" placeholder="07xx xxx xxx" autocomplete="tel">' +
-                '</div>' +
-                '<div class="field">' +
-                    '<label>Email <span class="opt">(opțional)</span></label>' +
-                    '<input type="email" id="email" placeholder="email@exemplu.ro" autocomplete="email">' +
-                '</div>' +
-                '<div class="row2">' +
-                    '<div class="field">' +
-                        '<label>Data</label>' +
-                        '<input type="date" id="data" min="' + azi + '" value="' + azi + '" oninput="incarcaDisponibilitate()">' +
-                    '</div>' +
-                    '<div class="field">' +
-                        '<label>Număr persoane</label>' +
-                        '<select id="nrPersoane" onchange="incarcaDisponibilitate()">' + optiuniPersoane() + '</select>' +
-                    '</div>' +
-                '</div>' +
-                (typeof maxPersoane === 'number' && maxPersoane > 0
-                    ? '<div style="font-size:12px;color:var(--text-sub);margin:-8px 0 14px">Pentru grupuri mai mari, sună restaurantul.</div>'
-                    : '') +
-                '<div class="field">' +
-                    '<label>Ora</label>' +
-                    '<input type="hidden" id="ora" value="">' +
-                    '<div class="sloturi-grid" id="sloturiGrid" style="display:none"></div>' +
-                    '<div class="sloturi-hint" id="sloturiHint">Alege data și numărul de persoane ca să vezi orele disponibile.</div>' +
-                '</div>' +
-                '<div class="field">' +
-                    '<label>Observații <span class="opt">(opțional)</span></label>' +
-                    '<textarea id="observatii" rows="2" placeholder="Preferințe, ocazie specială, alergii..."></textarea>' +
-                '</div>' +
-                '<button class="btn-trimite" id="btnTrimite" onclick="trimite()">Trimite rezervarea</button>' +
-                '<div class="nota">Vei fi contactat telefonic pentru confirmare.</div>' +
-            '</div>' +
+            tabBar +
+            (showMasa ? cardMasaHtml(azi) : '') +
+            (showEveniment ? cardEvenimentHtml(azi, rest) : '') +
         '</div>';
 
-    incarcaDisponibilitate();
+    if (ambele) switchTab('masa');
+    if (showMasa) incarcaDisponibilitate();
 }
 
 let sloturiCerere = 0;
@@ -340,6 +432,60 @@ function randeazaConfirmare(info) {
                 '<div><strong>Data:</strong> ' + escapeHtml(formatData(info.data)) + '</div>' +
                 '<div><strong>Ora:</strong> ' + escapeHtml(info.ora) + '</div>' +
                 '<div><strong>Persoane:</strong> ' + escapeHtml(info.nr_persoane) + '</div>' +
+            '</div>' +
+        '</div>';
+}
+
+const LABEL_TIP = { nunta: 'Nuntă', botez: 'Botez', aniversare: 'Aniversare', corporate: 'Eveniment corporate', altul: 'Eveniment' };
+
+async function trimiteEveniment() {
+    const eroare = document.getElementById('eroareEv');
+    eroare.classList.remove('vizibil');
+    function aratEroare(msg) { eroare.textContent = msg; eroare.classList.add('vizibil'); }
+
+    const tip = document.getElementById('evTip').value;
+    const data = document.getElementById('evData').value;
+    const nr_invitati = Number(document.getElementById('evInvitati').value) || 0;
+    const nume = document.getElementById('evNume').value.trim();
+    const telefon = document.getElementById('evTelefon').value.trim();
+    const email = document.getElementById('evEmail').value.trim();
+    const mesaj = document.getElementById('evMesaj').value.trim();
+
+    if (!nume) return aratEroare('Te rugăm introdu numele.');
+    if (!telefon) return aratEroare('Te rugăm introdu numărul de telefon.');
+
+    const btn = document.getElementById('btnTrimiteEv');
+    btn.disabled = true;
+    btn.textContent = 'Se trimite...';
+
+    try {
+        const r = await fetch('/api/rezervare/eveniment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, tip, data, nr_invitati, nume, telefon, email, mesaj })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (d && d.ok) { randeazaConfirmareEveniment({ tip, data, nr_invitati, nume }); return; }
+        aratEroare((d && d.msg) || 'A apărut o eroare. Te rugăm încearcă din nou.');
+    } catch (e) {
+        aratEroare('Eroare de conexiune. Te rugăm încearcă din nou.');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Trimite cererea';
+}
+
+function randeazaConfirmareEveniment(info) {
+    const card = document.getElementById('cardEveniment');
+    const detData = info.data ? '<div><strong>Data:</strong> ' + escapeHtml(formatData(info.data)) + '</div>' : '';
+    const detInv = info.nr_invitati ? '<div><strong>Invitați:</strong> ' + escapeHtml(info.nr_invitati) + '</div>' : '';
+    card.innerHTML =
+        '<div class="confirmare vizibil">' +
+            '<div class="icon">🎉</div>' +
+            '<h2>Cerere trimisă!</h2>' +
+            '<p>Mulțumim, <strong>' + escapeHtml(info.nume) + '</strong>.<br>Te contactăm în curând pentru detalii și ofertă.</p>' +
+            '<div class="detalii">' +
+                '<div><strong>Eveniment:</strong> ' + escapeHtml(LABEL_TIP[info.tip] || 'Eveniment') + '</div>' +
+                detData + detInv +
             '</div>' +
         '</div>';
 }

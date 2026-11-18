@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS restaurante (
     descriere       TEXT,                          -- short public description (shown on the reservations directory)
     categorie       TEXT,                          -- restaurant type (e.g. Pizzerie, Cafenea), for the public directory
     oras            TEXT,                          -- city (for search/filter on the public portal)
+    evenimente_publice   INTEGER DEFAULT 0,        -- 1 = offers event spaces (weddings, baptisms, parties) — shown publicly
+    evenimente_descriere TEXT,                      -- public description of event offerings (halls, menus)
+    evenimente_capacitate INTEGER,                  -- max guests for an event (NULL = unspecified)
     promovat        INTEGER DEFAULT 0,             -- 1 = featured/promoted on the portal (set by platform admin)
     abonament_status TEXT DEFAULT 'activ',         -- activ | trial | expirat | anulat
     abonament_pret  REAL,                          -- monthly price (NULL = default 100)
@@ -243,3 +246,21 @@ CREATE TABLE IF NOT EXISTS oferte (
     FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_oferte_restaurant ON oferte(restaurant_id);
+
+-- Event-space requests (weddings, baptisms, parties) submitted by clients from the
+-- public restaurant page; the restaurant manages them like leads.
+CREATE TABLE IF NOT EXISTS evenimente (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id  INTEGER NOT NULL,
+    tip            TEXT,                            -- nunta | botez | aniversare | corporate | altul
+    data_eveniment TEXT,                            -- YYYY-MM-DD (optional)
+    nr_invitati    INTEGER,                         -- estimated guests (optional)
+    nume           TEXT NOT NULL,                   -- contact name
+    telefon        TEXT,
+    email          TEXT,
+    mesaj          TEXT,                            -- free-text details
+    status         TEXT NOT NULL DEFAULT 'nou',     -- nou | contactat | confirmat | anulat
+    creat_la       TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_evenimente_restaurant ON evenimente(restaurant_id);

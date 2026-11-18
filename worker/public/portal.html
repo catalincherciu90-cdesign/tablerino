@@ -267,6 +267,7 @@ footer .fcol a:hover{color:var(--gold)}
       <a class="chip" onclick="chipTip('Fine Dining')">Fine Dining</a>
       <a class="chip" onclick="chipTip('Cafenea')">Cafenea</a>
       <a class="chip" onclick="chipTip('Terasă / Grădină')">Terasă</a>
+      <a class="chip" id="chipEv" onclick="toggleEvenimente()">🎉 Evenimente &amp; săli</a>
       <a class="chip" href="#oferte">🔥 Oferte azi</a>
     </div>
 
@@ -409,7 +410,14 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){retur
 })();
 
 function chipTip(t){ document.getElementById('qTip').value=t; cauta(); }
-function resetCautare(ev){ if(ev)ev.preventDefault(); document.getElementById('qOras').value=''; document.getElementById('qTip').value=''; incarcaRestaurante(); }
+var filtruEv=false;
+function toggleEvenimente(){
+  filtruEv=!filtruEv;
+  var chip=document.getElementById('chipEv');
+  if(chip){ chip.style.background=filtruEv?'var(--gold)':''; chip.style.color=filtruEv?'#201913':''; chip.style.borderColor=filtruEv?'var(--gold)':''; }
+  cauta();
+}
+function resetCautare(ev){ if(ev)ev.preventDefault(); document.getElementById('qOras').value=''; document.getElementById('qTip').value=''; filtruEv=false; var chip=document.getElementById('chipEv'); if(chip){chip.style.background='';chip.style.color='';chip.style.borderColor='';} incarcaRestaurante(); }
 
 document.getElementById('qOras').addEventListener('keydown',function(e){ if(e.key==='Enter') cauta(); });
 
@@ -445,6 +453,7 @@ async function incarcaRestaurante(){
   var tip=document.getElementById('qTip').value;
   var sub=document.getElementById('rgridSub');
   var q=[]; if(oras)q.push('oras='+encodeURIComponent(oras)); if(tip)q.push('tip='+encodeURIComponent(tip));
+  if(filtruEv)q.push('evenimente=1');
   try{
     var d=await fetch('/api/rezervare/restaurante'+(q.length?'?'+q.join('&'):'')).then(function(r){return r.json();});
     var list=(d&&d.ok)?d.restaurante:[];
@@ -456,6 +465,7 @@ async function incarcaRestaurante(){
       var ratingHtml=(r.rating!=null)?'<div class="r"><span class="rating">★ '+esc(r.rating)+'</span></div>':'';
       var promo=(r.promovat===1)?'<div class="ov"><span class="badge-promo">★ Promovat</span></div>':'';
       var tag=r.categorie?'<span class="tag">'+esc(r.categorie)+'</span>':'';
+      var evtag=(r.evenimente===1)?'<span class="tag" style="background:rgba(201,166,107,.16);color:var(--gold);border-color:var(--gold-d)">🎉 Evenimente</span>':'';
       var desc=r.descriere?'<div class="rdesc">'+esc(r.descriere)+'</div>':'';
       var oferta=r.oferta?'<div class="roffer">🔥 '+esc(r.oferta)+'</div>':'';
       var loc=r.oras?'<span class="meta" style="color:var(--muted2);font-size:12.5px">'+esc(r.oras)+'</span>':'<span></span>';
@@ -463,7 +473,7 @@ async function incarcaRestaurante(){
         +'<div class="photo"><img src="'+foto+'" alt="'+esc(r.nume)+'" loading="lazy">'+promo+ratingHtml+'</div>'
         +'<div class="body">'
         +'<div class="rname">'+esc(r.nume)+'</div>'
-        +tag+desc+oferta
+        +tag+evtag+desc+oferta
         +'<div class="foot">'+loc+'<a href="/rezervare/?token='+encodeURIComponent(r.token)+'" class="btn btn-gold">Rezervă</a></div>'
         +'</div></article>';
     }).join('');
