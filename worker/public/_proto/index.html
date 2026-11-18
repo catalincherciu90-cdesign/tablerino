@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Tablerino — descoperă restaurante, vezi oferte și rezervă o masă în câteva secunde. Pentru restaurante: software complet + clienți noi.">
+<title>Tablerino — Descoperă restaurante & rezervă o masă</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#17120f; --bg2:#1f1812; --card:#241d17; --card2:#2b2219;
+  --line:#3a2f26; --gold-line:rgba(201,166,107,.26);
+  --cream:#f3eadc; --muted:#c7b8a4; --muted2:#9c8f7d;
+  --gold:#c9a66b; --gold-d:#b08f52; --gold-tint:#2a2015;
+  --serif:'Playfair Display',Georgia,serif;
+  --sans:'Inter',system-ui,sans-serif;
+  --nav-h:68px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--cream);line-height:1.6;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+.serif{font-family:var(--serif)}
+.gold{color:var(--gold)}
+.eyebrow{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:600}
+.sec-title{font-family:var(--serif);font-size:clamp(26px,4vw,40px);font-weight:700;line-height:1.1;margin:10px 0 6px}
+.sec-title em{font-style:italic;color:var(--gold)}
+.sec-sub{color:var(--muted);max-width:560px}
+.btn{display:inline-flex;align-items:center;gap:8px;border:none;border-radius:30px;font-weight:700;font-size:14px;cursor:pointer;padding:13px 22px;letter-spacing:.3px;font-family:var(--sans);transition:.16s}
+.btn-gold{background:var(--gold);color:#201913}
+.btn-gold:hover{background:var(--cream)}
+.btn-ghost{background:transparent;color:var(--cream);border:1px solid var(--line)}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+.tag{display:inline-block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold-d);border-radius:20px;padding:3px 10px;font-weight:600}
+.badge-promo{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;font-weight:700;color:#201913;background:var(--gold);border-radius:20px;padding:4px 10px}
+.badge-offer{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;font-weight:700;color:var(--gold);border:1px solid var(--gold-d);border-radius:20px;padding:4px 10px}
+.rating{color:var(--gold);font-weight:700;font-size:13.5px}
+
+/* ===== NAV ===== */
+.nav{position:sticky;top:0;z-index:50;height:var(--nav-h);display:flex;align-items:center;
+     background:rgba(23,18,15,.72);backdrop-filter:blur(10px);border-bottom:1px solid transparent;transition:.2s}
+.nav.scrolled{background:rgba(20,15,12,.94);border-bottom-color:var(--line);box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.nav .wrap{display:flex;align-items:center;gap:18px;width:100%}
+.logo-chip{background:#fff;border-radius:11px;padding:7px 9px;display:flex;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.logo-chip img{height:30px;width:auto}
+.nav-links{display:flex;gap:26px;margin-left:14px}
+.nav-links a{font-size:14.5px;color:var(--muted);font-weight:500;transition:.15s}
+.nav-links a:hover{color:var(--cream)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.lang{display:flex;background:#2a2118;border:1px solid var(--line);border-radius:30px;padding:3px}
+.lang button{border:none;background:transparent;color:var(--muted);font-weight:700;font-size:12px;padding:5px 11px;border-radius:30px;cursor:pointer}
+.lang button.on{background:var(--gold);color:#201913}
+.hamb{display:none;background:#2a2118;border:1px solid var(--line);color:var(--cream);width:42px;height:42px;border-radius:11px;font-size:19px;cursor:pointer}
+.mmenu{display:none;flex-direction:column;gap:2px;background:var(--bg2);border-bottom:1px solid var(--line);padding:10px 22px 18px;position:sticky;top:var(--nav-h);z-index:49}
+.mmenu.open{display:flex}
+.mmenu a{padding:11px 4px;color:var(--cream);font-size:15px;border-bottom:1px solid var(--line)}
+.mmenu .btn{margin-top:12px;justify-content:center}
+
+/* ===== HERO ===== */
+.hero{position:relative;min-height:min(640px,86vh);display:flex;align-items:center;padding:60px 0 70px;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background:url('/uploads/landing-hero-bg.jpg') center/cover no-repeat;transform:scale(1.04)}
+.hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,18,15,.78),rgba(23,18,15,.62) 42%,rgba(23,18,15,.9))}
+.hero .wrap{position:relative;z-index:2;width:100%}
+.hero h1{font-family:var(--serif);font-weight:700;font-size:clamp(34px,6vw,62px);line-height:1.04;max-width:800px;letter-spacing:-.01em}
+.hero h1 em{font-style:italic;color:var(--gold)}
+.hero p.lead{color:var(--muted);font-size:clamp(15px,2vw,18px);max-width:560px;margin-top:18px}
+.search{margin-top:30px;background:rgba(36,29,23,.86);border:1px solid var(--gold-line);border-radius:18px;padding:14px;display:flex;gap:10px;max-width:760px;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.search .fld{flex:1;display:flex;align-items:center;gap:9px;background:#1c1611;border:1px solid var(--line);border-radius:12px;padding:0 14px}
+.search .fld .ic{color:var(--gold);font-size:15px}
+.search input,.search select{flex:1;background:transparent;border:none;outline:none;color:var(--cream);font-size:15px;font-family:var(--sans);padding:14px 0;min-width:0}
+.search select{color:var(--cream)}
+.search option{color:#111}
+.search .btn{flex:0 0 auto;padding:0 26px}
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}
+.chip{font-size:13px;color:var(--cream);background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:30px;padding:7px 14px;transition:.15s;cursor:pointer}
+.chip:hover{border-color:var(--gold);color:var(--gold)}
+.hero-stats{display:flex;gap:28px;margin-top:30px;flex-wrap:wrap}
+.hero-stats b{font-family:var(--serif);color:var(--gold);font-size:22px;margin-right:7px}
+.hero-stats span{color:var(--muted);font-size:13.5px}
+
+/* ===== SECTIONS ===== */
+section.pad{padding:66px 0}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:28px}
+.link-more{color:var(--gold);font-weight:600;font-size:14px;white-space:nowrap}
+
+/* Oferte */
+.offers{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.offer{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:11px;transition:.18s}
+.offer:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.offer .rname{font-family:var(--serif);font-size:18px;font-weight:600}
+.offer .deal{font-family:var(--serif);font-size:26px;font-weight:700;color:var(--cream);line-height:1.1}
+.offer .deal span{color:var(--gold)}
+.offer .meta{font-size:12.5px;color:var(--muted2)}
+.offer .btn{margin-top:auto}
+
+/* Restaurante */
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.rcard{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;transition:.18s}
+.rcard:hover{border-color:var(--gold);transform:translateY(-4px);box-shadow:0 20px 48px rgba(0,0,0,.4)}
+.rcard .photo{position:relative;aspect-ratio:16/10;overflow:hidden}
+.rcard .photo img{width:100%;height:100%;object-fit:cover;transition:.5s}
+.rcard:hover .photo img{transform:scale(1.06)}
+.rcard .photo .ov{position:absolute;top:12px;left:12px;display:flex;gap:7px}
+.rcard .photo .r{position:absolute;bottom:12px;right:12px;background:rgba(20,15,12,.82);border:1px solid var(--gold-line);border-radius:30px;padding:4px 11px}
+.rcard .body{padding:17px 18px 20px;display:flex;flex-direction:column;gap:9px;flex:1}
+.rcard .rname{font-family:var(--serif);font-size:20px;font-weight:600;line-height:1.15}
+.rcard .rdesc{font-size:13.5px;color:var(--muted);line-height:1.5}
+.rcard .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding-top:6px}
+
+/* How */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.step{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 22px;text-align:center}
+.step .n{width:52px;height:52px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-weight:700;font-size:22px;color:var(--gold);background:var(--gold-tint);border:1px solid var(--gold-line)}
+.step h3{font-family:var(--serif);font-size:19px;font-weight:600;margin-bottom:6px}
+.step p{font-size:14px;color:var(--muted)}
+
+/* Business band */
+.business{background:linear-gradient(160deg,#241a10,#1a140d);border-top:1px solid var(--gold-line);border-bottom:1px solid var(--gold-line)}
+.biz-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:46px;align-items:center}
+.biz h2{font-family:var(--serif);font-size:clamp(27px,4vw,42px);font-weight:700;line-height:1.08}
+.biz h2 em{font-style:italic;color:var(--gold)}
+.biz p.sub{color:var(--muted);margin-top:14px;font-size:16px;max-width:520px}
+.biz-feats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 0 26px}
+.biz-feat{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--cream)}
+.biz-feat .ic{flex:0 0 auto;width:26px;height:26px;border-radius:7px;background:var(--gold-tint);border:1px solid var(--gold-line);display:grid;place-items:center;font-size:13px}
+.biz-cta{display:flex;gap:12px;flex-wrap:wrap}
+.biz-art{position:relative}
+.biz-art img{width:100%;border-radius:18px;border:1px solid var(--gold-line);box-shadow:0 26px 60px rgba(0,0,0,.5)}
+.biz-art .pill{position:absolute;bottom:-14px;left:-14px;background:var(--card);border:1px solid var(--gold-line);border-radius:14px;padding:12px 16px;box-shadow:0 14px 30px rgba(0,0,0,.4)}
+.biz-art .pill b{font-family:var(--serif);color:var(--gold);font-size:20px}
+.biz-art .pill span{display:block;font-size:11.5px;color:var(--muted);letter-spacing:.3px}
+
+/* Footer */
+footer{background:#120d09;border-top:1px solid var(--line);padding:50px 0 28px}
+.fgrid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px}
+.fbrand .serif{font-size:24px;font-weight:700}
+.fbrand p{color:var(--muted);font-size:13.5px;margin-top:10px;max-width:280px}
+footer h4{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+footer .fcol a,footer .fcol span{display:block;color:var(--muted);font-size:14px;padding:5px 0;transition:.15s}
+footer .fcol a:hover{color:var(--gold)}
+.fbot{border-top:1px solid var(--line);margin-top:34px;padding-top:20px;text-align:center;color:var(--muted2);font-size:13px}
+
+@media(max-width:940px){
+  .biz-grid{grid-template-columns:1fr;gap:30px}
+  .offers{grid-template-columns:repeat(2,1fr)}
+  .rgrid{grid-template-columns:repeat(2,1fr)}
+  .fgrid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:720px){
+  .nav-links{display:none}
+  .nav-right .lang{display:none}
+  .nav-right .biz-btn{display:none}
+  .hamb{display:block}
+  .steps{grid-template-columns:1fr}
+  .biz-feats{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  .search{flex-direction:column}
+  .search .btn{padding:14px}
+  .offers{grid-template-columns:1fr}
+  .rgrid{grid-template-columns:1fr}
+  .fgrid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="wrap">
+    <a href="#top" class="logo-chip"><img src="/uploads/logo-tablerino-trim.png" alt="Tablerino"></a>
+    <div class="nav-links">
+      <a href="#restaurante">Restaurante</a>
+      <a href="#oferte">Oferte</a>
+      <a href="#cum">Cum funcționează</a>
+    </div>
+    <div class="nav-right">
+      <div class="lang"><button class="on">RO</button><button>EN</button></div>
+      <a href="#business" class="btn btn-gold biz-btn">Ești restaurant? →</a>
+      <button class="hamb" id="hamb" onclick="toggleMenu()">☰</button>
+    </div>
+  </div>
+</nav>
+<div class="mmenu" id="mmenu">
+  <a href="#restaurante" onclick="toggleMenu()">Restaurante</a>
+  <a href="#oferte" onclick="toggleMenu()">Oferte</a>
+  <a href="#cum" onclick="toggleMenu()">Cum funcționează</a>
+  <a href="/admin/login.html">Autentificare restaurant</a>
+  <a href="#business" class="btn btn-gold" onclick="toggleMenu()">Ești restaurant? →</a>
+</div>
+
+<!-- HERO -->
+<header class="hero" id="top">
+  <div class="hero-bg"></div>
+  <div class="wrap">
+    <div class="eyebrow">Descoperă · Rezervă · Savurează</div>
+    <h1 style="margin-top:14px">Descoperă restaurante.<br>Rezervă <em>în câteva secunde.</em></h1>
+    <p class="lead">Caută după oraș și tip de bucătărie, vezi meniul, recenziile și ofertele — apoi rezervă o masă direct, fără apeluri.</p>
+
+    <div class="search">
+      <div class="fld"><span class="ic">📍</span><input type="text" placeholder="Oraș (ex: Suceava)"></div>
+      <div class="fld"><span class="ic">🍽️</span>
+        <select>
+          <option>Tip bucătărie</option>
+          <option>Pizzerie</option><option>Italian</option><option>Fine Dining</option>
+          <option>Cafenea</option><option>Fast Food</option><option>Bistro</option>
+          <option>Tradițional românesc</option><option>Asiatic</option><option>Terasă / Grădină</option>
+        </select>
+      </div>
+      <a href="#restaurante" class="btn btn-gold">Caută</a>
+    </div>
+
+    <div class="chips">
+      <a class="chip" href="#restaurante">Pizzerie</a>
+      <a class="chip" href="#restaurante">Fine Dining</a>
+      <a class="chip" href="#restaurante">Cafenea</a>
+      <a class="chip" href="#restaurante">Terasă</a>
+      <a class="chip" href="#oferte">🔥 Oferte azi</a>
+    </div>
+
+    <div class="hero-stats">
+      <div><b>120+</b><span>restaurante</span></div>
+      <div><b>4.7</b><span>rating mediu</span></div>
+      <div><b>în câteva sec.</b><span>rezervi o masă</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- OFERTE -->
+<section class="pad" id="oferte">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="eyebrow">Promoții active</div>
+        <h2 class="sec-title">Oferte <em>de nerefuzat</em></h2>
+        <p class="sec-sub">Reduceri și promoții de la restaurantele din platformă. Rezervă acum și profită.</p>
+      </div>
+      <a href="#restaurante" class="link-more">Vezi toate →</a>
+    </div>
+    <div class="offers">
+      <div class="offer">
+        <div class="badge-offer">★ Ofertă</div>
+        <div class="rname">Trattoria Verde</div>
+        <div class="meta">Italian · Centru</div>
+        <div class="deal"><span>-20%</span> la prânz</div>
+        <div class="meta">Luni–Vineri, 12:00–16:00</div>
+        <a href="#" class="btn btn-gold">Rezervă</a>
+      </div>
+      <div class="offer">
+        <div class="badge-offer">★ Ofertă</div>
+        <div class="rname">Bistro 9</div>
+        <div class="meta">Bistro · Nord</div>
+        <div class="deal"><span>2+1</span> la pizza</div>
+        <div class="meta">În fiecare seară</div>
+        <a href="#" class="btn btn-gold">Rezervă</a>
+      </div>
+      <div class="offer">
+        <div class="badge-offer">★ Ofertă</div>
+        <div class="rname">Sushi Zen</div>
+        <div class="meta">Asiatic · Mall</div>
+        <div class="deal"><span>Happy</span> hour</div>
+        <div class="meta">17:00–19:00, -30% băuturi</div>
+        <a href="#" class="btn btn-gold">Rezervă</a>
+      </div>
+      <div class="offer">
+        <div class="badge-offer">★ Ofertă</div>
+        <div class="rname">La Vatra</div>
+        <div class="meta">Tradițional · Centru</div>
+        <div class="deal"><span>Desert</span> gratuit</div>
+        <div class="meta">La orice meniu de 2 persoane</div>
+        <a href="#" class="btn btn-gold">Rezervă</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESTAURANTE -->
+<section class="pad" id="restaurante" style="background:var(--bg2)">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="eyebrow">Alese pentru tine</div>
+        <h2 class="sec-title">Restaurante <em>recomandate</em></h2>
+        <p class="sec-sub">Rezervă o masă la cele mai apreciate restaurante din platformă.</p>
+      </div>
+      <a href="#" class="link-more">Toate restaurantele →</a>
+    </div>
+    <div class="rgrid">
+      <!-- card 1 PROMOVAT -->
+      <article class="rcard">
+        <div class="photo"><img src="/uploads/landing-img1.jpg" alt="">
+          <div class="ov"><span class="badge-promo">★ Promovat</span></div>
+          <div class="r"><span class="rating">★ 4.8</span></div>
+        </div>
+        <div class="body">
+          <div class="rname">Trattoria Verde</div>
+          <span class="tag">Italian</span>
+          <div class="rdesc">Paste de casă și pizza la cuptor pe lemne, în inima orașului.</div>
+          <div class="foot"><span class="meta" style="color:var(--muted2);font-size:12.5px">Suceava · Centru</span><a href="#" class="btn btn-gold">Rezervă</a></div>
+        </div>
+      </article>
+      <!-- card 2 PROMOVAT -->
+      <article class="rcard">
+        <div class="photo"><img src="/uploads/landing-img2.jpg" alt="">
+          <div class="ov"><span class="badge-promo">★ Promovat</span></div>
+          <div class="r"><span class="rating">★ 4.7</span></div>
+        </div>
+        <div class="body">
+          <div class="rname">Bistro 9</div>
+          <span class="tag">Bistro</span>
+          <div class="rdesc">Bucătărie de autor, atmosferă caldă și preparate proaspete zilnic.</div>
+          <div class="foot"><span class="meta" style="color:var(--muted2);font-size:12.5px">Suceava · Nord</span><a href="#" class="btn btn-gold">Rezervă</a></div>
+        </div>
+      </article>
+      <!-- card 3 -->
+      <article class="rcard">
+        <div class="photo"><img src="/uploads/landing-img3.jpg" alt="">
+          <div class="r"><span class="rating">★ 4.6</span></div>
+        </div>
+        <div class="body">
+          <div class="rname">La Vatra</div>
+          <span class="tag">Tradițional</span>
+          <div class="rdesc">Rețete românești autentice și o terasă perfectă pentru seri lungi.</div>
+          <div class="foot"><span class="meta" style="color:var(--muted2);font-size:12.5px">Suceava · Centru</span><a href="#" class="btn btn-gold">Rezervă</a></div>
+        </div>
+      </article>
+      <!-- card 4 -->
+      <article class="rcard">
+        <div class="photo"><img src="/uploads/landing-img2.jpg" alt="">
+          <div class="r"><span class="rating">★ 4.9</span></div>
+        </div>
+        <div class="body">
+          <div class="rname">Sushi Zen</div>
+          <span class="tag">Asiatic</span>
+          <div class="rdesc">Sushi proaspăt și preparate japoneze, într-un decor minimalist.</div>
+          <div class="foot"><span class="meta" style="color:var(--muted2);font-size:12.5px">Suceava · Mall</span><a href="#" class="btn btn-gold">Rezervă</a></div>
+        </div>
+      </article>
+      <!-- card 5 -->
+      <article class="rcard">
+        <div class="photo"><img src="/uploads/landing-img1.jpg" alt="">
+          <div class="r"><span class="rating">★ 4.5</span></div>
+        </div>
+        <div class="body">
+          <div class="rname">Caffe Luna</div>
+          <span class="tag">Cafenea</span>
+          <div class="rdesc">Specialty coffee, brunch și deserturi de casă toată ziua.</div>
+          <div class="foot"><span class="meta" style="color:var(--muted2);font-size:12.5px">Suceava · Centru</span><a href="#" class="btn btn-gold">Rezervă</a></div>
+        </div>
+      </article>
+      <!-- card 6 -->
+      <article class="rcard">
+        <div class="photo"><img src="/uploads/landing-img3.jpg" alt="">
+          <div class="r"><span class="rating">★ 4.8</span></div>
+        </div>
+        <div class="body">
+          <div class="rname">The Grill House</div>
+          <span class="tag">Steakhouse</span>
+          <div class="rdesc">Fripturi la grătar, maturate, și o selecție bogată de vinuri.</div>
+          <div class="foot"><span class="meta" style="color:var(--muted2);font-size:12.5px">Suceava · Sud</span><a href="#" class="btn btn-gold">Rezervă</a></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- CUM FUNCTIONEAZA -->
+<section class="pad" id="cum">
+  <div class="wrap">
+    <div style="text-align:center;margin-bottom:30px">
+      <div class="eyebrow">Simplu</div>
+      <h2 class="sec-title">Rezervi în <em>3 pași</em></h2>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h3>Caută restaurantul</h3><p>Filtrează după oraș și tip de bucătărie și alege-ți favoritul.</p></div>
+      <div class="step"><div class="n">2</div><h3>Alege data și ora</h3><p>Vezi intervalele disponibile și numărul de persoane.</p></div>
+      <div class="step"><div class="n">3</div><h3>Rezervă instant</h3><p>Confirmi în câteva secunde. Rezervarea ajunge direct la restaurant.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- BUSINESS -->
+<section class="business pad" id="business">
+  <div class="wrap">
+    <div class="biz-grid">
+      <div class="biz">
+        <div class="eyebrow">Pentru restaurante</div>
+        <h2>Ești restaurant? Adu <em>clienți noi</em> și gestionează totul într-un loc.</h2>
+        <p class="sub">Tablerino îți dă software-ul complet pentru sală — și te pune în fața clienților care caută unde să mănânce.</p>
+        <div class="biz-feats">
+          <div class="biz-feat"><span class="ic">📱</span><span>Comenzi la masă prin QR</span></div>
+          <div class="biz-feat"><span class="ic">🧑‍🍳</span><span>Aplicație pentru ospătari</span></div>
+          <div class="biz-feat"><span class="ic">📅</span><span>Rezervări online</span></div>
+          <div class="biz-feat"><span class="ic">✨</span><span>Ești descoperit de clienți noi</span></div>
+          <div class="biz-feat"><span class="ic">📣</span><span>Oferte & promovare pe portal</span></div>
+          <div class="biz-feat"><span class="ic">📊</span><span>Rapoarte & statistici</span></div>
+        </div>
+        <div class="biz-cta">
+          <a href="/admin/login.html" class="btn btn-gold">Înscrie restaurantul</a>
+          <a href="#cum" class="btn btn-ghost">Vezi cum funcționează</a>
+        </div>
+      </div>
+      <div class="biz-art">
+        <img src="/uploads/show-rezervare.png" alt="Platforma Tablerino pentru restaurante">
+        <div class="pill"><b>+37%</b><span>rezervări noi / lună*</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fbrand">
+        <div class="serif gold">Tablerino</div>
+        <p>Descoperă restaurante și rezervă o masă în câteva secunde. Pentru restaurante: software complet + clienți noi.</p>
+      </div>
+      <div class="fcol">
+        <h4>Clienți</h4>
+        <a href="#restaurante">Restaurante</a>
+        <a href="#oferte">Oferte</a>
+        <a href="#cum">Cum funcționează</a>
+      </div>
+      <div class="fcol">
+        <h4>Restaurante</h4>
+        <a href="/admin/login.html">Autentificare</a>
+        <a href="#business">Înscrie restaurantul</a>
+        <a href="#business">Promovare & oferte</a>
+      </div>
+      <div class="fcol">
+        <h4>Contact</h4>
+        <a href="mailto:office@tablerino.ro">office@tablerino.ro</a>
+        <span>Lun–Vin · 09:00–18:00</span>
+      </div>
+    </div>
+    <div class="fbot">© Tablerino · Made with ♥ in Romania · <span style="color:var(--muted2)">*date orientative, demo</span></div>
+  </div>
+</footer>
+
+<script>
+function toggleMenu(){
+  var m=document.getElementById('mmenu'), h=document.getElementById('hamb');
+  var open=m.classList.toggle('open');
+  h.textContent=open?'✕':'☰';
+}
+window.addEventListener('scroll',function(){
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY>24);
+});
+</script>
+</body>
+</html>
