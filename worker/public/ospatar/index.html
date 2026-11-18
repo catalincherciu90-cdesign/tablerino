@@ -85,6 +85,11 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #f0f0f5; c
 .btn-servita { background: #10b981; color: #fff; }
 .btn-elibereaza { background: #111827; color: #fff; }
 .servite { text-align: center; color: #10b981; font-weight: 700; font-size: 13px; padding: 8px; }
+.ist-sumar { background: #ecfdf5; color: #065f46; border-radius: 12px; padding: 12px 14px; font-size: 14px; text-align: center; }
+.istoric-card { border-left-color: #94a3b8; opacity: .95; }
+.istoric-card .status.servita { background: #e2e8f0; color: #475569; }
+.istoric-card .produse li { opacity: 1; text-decoration: none; }
+.ist-meta { font-size: 12px; color: #64748b; font-weight: 600; margin-top: 8px; }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%);
          background: #111827; color: #fff; padding: 12px 18px; border-radius: 12px; font-size: 14px; font-weight: 600;
          box-shadow: 0 8px 24px rgba(0,0,0,.3); opacity: 0; transition: opacity .2s; z-index: 50; pointer-events: none; max-width: 90vw; text-align: center; }
@@ -116,6 +121,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #f0f0f5; c
     <button class="filtru activ" id="fAle" onclick="setFiltru('ale_mele')">Ale mele</button>
     <button class="filtru" id="fNe" onclick="setFiltru('nepreluate')">Nepreluate</button>
     <button class="filtru" id="fTot" onclick="setFiltru('toate')">Toate</button>
+    <button class="filtru" id="fIst" onclick="setFiltru('istoric')">Istoric azi</button>
 </div>
 
 <div class="wrap" id="wrap">
@@ -236,10 +242,44 @@ function setFiltru(f){
     document.getElementById('fAle').classList.toggle('activ', f==='ale_mele');
     document.getElementById('fNe').classList.toggle('activ', f==='nepreluate');
     document.getElementById('fTot').classList.toggle('activ', f==='toate');
-    render();
+    document.getElementById('fIst').classList.toggle('activ', f==='istoric');
+    if (f === 'istoric') incarcaIstoric();
+    else render();
+}
+
+// Read-only view of today's completed orders.
+async function incarcaIstoric(){
+    const wrap = document.getElementById('wrap');
+    try {
+        const r = await fetch('/api/admin/istoric_azi');
+        if (r.status === 401){ location.href='/ospatar/login.html'; return; }
+        const d = await r.json();
+        if (filtru !== 'istoric') return; // user switched tabs while loading
+        if (!d.ok || !d.comenzi.length){ wrap.innerHTML = `<div class="gol">Nicio comandă finalizată azi.</div>`; return; }
+        const head = `<div class="ist-sumar">✅ ${d.nr} comenzi finalizate azi · <b>${Number(d.total_zi).toFixed(2)} lei</b></div>`;
+        wrap.innerHTML = head + d.comenzi.map(c => {
+            const produse = (c.produse||[]).map(p => `<li class="livrat"><span>${p.cantitate}x ${escHtml(p.nume_produs)}</span><span>${parseFloat(p.total).toFixed(2)}</span></li>`).join('');
+            const total = (c.produse||[]).reduce((s,p)=>s+parseFloat(p.total),0);
+            const plata = c.metoda_plata === 'cash' ? '💵 Cash' : (c.metoda_plata === 'card' ? '💳 Card' : '');
+            const cine = c.preluat_de_nume ? ('👤 ' + escHtml(c.preluat_de_nume)) : '';
+            const meta = ['✓ Finalizată', cine, plata].filter(Boolean).join(' · ');
+            return `<div class="card istoric-card">
+                <div class="ch">
+                    <div><div class="masa">${escHtml(c.masa_nume)} <span class="nr">#${c.nr_ordine_zi||'—'}</span></div><div class="ora">${fmtOra(c.created_at)}</div></div>
+                    <span class="status servita">✓</span>
+                </div>
+                <ul class="produse">${produse}</ul>
+                <div class="total">Total: ${total.toFixed(2)} lei</div>
+                <div class="ist-meta">${meta}</div>
+            </div>`;
+        }).join('');
+    } catch(e){
+        if (filtru === 'istoric') wrap.innerHTML = `<div class="gol">Eroare la încărcarea istoricului.</div>`;
+    }
 }
 
 function render(){
+    if (filtru === 'istoric') return; // the history view renders itself
     const wrap = document.getElementById('wrap');
     let baza = comenziToate;
     if (filtru === 'ale_mele') baza = baza.filter(c => (masaDefaultId && c.masa_id===masaDefaultId) || c.masa_ospatar_id===ospatarId || c.preluat_de===ospatarId);
@@ -439,7 +479,9 @@ fetch('/api/admin/me').then(r => { if(!r.ok){ location.href='/ospatar/login.html
         if (!sunetOk || !pushGranted) document.getElementById('enableSound').style.display = 'block';
     }
     incarca();
-    setInterval(incarca, 5000);
+    // Keep active orders fresh (and new-order alerts live) even while viewing history;
+    // refresh the history list too when that tab is open.
+    setInterval(() => { incarca(); if (filtru === 'istoric') incarcaIstoric(); }, 5000);
 });
 window.addEventListener('resize', setHdr);
 

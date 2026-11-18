@@ -182,6 +182,28 @@ admin.get('/comenzi', async (c) => {
   return c.json({ ok: true, comenzi });
 });
 
+// Today's completed orders — available to waiters too (read-only history view).
+admin.get('/istoric_azi', async (c) => {
+  const comenzi = await all<Record<string, unknown>>(
+    c.env.DB,
+    `SELECT c.*, m.nume AS masa_nume, o.nume AS preluat_de_nume
+     FROM comenzi c
+     JOIN mese m ON m.id = c.masa_id
+     LEFT JOIN ospatari o ON o.id = c.preluat_de
+     WHERE c.restaurant_id = ? AND c.status = 'servita' AND DATE(c.created_at) = DATE('now')
+     ORDER BY c.created_at DESC`,
+    rid(c)
+  );
+  let totalZi = 0;
+  for (const cmd of comenzi) {
+    const produse = await all<{ total: number }>(c.env.DB, 'SELECT * FROM comanda_produse WHERE comanda_id = ?', cmd.id);
+    cmd.produse = produse;
+    cmd.total = produse.reduce((s, p) => s + Number(p.total), 0);
+    totalZi += Number(cmd.total);
+  }
+  return c.json({ ok: true, comenzi, nr: comenzi.length, total_zi: totalZi });
+});
+
 admin.get('/istoric', requireOwner, async (c) => {
   const masaId = Number(c.req.query('masa_id') ?? 0);
   const data = c.req.query('data') ?? '';
