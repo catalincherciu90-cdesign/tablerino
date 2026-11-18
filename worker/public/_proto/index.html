@@ -19,6 +19,8 @@
   --serif:'Playfair Display',Georgia,serif;
   --sans:'Inter',system-ui,sans-serif;
   --nav-h:68px;
+  --side:256px; --topbar:62px; --sidebar:#15110e; --espresso:#1b1613;
+  --line-soft:#2c231c; --cream-dim:#cdbfab; --panel:#241d17; --radius:16px; --shadow:0 24px 60px rgba(0,0,0,.45);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
@@ -42,25 +44,44 @@ img{display:block;max-width:100%}
 .badge-offer{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;font-weight:700;color:var(--gold);border:1px solid var(--gold-d);border-radius:20px;padding:4px 10px}
 .rating{color:var(--gold);font-weight:700;font-size:13.5px}
 
-/* ===== NAV ===== */
-.nav{position:sticky;top:0;z-index:50;height:var(--nav-h);display:flex;align-items:center;
-     background:rgba(23,18,15,.72);backdrop-filter:blur(10px);border-bottom:1px solid transparent;transition:.2s}
-.nav.scrolled{background:rgba(20,15,12,.94);border-bottom-color:var(--line);box-shadow:0 8px 30px rgba(0,0,0,.35)}
-.nav .wrap{display:flex;align-items:center;gap:18px;width:100%}
-.logo-chip{background:#fff;border-radius:11px;padding:7px 9px;display:flex;box-shadow:0 6px 18px rgba(0,0,0,.3)}
-.logo-chip img{height:30px;width:auto}
-.nav-links{display:flex;gap:26px;margin-left:14px}
-.nav-links a{font-size:14.5px;color:var(--muted);font-weight:500;transition:.15s}
-.nav-links a:hover{color:var(--cream)}
-.nav-right{margin-left:auto;display:flex;align-items:center;gap:14px}
-.lang{display:flex;background:#2a2118;border:1px solid var(--line);border-radius:30px;padding:3px}
-.lang button{border:none;background:transparent;color:var(--muted);font-weight:700;font-size:12px;padding:5px 11px;border-radius:30px;cursor:pointer}
-.lang button.on{background:var(--gold);color:#201913}
-.hamb{display:none;background:#2a2118;border:1px solid var(--line);color:var(--cream);width:42px;height:42px;border-radius:11px;font-size:19px;cursor:pointer}
-.mmenu{display:none;flex-direction:column;gap:2px;background:var(--bg2);border-bottom:1px solid var(--line);padding:10px 22px 18px;position:sticky;top:var(--nav-h);z-index:49}
-.mmenu.open{display:flex}
-.mmenu a{padding:11px 4px;color:var(--cream);font-size:15px;border-bottom:1px solid var(--line)}
-.mmenu .btn{margin-top:12px;justify-content:center}
+/* ===== SIDEBAR (desktop) ===== */
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--side);background:var(--sidebar);border-right:1px solid var(--line-soft);z-index:100;display:flex;flex-direction:column;padding:34px 28px 26px;overflow-y:auto}
+.side-logo{display:block;background:#fff;border-radius:16px;padding:16px 18px;width:162px;max-width:100%;box-shadow:0 10px 26px rgba(0,0,0,0.32)}
+.side-logo img{width:100%;display:block}
+.side-tagline{font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-top:10px}
+.side-head{padding-bottom:26px;margin-bottom:26px;border-bottom:1px solid var(--line-soft)}
+.side-nav{display:flex;flex-direction:column;gap:3px}
+.side-nav a{font-family:var(--serif);font-size:21px;font-weight:500;color:var(--cream-dim);padding:7px 0;transition:color .2s,padding-left .2s}
+.side-nav a:hover{color:var(--gold);padding-left:6px}
+.side-spacer{flex:1 1 auto;min-height:30px}
+.side-actions{display:flex;flex-direction:column;gap:16px;margin-bottom:26px}
+.side-login{display:inline-block;text-align:center;border:1px solid var(--gold-line);color:var(--gold);font-size:11px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;padding:12px 14px;border-radius:999px;transition:background .2s,color .2s}
+.side-login:hover{background:var(--gold);color:var(--espresso)}
+.lang-toggle{display:inline-flex;gap:3px;background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:999px;padding:3px;width:max-content}
+.lang-toggle button{background:none;border:none;font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:0.04em;color:var(--muted);padding:6px 14px;border-radius:999px;cursor:pointer;transition:all .2s}
+.lang-toggle button.activ{background:var(--gold);color:var(--espresso)}
+.side-foot{border-top:1px solid var(--line-soft);padding-top:20px}
+.sf-title{font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:9px}
+.sf-line{font-size:13px;color:var(--muted);display:block}
+.sf-mail:hover{color:var(--gold)}
+/* mobile top bar */
+.topbar{display:none;position:fixed;top:0;left:0;right:0;height:var(--topbar);background:rgba(21,17,14,0.92);backdrop-filter:saturate(160%) blur(12px);-webkit-backdrop-filter:saturate(160%) blur(12px);border-bottom:1px solid var(--line-soft);z-index:100;padding:0 16px;align-items:center;justify-content:space-between}
+.tb-logo{display:flex;align-items:center}
+.tb-logo img{height:42px;width:auto;background:#fff;border-radius:10px;padding:5px 7px;display:block;box-shadow:0 4px 12px rgba(0,0,0,0.25)}
+.tb-right{display:flex;align-items:center;gap:10px}
+.hamburger{background:var(--gold);border:none;color:var(--espresso);width:42px;height:42px;border-radius:11px;font-size:19px;cursor:pointer;display:grid;place-items:center}
+.mobile-menu{display:none;position:fixed;top:var(--topbar);left:10px;right:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:10px;z-index:99;flex-direction:column;gap:2px;box-shadow:var(--shadow)}
+.mobile-menu.open{display:flex}
+.mobile-menu a{font-family:var(--serif);color:var(--cream);padding:13px 16px;font-size:19px;font-weight:500;border-radius:10px;transition:background .2s,color .2s}
+.mobile-menu a:hover{background:rgba(255,255,255,0.04);color:var(--gold)}
+.mobile-menu a.mm-login{font-family:var(--sans);font-size:13px;letter-spacing:0.12em;text-transform:uppercase;background:var(--gold);color:var(--espresso);text-align:center;margin-top:6px;font-weight:700}
+.page{margin-left:var(--side)}
+@media (max-width:980px){
+  .sidebar{display:none}
+  .topbar{display:flex}
+  .page{margin-left:0;padding-top:var(--topbar)}
+  .hero{min-height:calc(100vh - var(--topbar))}
+}
 
 /* ===== HERO ===== */
 .hero{position:relative;min-height:min(640px,86vh);display:flex;align-items:center;padding:60px 0 70px;overflow:hidden}
@@ -153,10 +174,6 @@ footer .fcol a:hover{color:var(--gold)}
   .fgrid{grid-template-columns:1fr 1fr}
 }
 @media(max-width:720px){
-  .nav-links{display:none}
-  .nav-right .lang{display:none}
-  .nav-right .biz-btn{display:none}
-  .hamb{display:block}
   .steps{grid-template-columns:1fr}
   .biz-feats{grid-template-columns:1fr}
 }
@@ -171,29 +188,55 @@ footer .fcol a:hover{color:var(--gold)}
 </head>
 <body>
 
-<!-- NAV -->
-<nav class="nav" id="nav">
-  <div class="wrap">
-    <a href="#top" class="logo-chip"><img src="/uploads/logo-tablerino-trim.png" alt="Tablerino"></a>
-    <div class="nav-links">
-      <a href="#restaurante">Restaurante</a>
-      <a href="#oferte">Oferte</a>
-      <a href="#cum">Cum funcționează</a>
-    </div>
-    <div class="nav-right">
-      <div class="lang"><button class="on">RO</button><button>EN</button></div>
-      <a href="#business" class="btn btn-gold biz-btn">Ești restaurant? →</a>
-      <button class="hamb" id="hamb" onclick="toggleMenu()">☰</button>
+<!-- SIDEBAR (desktop) -->
+<nav id="navbar" class="sidebar">
+  <div class="side-head">
+    <a href="#top" class="side-logo"><img src="/uploads/logo-tablerino-trim.png" alt="Tablerino"></a>
+    <div class="side-tagline">Descoperă · Rezervă</div>
+  </div>
+  <div class="side-nav">
+    <a href="#restaurante">Restaurante</a>
+    <a href="#oferte">Oferte</a>
+    <a href="#cum">Cum funcționează</a>
+    <a href="#business" style="color:var(--gold)">◦ Ești restaurant?</a>
+  </div>
+  <div class="side-spacer"></div>
+  <div class="side-actions">
+    <a href="/admin/login.html" class="side-login">Autentificare</a>
+    <div class="lang-toggle">
+      <button onclick="setLang('ro')" id="btnRo" class="activ">RO</button>
+      <button onclick="setLang('en')" id="btnEn">EN</button>
     </div>
   </div>
+  <div class="side-foot">
+    <div class="sf-title">Program suport</div>
+    <span class="sf-line">Lun–Vin · 09:00–18:00</span>
+    <a class="sf-line sf-mail" href="mailto:office@tablerino.ro">office@tablerino.ro</a>
+  </div>
 </nav>
-<div class="mmenu" id="mmenu">
-  <a href="#restaurante" onclick="toggleMenu()">Restaurante</a>
-  <a href="#oferte" onclick="toggleMenu()">Oferte</a>
-  <a href="#cum" onclick="toggleMenu()">Cum funcționează</a>
-  <a href="/admin/login.html">Autentificare restaurant</a>
-  <a href="#business" class="btn btn-gold" onclick="toggleMenu()">Ești restaurant? →</a>
+
+<!-- TOP BAR (mobile) -->
+<header class="topbar">
+  <a href="#top" class="tb-logo"><img src="/uploads/logo-tablerino-trim.png" alt="Tablerino"></a>
+  <div class="tb-right">
+    <div class="lang-toggle">
+      <button onclick="setLang('ro')" id="btnRoM" class="activ">RO</button>
+      <button onclick="setLang('en')" id="btnEnM">EN</button>
+    </div>
+    <button class="hamburger" onclick="toggleMobileMenu()" id="hamburger">☰</button>
+  </div>
+</header>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#restaurante" onclick="toggleMobileMenu()">Restaurante</a>
+  <a href="#oferte" onclick="toggleMobileMenu()">Oferte</a>
+  <a href="#cum" onclick="toggleMobileMenu()">Cum funcționează</a>
+  <a href="#business" onclick="toggleMobileMenu()" style="color:var(--gold)">Ești restaurant?</a>
+  <a href="/admin/login.html" class="mm-login">Autentificare</a>
 </div>
+
+<div class="page">
 
 <!-- HERO -->
 <header class="hero" id="top">
@@ -443,16 +486,20 @@ footer .fcol a:hover{color:var(--gold)}
     <div class="fbot">© Tablerino · Made with ♥ in Romania · <span style="color:var(--muted2)">*date orientative, demo</span></div>
   </div>
 </footer>
+</div><!-- /page -->
 
 <script>
-function toggleMenu(){
-  var m=document.getElementById('mmenu'), h=document.getElementById('hamb');
+function toggleMobileMenu(){
+  var m=document.getElementById('mobileMenu'), h=document.getElementById('hamburger');
   var open=m.classList.toggle('open');
-  h.textContent=open?'✕':'☰';
+  if(h) h.textContent=open?'✕':'☰';
 }
-window.addEventListener('scroll',function(){
-  document.getElementById('nav').classList.toggle('scrolled', window.scrollY>24);
-});
+function setLang(lang){
+  ['btnRo','btnRoM'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.toggle('activ',lang==='ro');});
+  ['btnEn','btnEnM'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.toggle('activ',lang==='en');});
+  document.querySelectorAll('[data-'+lang+']').forEach(function(el){var t=el.getAttribute('data-'+lang);if(t)el.innerHTML=t;});
+}
+document.querySelectorAll('.mobile-menu a').forEach(function(a){a.addEventListener('click',function(){document.getElementById('mobileMenu').classList.remove('open');var h=document.getElementById('hamburger');if(h)h.textContent='☰';});});
 </script>
 </body>
 </html>
