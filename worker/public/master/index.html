@@ -150,6 +150,30 @@ tr:hover td { background: rgba(108,71,255,0.05); }
     </div>
 </div>
 
+<!-- Modal abonament -->
+<div class="overlay" id="overlayAbonament">
+    <div class="modal">
+        <h3 id="abTitlu">Abonament</h3>
+        <input type="hidden" id="abId">
+        <label>Status abonament</label>
+        <select id="abStatus">
+            <option value="activ">Activ</option>
+            <option value="trial">Trial (perioadă de probă)</option>
+            <option value="expirat">Expirat</option>
+            <option value="anulat">Anulat</option>
+        </select>
+        <label>Preț lunar (€) — gol = standard 100€</label>
+        <input type="number" id="abPret" min="0" step="1" placeholder="100">
+        <label>Expiră / următoarea plată (opțional)</label>
+        <input type="date" id="abExpira">
+        <p class="modal-note" id="abNote"></p>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="inchideAbonament()">Anulează</button>
+            <button class="btn-save" onclick="salveazaAbonament()">Salvează</button>
+        </div>
+    </div>
+</div>
+
 <script>
 function logout(e) {
     if (e) e.preventDefault();
@@ -169,6 +193,8 @@ async function incarcaStats() {
         <div class="stat-card"><div class="val">${s.comenzi_azi}</div><div class="lbl">Comenzi azi (toate)</div></div>
         <div class="stat-card"><div class="val verde">${parseFloat(s.vanzari_azi).toFixed(2)} lei</div><div class="lbl">Vânzări azi (toate)</div></div>
         <div class="stat-card"><div class="val alb">${s.total_comenzi_all}</div><div class="lbl">Total comenzi (all time)</div></div>
+        <div class="stat-card"><div class="val" style="color:#c9a66b">${parseFloat(s.venit_lunar||0).toFixed(0)} €/lună</div><div class="lbl">Venit lunar (abonamente)</div></div>
+        ${s.abonamente_expirate > 0 ? `<div class="stat-card" style="border-color:#e53e3e"><div class="val" style="color:#e53e3e">${s.abonamente_expirate}</div><div class="lbl">Abonamente expirate</div></div>` : ''}
         ${s.cereri_pending > 0 ? `<div class="stat-card" style="border-color:#e53e3e"><div class="val" style="color:#e53e3e">${s.cereri_pending}</div><div class="lbl">⏳ Cereri în așteptare</div></div>` : ''}
     `;
     // Badge pe link cereri
@@ -196,7 +222,10 @@ async function incarcaRestaurante() {
             <td>${r.nr_mese}</td>
             <td>${r.comenzi_azi}</td>
             <td>${parseFloat(r.vanzari_azi).toFixed(2)} lei</td>
-            <td><span class="${r.activ == 1 ? 'badge-activ' : 'badge-inactiv'}">${r.activ == 1 ? 'Activ' : 'Inactiv'}</span></td>
+            <td>
+                <span class="${r.activ == 1 ? 'badge-activ' : 'badge-inactiv'}">${r.activ == 1 ? 'Activ' : 'Inactiv'}</span>
+                <div style="margin-top:6px">${abonamentBadge(r)}</div>
+            </td>
             <td>
                 <div class="td-actiuni">
                     <button class="btn-sm btn-vezi" onclick="window.open('/master/comenzi.html?id=${r.id}','_blank')">Comenzi</button>
@@ -204,6 +233,7 @@ async function incarcaRestaurante() {
                     <button class="btn-sm btn-edit" onclick="deschideModalEditare(${r.id},'${r.nume.replace(/'/g,"\\'")}','${r.email}','${r.telefon||''}')">Editează</button>
                     <button class="btn-sm ${r.activ == 1 ? 'btn-toggle-on' : 'btn-toggle-off'}" onclick="toggleActiv(${r.id})">${r.activ == 1 ? 'Dezactivează' : 'Activează'}</button>
                     <button class="btn-sm" onclick="togglePromovat(${r.id})" style="background:${r.promovat == 1 ? 'rgba(201,166,107,0.3)' : 'rgba(255,255,255,0.08)'};color:${r.promovat == 1 ? '#e2c48a' : '#888'}">${r.promovat == 1 ? '★ Promovat' : '☆ Promovează'}</button>
+                    <button class="btn-sm" onclick="deschideAbonament(${r.id},'${r.nume.replace(/'/g,"\\'")}','${r.abonament_status||'activ'}',${r.abonament_pret==null?'null':r.abonament_pret},'${r.abonament_expira||''}')" style="background:rgba(201,166,107,0.15);color:#c9a66b">💳 Abonament</button>
                 </div>
             </td>
         </tr>
@@ -236,6 +266,65 @@ function deschideModalEditare(id, nume, email, tel) {
 
 function inchideModal() {
     document.getElementById('overlay').classList.remove('open');
+}
+
+// ---- Abonament ----
+function abonamentBadge(r) {
+    const st = r.abonament_status || 'activ';
+    const pret = (r.abonament_pret == null ? 100 : r.abonament_pret);
+    const map = {
+        activ:   ['#10b981', 'Activ'],
+        trial:   ['#c9a66b', 'Trial'],
+        expirat: ['#e53e3e', 'Expirat'],
+        anulat:  ['#888',    'Anulat'],
+    };
+    const [col, txt] = map[st] || map.activ;
+    let exp = '';
+    if (r.abonament_expira) {
+        const d = new Date(r.abonament_expira + 'T00:00:00');
+        const azi = new Date(); azi.setHours(0,0,0,0);
+        const zile = Math.round((d - azi) / 86400000);
+        const warn = zile < 7;
+        exp = ` · <span style="color:${warn ? '#e53e3e' : '#999'}">${r.abonament_expira}${zile < 0 ? ' (depășit)' : zile <= 7 ? ' ('+zile+'z)' : ''}</span>`;
+    }
+    return `<span style="display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:${col}22;color:${col}">${txt}</span>` +
+           `<span style="font-size:11px;color:#888"> ${pret}€${exp}</span>`;
+}
+
+function deschideAbonament(id, nume, status, pret, expira) {
+    document.getElementById('abTitlu').textContent = 'Abonament · ' + nume;
+    document.getElementById('abId').value = id;
+    document.getElementById('abStatus').value = status || 'activ';
+    document.getElementById('abPret').value = (pret == null ? '' : pret);
+    document.getElementById('abExpira').value = expira || '';
+    document.getElementById('abNote').textContent = '';
+    document.getElementById('overlayAbonament').classList.add('open');
+}
+
+function inchideAbonament() {
+    document.getElementById('overlayAbonament').classList.remove('open');
+}
+
+async function salveazaAbonament() {
+    const id     = document.getElementById('abId').value;
+    const status = document.getElementById('abStatus').value;
+    const pretRaw = document.getElementById('abPret').value.trim();
+    const expira = document.getElementById('abExpira').value;
+    const note   = document.getElementById('abNote');
+    note.textContent = 'Se salvează...';
+    const r = await fetch('/api/master/set_abonament', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: parseInt(id)||0, status, pret: pretRaw, expira })
+    });
+    const d = await r.json();
+    if (d.ok) {
+        inchideAbonament();
+        incarcaRestaurante();
+        incarcaStats();
+    } else {
+        note.textContent = 'Eroare la salvare.';
+    }
 }
 
 async function salveaza() {

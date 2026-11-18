@@ -29,6 +29,9 @@ CREATE TABLE IF NOT EXISTS restaurante (
     categorie       TEXT,                          -- restaurant type (e.g. Pizzerie, Cafenea), for the public directory
     oras            TEXT,                          -- city (for search/filter on the public portal)
     promovat        INTEGER DEFAULT 0,             -- 1 = featured/promoted on the portal (set by platform admin)
+    abonament_status TEXT DEFAULT 'activ',         -- activ | trial | expirat | anulat
+    abonament_pret  REAL,                          -- monthly price (NULL = default 100)
+    abonament_expira TEXT,                          -- next-payment / expiry date (YYYY-MM-DD)
     escalare_sec    INTEGER,                       -- seconds an order stays reserved for the table's waiter (NULL = default 120)
     activ           INTEGER DEFAULT 1,             -- 0 = pending approval
     created_at      TEXT DEFAULT CURRENT_TIMESTAMP

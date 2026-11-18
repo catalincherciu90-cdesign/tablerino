@@ -76,6 +76,12 @@ jobs:
             --command "ALTER TABLE restaurante ADD COLUMN oras TEXT" || true
           npx wrangler d1 execute tablerino --remote --yes \
             --command "ALTER TABLE restaurante ADD COLUMN promovat INTEGER DEFAULT 0" || true
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE restaurante ADD COLUMN abonament_status TEXT DEFAULT 'activ'" || true
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE restaurante ADD COLUMN abonament_pret REAL" || true
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE restaurante ADD COLUMN abonament_expira TEXT" || true
 
       - name: Deploy Worker
         run: npx wrangler deploy

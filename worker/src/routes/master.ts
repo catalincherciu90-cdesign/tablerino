@@ -57,6 +57,8 @@ master.get('/statistici', async (c) => {
     vanzari_azi: await num("SELECT COALESCE(SUM(cp.total),0) AS n FROM comenzi c JOIN comanda_produse cp ON cp.comanda_id = c.id WHERE DATE(c.created_at) = DATE('now') AND c.status = 'servita'"),
     total_comenzi_all: await num("SELECT COUNT(*) AS n FROM comenzi WHERE status = 'servita'"),
     cereri_pending: await num('SELECT COUNT(*) AS n FROM restaurante WHERE activ = 0'),
+    venit_lunar: await num("SELECT COALESCE(SUM(COALESCE(abonament_pret,100)),0) AS n FROM restaurante WHERE activ = 1 AND abonament_status IN ('activ','trial')"),
+    abonamente_expirate: await num("SELECT COUNT(*) AS n FROM restaurante WHERE activ = 1 AND (abonament_status = 'expirat' OR abonament_status = 'anulat' OR (abonament_expira IS NOT NULL AND abonament_expira < DATE('now')))"),
   };
   return c.json({ ok: true, stats });
 });
@@ -133,6 +135,23 @@ master.post('/toggle_promovat', async (c) => {
   await run(c.env.DB, 'UPDATE restaurante SET promovat = 1 - promovat WHERE id = ?', id);
   const row = await one<{ promovat: number }>(c.env.DB, 'SELECT promovat FROM restaurante WHERE id = ?', id);
   return c.json({ ok: true, promovat: row?.promovat ? 1 : 0 });
+});
+
+// Subscription (abonament) management per restaurant.
+master.post('/set_abonament', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  if (!id) return c.json({ ok: false }, 400);
+  const STATUSES = ['activ', 'trial', 'expirat', 'anulat'];
+  const status = STATUSES.includes(body.status) ? body.status : 'activ';
+  const pret = body.pret === '' || body.pret == null ? null : Math.max(0, Number(body.pret));
+  const expira = /^\d{4}-\d{2}-\d{2}$/.test(body.expira ?? '') ? body.expira : null;
+  await run(
+    c.env.DB,
+    'UPDATE restaurante SET abonament_status = ?, abonament_pret = ?, abonament_expira = ? WHERE id = ?',
+    status, Number.isFinite(pret as number) ? pret : null, expira, id
+  );
+  return c.json({ ok: true, status, pret, expira });
 });
 
 // Global toggle: is the public diner portal shown at "/" (ON) or the B2B landing (OFF)?
