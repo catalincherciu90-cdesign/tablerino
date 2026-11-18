@@ -137,14 +137,21 @@ function randeazaForm(rest) {
     const logoHtml = rest.logo
         ? '<img class="header-logo" src="/' + escapeHtml(rest.logo) + '" alt="Logo" style="display:block" onerror="this.style.display=\'none\'">'
         : '';
-    const bunVenitHtml = rest.text_bun_venit
-        ? '<div class="bun-venit"><div class="bun-venit-box">' + escapeHtml(rest.text_bun_venit) + '</div></div>'
+    const descParts = [];
+    if (rest.descriere) descParts.push(escapeHtml(rest.descriere));
+    if (rest.text_bun_venit) descParts.push(escapeHtml(rest.text_bun_venit));
+    const bunVenitHtml = descParts.length
+        ? '<div class="bun-venit"><div class="bun-venit-box">' + descParts.join('<br>') + '</div></div>'
+        : '';
+    const catHtml = rest.categorie
+        ? '<div class="sub" style="opacity:.85">' + escapeHtml(rest.categorie) + '</div>'
         : '';
 
     continut.innerHTML =
         '<div class="header">' +
             logoHtml +
             '<h1>' + escapeHtml(numeRestaurant) + '</h1>' +
+            catHtml +
             '<div class="sub">📅 Rezervă o masă</div>' +
         '</div>' +
         bunVenitHtml +

@@ -37,7 +37,9 @@ header{display:flex;align-items:center;justify-content:space-between;padding:22p
 .ravatar{width:58px;height:58px;border-radius:14px;flex:0 0 auto;object-fit:cover;background:#2e251d;display:flex;align-items:center;justify-content:center;
          font-family:'Playfair Display',serif;font-size:26px;color:var(--gold);border:1px solid var(--line)}
 .rname{font-family:'Playfair Display',serif;font-size:20px;font-weight:600;line-height:1.2}
-.rsub{font-size:12.5px;color:var(--muted);margin-top:3px}
+.rsub{font-size:12.5px;color:var(--muted);margin-top:4px}
+.rcat{display:inline-block;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold-d);border-radius:20px;padding:3px 10px;font-weight:600}
+.rdesc{font-size:13.5px;color:var(--muted);line-height:1.55;margin:2px 0 2px}
 .rbtn{margin-top:auto;display:block;text-align:center;background:var(--gold);color:#201913;font-weight:700;font-size:14px;
       padding:12px;border-radius:12px;transition:.15s;letter-spacing:.3px}
 .rbtn:hover{background:var(--cream)}
@@ -86,8 +88,11 @@ async function incarca(){
       const av = x.logo
         ? `<img class="ravatar" src="/${esc(x.logo)}" alt="${esc(x.nume)}" onerror="this.outerHTML='<div class=\\'ravatar\\'>${initiala(x.nume)}</div>'">`
         : `<div class="ravatar">${initiala(x.nume)}</div>`;
+      const cat = x.categorie ? `<div class="rsub"><span class="rcat">${esc(x.categorie)}</span></div>` : `<div class="rsub">Rezervare online</div>`;
+      const desc = x.descriere ? `<div class="rdesc">${esc(x.descriere)}</div>` : '';
       return `<div class="rcard">
-        <div class="rtop">${av}<div><div class="rname">${esc(x.nume)}</div><div class="rsub">Rezervare online</div></div></div>
+        <div class="rtop">${av}<div><div class="rname">${esc(x.nume)}</div>${cat}</div></div>
+        ${desc}
         <a class="rbtn" href="/rezervare/?token=${encodeURIComponent(x.token)}">Rezervă o masă</a>
       </div>`;
     }).join('');

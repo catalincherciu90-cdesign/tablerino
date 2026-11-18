@@ -1126,8 +1126,8 @@ admin.post('/sterge_rezervare', requireOwner, async (c) => {
 // Reservation capacity setting (total seats). GET shows the current override and
 // the sum of table capacities (the default when no override is set).
 admin.get('/rezervare_setari', requireOwner, async (c) => {
-  const row = await one<{ rez_capacitate: number | null; rezervari_publice: number }>(
-    c.env.DB, 'SELECT rez_capacitate, rezervari_publice FROM restaurante WHERE id = ?', rid(c)
+  const row = await one<{ rez_capacitate: number | null; rezervari_publice: number; descriere: string | null; categorie: string | null }>(
+    c.env.DB, 'SELECT rez_capacitate, rezervari_publice, descriere, categorie FROM restaurante WHERE id = ?', rid(c)
   );
   const sum = await one<{ s: number; n: number }>(
     c.env.DB,
@@ -1138,6 +1138,8 @@ admin.get('/rezervare_setari', requireOwner, async (c) => {
     ok: true,
     rez_capacitate: row?.rez_capacitate ?? null,
     rezervari_publice: row?.rezervari_publice ? 1 : 0,
+    descriere: row?.descriere ?? '',
+    categorie: row?.categorie ?? '',
     capacitate_mese: sum && sum.n > 0 ? sum.s : null,
   });
 });
@@ -1147,6 +1149,8 @@ admin.post('/salveaza_rezervare_setari', requireOwner, async (c) => {
   const n = Number(body.rez_capacitate ?? 0);
   const val = n >= 1 && n <= 1000 ? Math.floor(n) : null; // empty/0 → use table-capacity sum
   const publice = body.rezervari_publice ? 1 : 0;
+  const descriere = (body.descriere ?? '').toString().trim().slice(0, 500) || null;
+  const categorie = (body.categorie ?? '').toString().trim().slice(0, 60) || null;
   // Enabling public reservations requires a reservation token — create one if missing.
   if (publice) {
     const row = await one<{ rezervare_token: string | null }>(
@@ -1156,8 +1160,12 @@ admin.post('/salveaza_rezervare_setari', requireOwner, async (c) => {
       await run(c.env.DB, 'UPDATE restaurante SET rezervare_token = ? WHERE id = ?', generateToken(), rid(c));
     }
   }
-  await run(c.env.DB, 'UPDATE restaurante SET rez_capacitate = ?, rezervari_publice = ? WHERE id = ?', val, publice, rid(c));
-  return c.json({ ok: true, rez_capacitate: val, rezervari_publice: publice });
+  await run(
+    c.env.DB,
+    'UPDATE restaurante SET rez_capacitate = ?, rezervari_publice = ?, descriere = ?, categorie = ? WHERE id = ?',
+    val, publice, descriere, categorie, rid(c)
+  );
+  return c.json({ ok: true, rez_capacitate: val, rezervari_publice: publice, descriere, categorie });
 });
 
 // ── Reviews (recenzii) — owner only ──

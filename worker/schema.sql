@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS restaurante (
     rezervare_token TEXT,                          -- public token for the reservation link
     rez_capacitate  INTEGER,                       -- total seats for reservations (NULL = sum of table capacities)
     rezervari_publice INTEGER DEFAULT 0,           -- 1 = listed on the public Tablerino reservations directory
+    descriere       TEXT,                          -- short public description (shown on the reservations directory)
+    categorie       TEXT,                          -- restaurant type (e.g. Pizzerie, Cafenea), for the public directory
     escalare_sec    INTEGER,                       -- seconds an order stays reserved for the table's waiter (NULL = default 120)
     activ           INTEGER DEFAULT 1,             -- 0 = pending approval
     created_at      TEXT DEFAULT CURRENT_TIMESTAMP

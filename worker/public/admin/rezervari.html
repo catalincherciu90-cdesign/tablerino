@@ -170,7 +170,20 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
             <input type="checkbox" id="rezPublice" onchange="salveazaRezPublice()" style="width:20px;height:20px;cursor:pointer">
             <span>Afișează restaurantul în pagina publică de rezervări</span>
         </label>
-        <div id="rezPubliceLink" style="display:none;margin-top:12px;font-size:13px;color:#555">
+
+        <div style="margin-top:18px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Tip restaurant</label>
+            <select id="rezCategorie" style="width:100%;max-width:320px;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;background:#fff">
+                <option value="">— alege —</option>
+            </select>
+        </div>
+        <div style="margin-top:14px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Descriere scurtă <span style="color:#aaa;font-weight:400">(apare pe pagina publică)</span></label>
+            <textarea id="rezDescriere" maxlength="500" rows="3" placeholder="Ex: Bucătărie italiană autentică, în inima orașului. Paste de casă și pizza la cuptor pe lemne." style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;resize:vertical;font-family:inherit"></textarea>
+        </div>
+        <button class="btn-add" style="margin-top:12px" onclick="salveazaRezProfil()">💾 Salvează descrierea și tipul</button>
+
+        <div id="rezPubliceLink" style="display:none;margin-top:14px;font-size:13px;color:#555">
             Pagina publică: <a href="/rezerva/" target="_blank" style="color:#6c47ff;font-weight:600">tablerino.ro/rezerva</a>
         </div>
     </div>
@@ -350,6 +363,15 @@ function actualizeazaCapHint() {
     }
 }
 
+const CATEGORII = ['Restaurant','Pizzerie','Fast Food','Burgerie','Cafenea','Bistro','Pub / Bar',
+    'Cofetărie / Patiserie','Fine Dining','Tradițional românesc','Italian','Asiatic',
+    'Terasă / Grădină','Steakhouse','Vegetarian / Vegan','Shaorma / Kebab','Altele'];
+(function populeazaCategorii(){
+    const sel = document.getElementById('rezCategorie');
+    if (!sel) return;
+    CATEGORII.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o); });
+})();
+
 async function incarcaCapacitate() {
     try {
         const r = await fetch('/api/admin/rezervare_setari');
@@ -360,6 +382,8 @@ async function incarcaCapacitate() {
             const pub = !!d.rezervari_publice;
             document.getElementById('rezPublice').checked = pub;
             document.getElementById('rezPubliceLink').style.display = pub ? 'block' : 'none';
+            document.getElementById('rezCategorie').value = d.categorie || '';
+            document.getElementById('rezDescriere').value = d.descriere || '';
             actualizeazaCapHint();
         }
     } catch (e) {}
@@ -369,7 +393,20 @@ function rezPayload() {
     return {
         rez_capacitate: Number(document.getElementById('capInput').value) || 0,
         rezervari_publice: document.getElementById('rezPublice').checked ? 1 : 0,
+        categorie: document.getElementById('rezCategorie').value,
+        descriere: document.getElementById('rezDescriere').value,
     };
+}
+
+async function salveazaRezProfil() {
+    const r = await fetch('/api/admin/salveaza_rezervare_setari', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rezPayload())
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) showToast('Salvat!');
+    else showToast(d.msg || 'Eroare', 'err');
 }
 
 async function salveazaCapacitate() {

@@ -304,13 +304,10 @@ section.block { padding: clamp(70px, 9vw, 120px) clamp(24px, 6vw, 92px); }
 .hl-feat::before { content: '✓'; color: var(--espresso); background: var(--gold); width: 21px; height: 21px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 2px; }
 .hl-art {
     border-radius: 16px; min-height: 340px;
-    background: linear-gradient(145deg, #3a2e23, #241c15);
     border: 1px solid var(--gold-line);
-    display: grid; place-items: center; position: relative; overflow: hidden; padding: 22px;
+    position: relative; overflow: hidden;
 }
-.hl-art .emoji { font-size: 92px; filter: drop-shadow(0 14px 24px rgba(0,0,0,0.5)); }
-.hl-art::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 70% 22%, rgba(201,166,107,0.26), transparent 60%); }
-.hl-art .hl-shot { position: relative; z-index: 1; max-height: 360px; width: auto; max-width: 88%; object-fit: contain; }
+.hl-art .hl-shot { width: 100%; height: 100%; min-height: 340px; object-fit: cover; display: block; }
 
 /* Feature grid */
 .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(262px, 1fr)); gap: 20px; }
@@ -541,11 +538,11 @@ footer { background: var(--sidebar); border-top: 1px solid var(--line-soft); pad
                         <li class="hl-feat" data-ro="Văd istoricul zilei și comenzile active" data-en="See the day's history and active orders">Văd istoricul zilei și comenzile active</li>
                     </ul>
                 </div>
-                <div class="hl-art"><img class="hl-shot" src="/uploads/showcase-app.png" alt="Aplicația de ospătar" loading="lazy"></div>
+                <div class="hl-art"><img class="hl-shot" src="/uploads/show-app.png" alt="Aplicația de ospătar" loading="lazy"></div>
             </div>
 
             <div class="hl alt reveal">
-                <div class="hl-art"><img class="hl-shot" src="/uploads/showcase-rezervare.png" alt="Pagina de rezervare" loading="lazy"></div>
+                <div class="hl-art"><img class="hl-shot" src="/uploads/show-rezervare.png" alt="Pagina de rezervare" loading="lazy"></div>
                 <div>
                     <span class="hl-badge">★ <span data-ro="NOU" data-en="NEW">NOU</span></span>
                     <h3 class="hl-title" data-ro="Rezervări online" data-en="Online reservations">Rezervări online</h3>
@@ -569,7 +566,7 @@ footer { background: var(--sidebar); border-top: 1px solid var(--line-soft); pad
                         <li class="hl-feat" data-ro="Cod QR propriu pentru promovare" data-en="Its own QR code for promotion">Cod QR propriu pentru promovare</li>
                     </ul>
                 </div>
-                <div class="hl-art"><img class="hl-shot" src="/uploads/showcase-profil.png" alt="Profil public restaurant" loading="lazy"></div>
+                <div class="hl-art"><img class="hl-shot" src="/uploads/show-profil.png" alt="Profil public restaurant" loading="lazy"></div>
             </div>
         </div>
 

@@ -19,14 +19,14 @@ const WINDOW = 120; // a reservation occupies the table for ~2h
 interface Rest {
   id: number; nume: string; logo: string | null; tema: string;
   bg_imagine: string | null; text_bun_venit: string | null; limba: string | null;
-  rez_capacitate: number | null;
+  rez_capacitate: number | null; descriere: string | null; categorie: string | null;
 }
 
 async function restByToken(db: D1Database, token: string): Promise<Rest | null> {
   if (!token) return null;
   return one<Rest>(
     db,
-    `SELECT id, nume, logo, tema, bg_imagine, text_bun_venit, limba, rez_capacitate
+    `SELECT id, nume, logo, tema, bg_imagine, text_bun_venit, limba, rez_capacitate, descriere, categorie
      FROM restaurante WHERE rezervare_token = ? AND activ = 1`,
     token
   );
@@ -69,9 +69,9 @@ function occupiedAt(rezRows: { ora: string; nr_persoane: number }[], targetMin: 
 // GET /api/rezervare/restaurante  — public directory of restaurants that opted in
 // to the Tablerino public reservations page.
 rezervare.get('/restaurante', async (c) => {
-  const rows = await all<{ nume: string; logo: string | null; tema: string; rezervare_token: string }>(
+  const rows = await all<{ nume: string; logo: string | null; tema: string; rezervare_token: string; descriere: string | null; categorie: string | null }>(
     c.env.DB,
-    `SELECT nume, logo, tema, rezervare_token
+    `SELECT nume, logo, tema, rezervare_token, descriere, categorie
      FROM restaurante
      WHERE rezervari_publice = 1 AND activ = 1 AND rezervare_token IS NOT NULL
      ORDER BY nume COLLATE NOCASE`
@@ -82,6 +82,8 @@ rezervare.get('/restaurante', async (c) => {
     tema: r.tema,
     tema_cfg: getTheme(r.tema),
     token: r.rezervare_token,
+    descriere: r.descriere ?? null,
+    categorie: r.categorie ?? null,
   }));
   return c.json({ ok: true, restaurante });
 });
@@ -106,6 +108,8 @@ rezervare.get('/info', async (c) => {
       bg_imagine: r.bg_imagine,
       text_bun_venit: r.text_bun_venit,
       limba: r.limba ?? 'ro',
+      descriere: r.descriere ?? null,
+      categorie: r.categorie ?? null,
     },
   });
 });
