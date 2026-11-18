@@ -3,1367 +3,885 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tablerino — Tehnologie pentru experiențe culinare</title>
+<title>Tablerino — Comandă la masă prin QR și unelte pentru restaurante</title>
+<meta name="description" content="Tablerino este platforma digitală pentru restaurante: comandă la masă prin QR, dashboard în timp real, aplicație Android pentru ospătari, rezervări online, recenzii și rapoarte. Abonament €100/lună, fără comision pe comenzi.">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-    --navy: #0d1117;
-    --navy-mid: #161b22;
-    --gold: #c9a84c;
-    --gold-light: #e8c97a;
-    --cream: #f5f0e8;
-    --cream-dark: #e8e0d0;
-    --text: #0d1117;
-    --text-sub: #4a4a5a;
+    --purple: #6c47ff;
+    --purple-dark: #5636d4;
+    --purple-light: #8b6cff;
+    --navy: #1a1a2e;
+    --navy-2: #12121f;
+    --bg: #ffffff;
+    --bg-soft: #f6f5fb;
+    --text: #1a1a2e;
+    --muted: #5d5d72;
+    --border: rgba(26,26,46,0.08);
     --white: #ffffff;
-    --radius: 2px;
+    --radius: 18px;
+    --radius-sm: 12px;
+    --shadow-sm: 0 2px 10px rgba(26,26,46,0.06);
+    --shadow: 0 18px 50px rgba(26,26,46,0.10);
+    --shadow-lg: 0 30px 80px rgba(26,26,46,0.18);
+    --grad: linear-gradient(135deg, #6c47ff 0%, #8b6cff 100%);
+    --font: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
 html { scroll-behavior: smooth; }
-
 body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--cream);
+    font-family: var(--font);
+    background: var(--bg);
     color: var(--text);
+    line-height: 1.6;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
 }
-
-/* ── CURSOR CUSTOM ── */
-* { cursor: none !important; }
-.cursor {
-    width: 8px; height: 8px;
-    background: var(--gold);
-    border-radius: 50%;
-    position: fixed;
-    top: 0; left: 0;
-    pointer-events: none;
-    z-index: 9999;
-    transition: transform 0.1s ease;
-    mix-blend-mode: multiply;
-}
-.cursor-ring {
-    width: 36px; height: 36px;
-    border: 1px solid var(--gold);
-    border-radius: 50%;
-    position: fixed;
-    top: 0; left: 0;
-    pointer-events: none;
-    z-index: 9998;
-    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), width 0.3s, height 0.3s, opacity 0.3s;
-    opacity: 0.6;
-}
+img { max-width: 100%; display: block; }
+a { color: inherit; }
 
 /* ── NAVBAR ── */
 nav {
     position: fixed;
     top: 0; left: 0; right: 0;
     z-index: 100;
-    padding: 24px 60px;
+    padding: 20px clamp(16px, 5vw, 56px);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: background 0.4s, padding 0.4s;
+    transition: background 0.35s, padding 0.35s, box-shadow 0.35s;
 }
 nav.scrolled {
-    background: rgba(245,240,232,0.95);
-    backdrop-filter: blur(12px);
-    padding: 16px 60px;
-    border-bottom: 1px solid rgba(201,168,76,0.2);
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    padding: 12px clamp(16px, 5vw, 56px);
+    box-shadow: 0 1px 0 var(--border), 0 10px 30px rgba(26,26,46,0.06);
 }
 .nav-logo {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
+    font-weight: 800;
+    font-size: 21px;
+    letter-spacing: -0.02em;
     color: var(--navy);
     text-decoration: none;
     display: flex;
     align-items: center;
     gap: 10px;
 }
-.nav-logo img { height: 56px; width: auto; }
-.nav-links { display: flex; gap: 40px; align-items: center; }
-.nav-links a {
-    font-size: 13px;
-    font-weight: 400;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-sub);
+.nav-logo .logo-mark {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    background: var(--grad);
+    display: grid; place-items: center;
+    color: #fff; font-size: 18px;
+    box-shadow: 0 6px 18px rgba(108,71,255,0.4);
+}
+.nav-links { display: flex; gap: 30px; align-items: center; }
+.nav-links a.navlink {
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--muted);
     text-decoration: none;
     transition: color 0.2s;
 }
-.nav-links a:hover { color: var(--gold); }
+.nav-links a.navlink:hover { color: var(--purple); }
 .lang-toggle {
     display: flex;
-    gap: 4px;
-    background: rgba(201,168,76,0.1);
-    border: 1px solid rgba(201,168,76,0.3);
-    border-radius: 20px;
-    padding: 4px;
+    gap: 2px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px;
 }
 .lang-toggle button {
     background: none;
     border: none;
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    color: var(--text-sub);
-    padding: 4px 10px;
-    border-radius: 16px;
-    cursor: pointer !important;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--muted);
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
     transition: all 0.2s;
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font);
 }
 .lang-toggle button.activ {
-    background: var(--gold);
-    color: var(--white);
+    background: var(--purple);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(108,71,255,0.35);
 }
-.nav-mobile-controls { display: none; align-items: center; gap: 10px; }
-.nav-hamburger { background: var(--gold); border: none; color: var(--navy); padding: 8px 14px; border-radius: 8px; font-size: 18px; cursor: pointer !important; font-weight: 700; }
-.mobile-menu { display: none; position: fixed; top: 0; left: 0; right: 0; background: var(--navy); padding: 80px 24px 32px; z-index: 99; flex-direction: column; gap: 4px; border-bottom: 1px solid rgba(201,168,76,0.2); }
-.mobile-menu.open { display: flex; }
-.mobile-menu a { color: rgba(255,255,255,0.7); text-decoration: none; padding: 14px 16px; font-size: 16px; font-weight: 400; border-radius: 8px; letter-spacing: 0.05em; transition: background 0.2s; }
-.mobile-menu a:hover { background: rgba(201,168,76,0.1); color: var(--gold-light); }
-.mobile-menu-btn { background: var(--gold) !important; color: var(--navy) !important; font-weight: 600 !important; text-align: center; margin-top: 8px; }
+.btn-login {
+    background: var(--navy);
+    color: #fff !important;
+    text-decoration: none;
+    padding: 10px 22px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.btn-login:hover { background: var(--purple); transform: translateY(-1px); box-shadow: 0 10px 24px rgba(108,71,255,0.35); }
 
-@media (max-width: 600px) {
-    .nav-links { display: none !important; }
+.nav-mobile-controls { display: none; align-items: center; gap: 10px; }
+.hamburger {
+    background: var(--navy);
+    border: none; color: #fff;
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    font-size: 20px;
+    cursor: pointer;
+    display: grid; place-items: center;
+}
+.mobile-menu {
+    display: none;
+    position: fixed;
+    top: 72px; left: 12px; right: 12px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    z-index: 99;
+    flex-direction: column;
+    gap: 2px;
+    box-shadow: var(--shadow-lg);
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+    color: var(--navy);
+    text-decoration: none;
+    padding: 14px 16px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 12px;
+    transition: background 0.2s;
+}
+.mobile-menu a:hover { background: var(--bg-soft); }
+.mobile-menu a.mm-login { background: var(--grad); color: #fff; text-align: center; margin-top: 6px; }
+
+@media (max-width: 900px) {
+    .nav-links { display: none; }
     .nav-mobile-controls { display: flex; }
 }
-    padding: 10px 24px !important;
-    border-radius: 2px;
-    font-size: 12px !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.12em !important;
-    text-transform: uppercase !important;
-    transition: background 0.2s !important;
+
+/* ── BUTTONS ── */
+.btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px;
+    font-family: var(--font);
+    font-weight: 600;
+    font-size: 15.5px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    padding: 15px 30px;
+    border-radius: 999px;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s, color 0.2s;
 }
-.btn-nav:hover { background: var(--gold) !important; color: var(--navy) !important; }
+.btn-primary { background: var(--grad); color: #fff; box-shadow: 0 12px 30px rgba(108,71,255,0.4); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(108,71,255,0.5); }
+.btn-ghost { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.25); }
+.btn-ghost:hover { background: rgba(255,255,255,0.16); transform: translateY(-2px); }
+.btn-dark { background: var(--navy); color: #fff; }
+.btn-dark:hover { background: var(--purple); transform: translateY(-2px); box-shadow: 0 14px 30px rgba(108,71,255,0.35); }
 
 /* ── HERO ── */
 .hero {
-    min-height: 100vh;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
     position: relative;
-    overflow: hidden;
-}
-.hero-left {
+    padding: 160px clamp(20px, 5vw, 56px) 90px;
     background: var(--navy);
-    background-image: url('/uploads/landing-hero-bg.jpg');
+    background-image: linear-gradient(180deg, rgba(18,18,31,0.80) 0%, rgba(18,18,31,0.92) 100%), url('/uploads/landing-hero-bg.jpg');
     background-size: cover;
     background-position: center;
-    padding: 160px 80px 80px 80px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    position: relative;
     overflow: hidden;
 }
-.hero-price { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; opacity: 0; animation: fadeUp 0.8s ease 0.7s forwards; }
-.price-badge { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); border: 1px solid rgba(201,168,76,0.4); padding: 5px 14px; border-radius: 20px; font-weight: 400; }
-.price-amount { font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 300; color: var(--white); line-height: 1; }
-.price-per { font-size: 16px; color: rgba(255,255,255,0.45); font-family: 'DM Sans', sans-serif; font-weight: 300; }
-.hero-left::before {
+.hero::after {
     content: '';
     position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(13,17,23,0.93) 0%, rgba(13,17,23,0.78) 60%, rgba(13,17,23,0.60) 100%);
+    top: -30%; right: -10%;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(108,71,255,0.45) 0%, transparent 65%);
     pointer-events: none;
-    z-index: 0;
+    filter: blur(20px);
 }
-.hero-left > * { position: relative; z-index: 1; }
-.hero-eyebrow {
-    font-size: 11px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 28px;
-    opacity: 0;
-    animation: fadeUp 0.8s ease 0.2s forwards;
-    font-weight: 400;
-}
-.hero-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(42px, 5vw, 68px);
-    font-weight: 300;
-    line-height: 1.1;
-    color: var(--white);
-    margin-bottom: 32px;
-    opacity: 0;
-    animation: fadeUp 0.8s ease 0.4s forwards;
-}
-.hero-title em {
-    font-style: italic;
-    color: var(--gold-light);
-}
-.hero-desc {
-    font-size: 16px;
-    line-height: 1.7;
-    color: rgba(255,255,255,0.6);
-    max-width: 420px;
-    margin-bottom: 48px;
-    font-weight: 300;
-    opacity: 0;
-    animation: fadeUp 0.8s ease 0.6s forwards;
-}
-.hero-actions {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    opacity: 0;
-    animation: fadeUp 0.8s ease 0.8s forwards;
-}
-.btn-primary {
-    background: var(--gold);
-    color: var(--navy);
-    padding: 14px 36px;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    text-decoration: none;
-    border-radius: var(--radius);
-    transition: all 0.3s;
-    display: inline-block;
-    font-family: 'DM Sans', sans-serif;
-}
-.btn-primary:hover {
-    background: var(--gold-light);
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(201,168,76,0.3);
-}
-.btn-secondary {
-    color: rgba(255,255,255,0.7);
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 400;
-    transition: color 0.2s;
-    font-family: 'DM Sans', sans-serif;
-}
-.btn-secondary:hover { color: var(--gold-light); }
-.btn-secondary::after { content: '→'; transition: transform 0.2s; }
-.btn-secondary:hover::after { transform: translateX(4px); }
-
-.hero-right {
-    background: var(--cream);
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.hero-right::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9a84c' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-}
-.hero-mockup {
-    position: relative;
-    width: 320px;
-    opacity: 0;
-    animation: fadeIn 1.2s ease 1s forwards;
-}
-.mockup-tablet {
-    background: var(--navy);
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 40px 120px rgba(13,17,23,0.25), 0 0 0 1px rgba(201,168,76,0.2);
-}
-.mockup-screen {
-    background: #161b22;
-    border-radius: 12px;
-    overflow: hidden;
-}
-.mockup-header {
-    background: #1a2535;
-    padding: 10px 14px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.mockup-logo { font-size: 10px; color: var(--gold-light); font-family: 'Cormorant Garamond', serif; }
-.mockup-btns { display: flex; gap: 6px; }
-.mockup-btn { background: rgba(201,168,76,0.2); border: 1px solid rgba(201,168,76,0.3); border-radius: 10px; padding: 3px 8px; font-size: 7px; color: var(--gold-light); font-family: 'DM Sans', sans-serif; }
-.mockup-ticker { background: #c9a84c; padding: 3px 14px; font-size: 7px; color: #0d1117; font-weight: 500; }
-.mockup-body { padding: 12px; }
-.mockup-status { background: #d1fae5; border-radius: 6px; padding: 6px 10px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-.mockup-status span { font-size: 8px; color: #065f46; font-weight: 500; }
-.mockup-item { background: rgba(255,255,255,0.05); border-radius: 6px; padding: 6px 10px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
-.mockup-item span { font-size: 7px; color: rgba(255,255,255,0.7); }
-.mockup-item .price { color: var(--gold-light); font-weight: 500; }
-.mockup-total { padding: 8px 10px; display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 6px; }
-.mockup-total span { font-size: 8px; color: rgba(255,255,255,0.5); }
-.mockup-total strong { font-size: 10px; color: var(--gold-light); }
-.mockup-cta { background: linear-gradient(135deg, #1a1a2e, #2d1f6e); border-radius: 8px; padding: 8px; margin: 8px 12px 12px; text-align: center; font-size: 8px; color: #fff; font-weight: 500; }
-
-/* Floating badge */
-.float-badge {
-    position: absolute;
-    background: var(--white);
-    border-radius: 12px;
-    padding: 10px 16px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    animation: float 3s ease-in-out infinite;
-}
-.float-badge-1 { bottom: 80px; left: -30px; animation-delay: 0s; }
-.float-badge-2 { top: 100px; right: -20px; animation-delay: 1.5s; }
-.float-badge .badge-icon { font-size: 20px; }
-.float-badge .badge-text { font-size: 11px; }
-.float-badge .badge-text strong { display: block; color: var(--navy); font-weight: 500; }
-.float-badge .badge-text span { color: var(--text-sub); font-size: 10px; }
-
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-}
-
-/* ── DEMO WRAPPER ── */
-.hero-right {
-    background: var(--cream);
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    padding: 120px 40px 80px;
-}
-.hero-right::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9a84c' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-}
-.demo-wrapper {
-    position: relative;
-    width: 100%;
-    max-width: 820px;
-    aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.demo-tablet {
-    position: relative;
-    z-index: 10;
-    animation: fadeIn 1s ease 0.8s both;
-    width: 420px;
-}
-.demo-tablet .mockup-tablet {
-    box-shadow: 0 40px 100px rgba(13,17,23,0.2), 0 0 0 1px rgba(201,168,76,0.2);
-    width: 100%;
-    padding: 28px;
-    border-radius: 28px;
-}
-.mockup-screen { border-radius: 16px; }
-.mockup-header {
-    background: #1a2535;
-    padding: 18px 22px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.mockup-logo { font-size: 15px; color: var(--gold-light); font-family: 'Cormorant Garamond', serif; }
-.mockup-btns { display: flex; gap: 8px; }
-.mockup-btn { background: rgba(201,168,76,0.2); border: 1px solid rgba(201,168,76,0.3); border-radius: 12px; padding: 6px 14px; font-size: 12px; color: var(--gold-light); font-family: 'DM Sans', sans-serif; }
-.mockup-ticker { background: #c9a84c; padding: 8px 22px; font-size: 12px; color: #0d1117; font-weight: 600; }
-.mockup-body { padding: 20px; }
-.mockup-status { background: #d1fae5; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-.mockup-status span { font-size: 13px; color: #065f46; font-weight: 500; }
-.mockup-item { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-.mockup-item span { font-size: 13px; color: rgba(255,255,255,0.75); }
-.mockup-item .price { color: var(--gold-light); font-weight: 600; font-size: 14px; }
-.mockup-total { padding: 14px 16px; display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 10px; }
-.mockup-total span { font-size: 13px; color: rgba(255,255,255,0.5); }
-.mockup-total strong { font-size: 18px; color: var(--gold-light); }
-.mockup-cta { background: linear-gradient(135deg, #1a1a2e, #2d1f6e); border-radius: 12px; padding: 16px; margin: 14px 0 6px; text-align: center; font-size: 14px; color: #fff; font-weight: 600; letter-spacing: 0.05em; }
-
-/* Callouts */
-.callout {
-    position: absolute;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    animation: fadeIn 0.8s ease both;
-    z-index: 5;
-}
-.callout-box {
-    background: var(--white);
-    border: 1px solid rgba(201,168,76,0.2);
-    border-radius: 10px;
-    padding: 10px 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    white-space: nowrap;
-}
-.callout-icon { font-size: 18px; flex-shrink: 0; }
-.callout-box strong { display: block; font-size: 12px; font-weight: 500; color: var(--navy); }
-.callout-box span { font-size: 10px; color: var(--text-sub); font-weight: 300; }
-.callout-arrow { flex-shrink: 0; }
-.callout-tl { top: 6%; left: 0; flex-direction: column; align-items: flex-start; animation-delay: 1.2s; }
-.callout-tl .callout-arrow { width: 80px; height: 50px; align-self: flex-end; margin-right: 20px; }
-.callout-tr { top: 6%; right: 0; flex-direction: column; align-items: flex-end; animation-delay: 1.4s; }
-.callout-tr .callout-arrow { width: 80px; height: 50px; align-self: flex-start; margin-left: 20px; }
-.callout-ml { left: -20px; top: 50%; transform: translateY(-80px); animation-delay: 1.6s; }
-.callout-ml .callout-arrow { width: 60px; height: 20px; }
-.callout-mr { right: -20px; top: 50%; transform: translateY(-80px); animation-delay: 1.8s; }
-.callout-mr .callout-arrow { width: 60px; height: 20px; }
-.callout-bl { bottom: 12%; left: 0; flex-direction: column; align-items: flex-start; animation-delay: 2s; }
-.callout-bl .callout-arrow { width: 80px; height: 50px; align-self: flex-end; margin-right: 20px; }
-.callout-br { bottom: 12%; right: 0; flex-direction: column; align-items: flex-end; animation-delay: 2.2s; }
-.callout-br .callout-arrow { width: 80px; height: 50px; align-self: flex-start; margin-left: 20px; }
-
-/* Preț jos */
-.demo-price {
-    position: absolute;
-    bottom: -60px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    background: var(--navy);
-    padding: 16px 36px;
-    border-radius: 40px;
-    box-shadow: 0 12px 48px rgba(13,17,23,0.25), 0 0 0 1px rgba(201,168,76,0.3);
-    white-space: nowrap;
-    animation: fadeIn 0.8s ease 2.4s both;
-    border: 1px solid rgba(201,168,76,0.2);
-}
-.demo-price-badge {
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.45);
-    font-weight: 400;
-    border-right: 1px solid rgba(255,255,255,0.1);
-    padding-right: 16px;
-}
-.demo-price-amount {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 42px;
-    font-weight: 300;
-    color: var(--gold-light);
-    line-height: 1;
-}
-.demo-price-amount span {
-    font-size: 16px;
-    color: rgba(255,255,255,0.4);
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 300;
-    margin-left: 3px;
-}
-.stats-bar {
-    background: var(--navy);
-    padding: 32px 80px;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 40px;
-    border-top: 1px solid rgba(201,168,76,0.2);
-}
-.stat-item { text-align: center; }
-.stat-num {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 42px;
-    font-weight: 300;
-    color: var(--gold-light);
-    line-height: 1;
-    margin-bottom: 6px;
-}
-.stat-lbl {
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.4);
-    font-weight: 300;
-}
-
-/* ── FEATURES ── */
-.features {
-    padding: 120px 80px;
-    max-width: 1400px;
-    margin: 0 auto;
-}
-.section-header {
-    text-align: center;
-    margin-bottom: 80px;
-}
-.section-eyebrow {
-    font-size: 11px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 16px;
-    font-weight: 400;
-}
-.section-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(32px, 4vw, 52px);
-    font-weight: 300;
-    line-height: 1.2;
-    color: var(--navy);
-}
-.section-title em { font-style: italic; color: var(--gold); }
-.features-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2px;
-    background: rgba(201,168,76,0.1);
-    border: 1px solid rgba(201,168,76,0.15);
-}
-.feature-card {
-    background: var(--cream);
-    padding: 48px 40px;
-    transition: background 0.3s;
-    position: relative;
-    overflow: hidden;
-}
-.feature-card::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 2px;
-    background: var(--gold);
-    transform: scaleX(0);
-    transition: transform 0.3s;
-    transform-origin: left;
-}
-.feature-card:hover { background: var(--white); }
-.feature-card:hover::after { transform: scaleX(1); }
-.feature-icon {
-    font-size: 32px;
-    margin-bottom: 24px;
-    display: block;
-}
-.feature-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 22px;
-    font-weight: 400;
-    color: var(--navy);
-    margin-bottom: 12px;
-}
-.feature-desc {
-    font-size: 14px;
-    line-height: 1.7;
-    color: var(--text-sub);
-    font-weight: 300;
-}
-
-/* ── GALERIE ── */
-.galerie {
-    padding: 0;
-    width: 100%;
-}
-.galerie-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 0.8fr 1fr;
-    gap: 3px;
-    height: 500px;
-}
-.galerie-item {
-    position: relative;
-    overflow: hidden;
-}
-.galerie-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.6s ease;
-    display: block;
-}
-.galerie-item:hover img {
-    transform: scale(1.04);
-}
-.galerie-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgba(13,17,23,0.75) 0%, transparent 55%);
-    display: flex;
-    align-items: flex-end;
-    padding: 28px;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-.galerie-item:hover .galerie-overlay {
-    opacity: 1;
-}
-.galerie-overlay span {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 20px;
-    font-weight: 300;
-    font-style: italic;
-    color: var(--white);
-    letter-spacing: 0.05em;
-}
-
-@media (max-width: 1024px) {
-    .galerie-grid { height: auto; grid-template-columns: 1fr; grid-template-rows: 260px 260px 260px; }
-}
-.how {
-    background: var(--navy);
-    padding: 120px 80px;
-    position: relative;
-    overflow: hidden;
-}
-.how::before {
-    content: '';
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 800px; height: 800px;
-    background: radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%);
-    pointer-events: none;
-}
-.how .section-title { color: var(--white); }
-.how-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 40px;
-    margin-top: 64px;
-    position: relative;
-}
-.how-grid::before {
-    content: '';
-    position: absolute;
-    top: 28px; left: 60px; right: 60px;
-    height: 1px;
-    background: linear-gradient(to right, transparent, rgba(201,168,76,0.3), rgba(201,168,76,0.3), transparent);
-}
-.how-step { text-align: center; position: relative; }
-.step-num {
-    width: 56px; height: 56px;
-    border: 1px solid rgba(201,168,76,0.4);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 24px;
-    background: var(--navy);
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 22px;
-    color: var(--gold-light);
+.hero-inner {
     position: relative;
     z-index: 1;
-}
-.step-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 18px;
-    color: var(--white);
-    margin-bottom: 10px;
-    font-weight: 400;
-}
-.step-desc {
-    font-size: 13px;
-    color: rgba(255,255,255,0.45);
-    line-height: 1.6;
-    font-weight: 300;
-}
-
-/* ── TESTIMONIAL ── */
-.testimonial {
-    padding: 120px 80px;
-    max-width: 900px;
+    max-width: 1200px;
     margin: 0 auto;
-    text-align: center;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 56px;
+    align-items: center;
 }
-.quote-mark {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 120px;
-    line-height: 0.6;
-    color: var(--gold);
-    opacity: 0.3;
-    margin-bottom: 20px;
-    display: block;
+.hero-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #e9e4ff;
+    padding: 7px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 26px;
 }
-.quote-text {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(22px, 3vw, 34px);
-    font-weight: 300;
-    font-style: italic;
-    line-height: 1.5;
-    color: var(--navy);
-    margin-bottom: 40px;
+.hero-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #58e3a0; box-shadow: 0 0 0 4px rgba(88,227,160,0.2); }
+.hero h1 {
+    font-size: clamp(36px, 5.4vw, 60px);
+    font-weight: 800;
+    line-height: 1.07;
+    letter-spacing: -0.03em;
+    color: #fff;
+    margin-bottom: 22px;
 }
-.quote-author {
-    font-size: 12px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--text-sub);
+.hero h1 em { font-style: normal; background: linear-gradient(120deg,#b9a6ff,#8b6cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero p.lead {
+    font-size: 18px;
+    color: rgba(255,255,255,0.72);
+    max-width: 520px;
+    margin-bottom: 34px;
 }
-.quote-author strong {
-    color: var(--gold);
-    display: block;
-    font-size: 14px;
-    letter-spacing: 0.1em;
-    margin-bottom: 4px;
+.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.hero-price {
+    display: inline-flex; align-items: center; gap: 12px;
+    margin-top: 30px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.14);
+    padding: 10px 10px 10px 20px;
+    border-radius: 999px;
+}
+.hero-price .amt { font-size: 24px; font-weight: 800; color: #fff; }
+.hero-price .amt span { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.55); }
+.hero-price .tag {
+    background: var(--grad); color: #fff;
+    font-size: 12.5px; font-weight: 700;
+    padding: 7px 14px; border-radius: 999px;
 }
 
-/* ── CTA ── */
-.cta-section {
-    background: var(--navy);
-    padding: 120px 80px;
+/* Hero mockup */
+.hero-visual { position: relative; display: flex; justify-content: center; }
+.device {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 24px;
+    padding: 14px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(255,255,255,0.4);
+}
+.device-screen { background: var(--bg-soft); border-radius: 16px; overflow: hidden; }
+.dev-top { background: var(--navy); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; }
+.dev-top .biz { color: #fff; font-weight: 700; font-size: 14px; display: flex; gap: 7px; align-items: center; }
+.dev-top .chips { display: flex; gap: 6px; }
+.dev-top .chip { background: rgba(255,255,255,0.12); color: #cfc6ff; font-size: 10px; font-weight: 600; padding: 5px 9px; border-radius: 8px; }
+.dev-ticker { background: var(--grad); color: #fff; font-size: 11px; font-weight: 600; padding: 8px 18px; }
+.dev-body { padding: 16px; }
+.dev-alert { background: #e4fbef; color: #12724a; font-size: 12px; font-weight: 600; padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; }
+.dev-row { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; }
+.dev-row .p { color: var(--muted); }
+.dev-row .v { font-weight: 700; color: var(--purple); }
+.dev-total { display: flex; justify-content: space-between; padding: 12px 4px 4px; font-size: 13px; }
+.dev-total strong { color: var(--navy); font-size: 16px; }
+.dev-cta { margin-top: 12px; background: var(--navy); color: #fff; text-align: center; font-weight: 700; font-size: 13px; padding: 12px; border-radius: 12px; }
+.float-chip {
+    position: absolute;
+    background: #fff;
+    border-radius: 14px;
+    padding: 10px 14px;
+    box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 9px;
+    font-size: 12px;
+    animation: floaty 3.5s ease-in-out infinite;
+}
+.float-chip .ic { font-size: 18px; }
+.float-chip strong { display: block; color: var(--navy); font-size: 12.5px; }
+.float-chip span { color: var(--muted); font-size: 11px; }
+.fc-1 { top: 30px; left: -16px; animation-delay: 0s; }
+.fc-2 { bottom: 60px; right: -16px; animation-delay: 1.4s; }
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+
+/* ── STATS STRIP ── */
+.stats {
+    max-width: 1100px;
+    margin: -46px auto 0;
+    position: relative;
+    z-index: 5;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    overflow: hidden;
+}
+.stat { padding: 26px 18px; text-align: center; border-right: 1px solid var(--border); }
+.stat:last-child { border-right: none; }
+.stat .num { font-size: 30px; font-weight: 800; color: var(--purple); letter-spacing: -0.02em; }
+.stat .lbl { font-size: 13px; color: var(--muted); font-weight: 500; margin-top: 4px; }
+
+/* ── SECTIONS ── */
+section.block { padding: clamp(64px, 9vw, 110px) clamp(20px, 5vw, 56px); }
+.wrap { max-width: 1200px; margin: 0 auto; }
+.sec-head { max-width: 680px; margin: 0 auto 56px; text-align: center; }
+.eyebrow {
+    display: inline-block;
+    color: var(--purple);
+    background: rgba(108,71,255,0.1);
+    font-weight: 700; font-size: 13px;
+    padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+}
+.sec-title {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+    color: var(--navy);
+}
+.sec-title em { font-style: normal; color: var(--purple); }
+.sec-sub { margin-top: 16px; font-size: 17px; color: var(--muted); }
+
+/* Highlight blocks */
+.highlights { display: flex; flex-direction: column; gap: 24px; margin-bottom: 28px; }
+.hl {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 26px;
+    padding: 44px;
+    overflow: hidden;
+}
+.hl.alt { background: var(--navy); border-color: rgba(255,255,255,0.08); }
+.hl.alt .hl-title { color: #fff; }
+.hl.alt .hl-desc { color: rgba(255,255,255,0.72); }
+.hl.alt .hl-feat { color: rgba(255,255,255,0.86); }
+.hl-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--grad); color: #fff;
+    font-size: 12.5px; font-weight: 700;
+    padding: 6px 13px; border-radius: 999px;
+    margin-bottom: 16px;
+}
+.hl-title { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; color: var(--navy); margin-bottom: 12px; }
+.hl-desc { font-size: 16px; color: var(--muted); margin-bottom: 18px; }
+.hl-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.hl-feat { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; font-weight: 500; }
+.hl-feat::before { content: '✓'; color: #fff; background: var(--purple); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+.hl.alt .hl-feat::before { background: var(--purple-light); }
+.hl-art {
+    border-radius: 20px;
+    min-height: 240px;
+    background: var(--grad);
+    display: grid; place-items: center;
+    position: relative;
+    overflow: hidden;
+    padding: 24px;
+}
+.hl-art .emoji { font-size: 92px; filter: drop-shadow(0 12px 24px rgba(0,0,0,0.25)); }
+.hl-art::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 70% 20%, rgba(255,255,255,0.3), transparent 55%); }
+.hl.alt .hl-art { background: linear-gradient(135deg,#2a2a4a,#1a1a2e); border: 1px solid rgba(255,255,255,0.08); }
+
+/* Feature grid */
+.feat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+}
+.feat-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 30px 26px;
+    transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+}
+.feat-card:hover { transform: translateY(-6px); box-shadow: var(--shadow); border-color: rgba(108,71,255,0.3); }
+.feat-ic {
+    width: 54px; height: 54px;
+    border-radius: 15px;
+    background: rgba(108,71,255,0.1);
+    display: grid; place-items: center;
+    font-size: 26px;
+    margin-bottom: 18px;
+}
+.feat-card.is-new { position: relative; }
+.badge-new {
+    position: absolute; top: 20px; right: 20px;
+    background: var(--grad); color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 4px 10px; border-radius: 999px;
+}
+.feat-card h3 { font-size: 18.5px; font-weight: 700; color: var(--navy); margin-bottom: 8px; letter-spacing: -0.01em; }
+.feat-card p { font-size: 14.5px; color: var(--muted); }
+
+/* ── GALLERY ── */
+.gallery { padding: 0; }
+.gal-grid { display: grid; grid-template-columns: 1.2fr 0.8fr 1fr; gap: 6px; }
+.gal-item { position: relative; overflow: hidden; aspect-ratio: 3/4; }
+.gal-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+.gal-item:hover img { transform: scale(1.05); }
+.gal-cap {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(18,18,31,0.78), transparent 55%);
+    display: flex; align-items: flex-end; padding: 24px;
+}
+.gal-cap span { color: #fff; font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
+@media (max-width: 820px) {
+    .gal-grid { grid-template-columns: 1fr; }
+    .gal-item { aspect-ratio: 16/10; }
+}
+
+/* ── HOW ── */
+.how { background: var(--navy); }
+.how .sec-title { color: #fff; }
+.how .sec-sub { color: rgba(255,255,255,0.65); }
+.steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
+.step {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    padding: 26px 20px;
+    text-align: left;
+}
+.step .n {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--grad); color: #fff;
+    font-weight: 800; font-size: 17px;
+    display: grid; place-items: center;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 20px rgba(108,71,255,0.4);
+}
+.step h4 { color: #fff; font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.step p { color: rgba(255,255,255,0.6); font-size: 13.5px; }
+@media (max-width: 900px) { .steps { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px) { .steps { grid-template-columns: 1fr; } }
+
+/* ── PRICING ── */
+.pricing { background: var(--bg-soft); }
+.price-card {
+    max-width: 480px; margin: 0 auto;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 26px;
+    padding: 44px 40px;
     text-align: center;
+    box-shadow: var(--shadow);
     position: relative;
     overflow: hidden;
 }
-.cta-section::before {
-    content: 'TABLERINO';
-    position: absolute;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 200px;
-    font-weight: 300;
-    color: rgba(201,168,76,0.03);
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    white-space: nowrap;
-    pointer-events: none;
-    letter-spacing: 0.1em;
+.price-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: var(--grad); }
+.price-card .plan { font-weight: 700; color: var(--purple); font-size: 14px; letter-spacing: 0.02em; }
+.price-card .big { font-size: 58px; font-weight: 800; letter-spacing: -0.03em; color: var(--navy); margin: 10px 0 2px; }
+.price-card .big span { font-size: 19px; font-weight: 500; color: var(--muted); }
+.price-card .no-comm { display: inline-flex; align-items: center; gap: 8px; background: rgba(88,227,160,0.14); color: #12724a; font-weight: 700; font-size: 13.5px; padding: 7px 15px; border-radius: 999px; margin: 14px 0 24px; }
+.price-list { list-style: none; text-align: left; display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px; }
+.price-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; color: var(--navy); font-weight: 500; }
+.price-list li::before { content: '✓'; color: #fff; background: var(--purple); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+.price-card .btn { width: 100%; }
+
+/* ── REGISTER ── */
+#inregistrare { background: #fff; }
+.reg-wrap { max-width: 1050px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+.reg-left .sec-title { text-align: left; }
+.reg-left .sec-head { text-align: left; margin: 0; max-width: none; }
+.reg-points { list-style: none; margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+.reg-points li { display: flex; gap: 10px; align-items: center; font-size: 15px; color: var(--muted); font-weight: 500; }
+.reg-points li b { color: var(--navy); }
+.reg-form {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 34px;
+    box-shadow: var(--shadow-sm);
 }
-.cta-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(36px, 5vw, 64px);
-    font-weight: 300;
-    color: var(--white);
-    margin-bottom: 20px;
-    line-height: 1.1;
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 7px; }
+.field input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: var(--font);
+    background: #fff;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
-.cta-title em { font-style: italic; color: var(--gold-light); }
-.cta-desc {
-    font-size: 16px;
-    color: rgba(255,255,255,0.5);
-    margin-bottom: 48px;
-    font-weight: 300;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
-}
-.cta-btns { display: flex; gap: 16px; justify-content: center; align-items: center; flex-wrap: wrap; }
-.btn-gold {
-    background: var(--gold);
-    color: var(--navy);
-    padding: 16px 48px;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    text-decoration: none;
-    border-radius: var(--radius);
-    transition: all 0.3s;
-    font-family: 'DM Sans', sans-serif;
-    display: inline-block;
-}
-.btn-gold:hover {
-    background: var(--gold-light);
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(201,168,76,0.25);
-}
-.btn-outline {
-    border: 1px solid rgba(201,168,76,0.4);
-    color: rgba(255,255,255,0.7);
-    padding: 16px 48px;
-    font-size: 12px;
-    font-weight: 400;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    text-decoration: none;
-    border-radius: var(--radius);
-    transition: all 0.3s;
-    font-family: 'DM Sans', sans-serif;
-    display: inline-block;
-}
-.btn-outline:hover { border-color: var(--gold); color: var(--gold-light); }
+.field input:focus { border-color: var(--purple); box-shadow: 0 0 0 4px rgba(108,71,255,0.12); }
+#irBtn { width: 100%; margin-top: 6px; }
+#irBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+.reg-note { font-size: 12.5px; color: var(--muted); text-align: center; margin-top: 14px; }
+.reg-success { text-align: center; padding: 30px 10px; }
+.reg-success .ic { font-size: 54px; margin-bottom: 10px; }
+.reg-success h3 { font-size: 24px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+.reg-success p { color: var(--muted); font-size: 15px; }
+@media (max-width: 860px) { .reg-wrap { grid-template-columns: 1fr; gap: 36px; } }
+
+/* ── CTA / CONTACT ── */
+.cta { background: var(--navy); text-align: center; position: relative; overflow: hidden; }
+.cta::after { content: ''; position: absolute; bottom: -40%; left: 50%; transform: translateX(-50%); width: 700px; height: 500px; background: radial-gradient(circle, rgba(108,71,255,0.4), transparent 65%); filter: blur(10px); pointer-events: none; }
+.cta .inner { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; }
+.cta h2 { font-size: clamp(28px, 4.4vw, 46px); font-weight: 800; letter-spacing: -0.03em; color: #fff; line-height: 1.1; margin-bottom: 18px; }
+.cta h2 em { font-style: normal; background: linear-gradient(120deg,#b9a6ff,#8b6cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cta p { color: rgba(255,255,255,0.68); font-size: 17px; margin-bottom: 32px; }
+.cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
 /* ── FOOTER ── */
-footer {
-    background: #080d12;
-    padding: 60px 80px 32px;
-    border-top: 1px solid rgba(201,168,76,0.1);
-}
-.footer-top {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 60px;
-    margin-bottom: 48px;
-}
-.footer-brand {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 24px;
-    font-weight: 300;
-    color: var(--gold-light);
-    margin-bottom: 16px;
-    letter-spacing: 0.05em;
-}
-.footer-tagline {
-    font-size: 13px;
-    color: rgba(255,255,255,0.3);
-    font-weight: 300;
-    line-height: 1.6;
-}
-.footer-col h4 {
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 20px;
-    font-weight: 400;
-}
-.footer-col a {
-    display: block;
-    font-size: 13px;
-    color: rgba(255,255,255,0.4);
-    text-decoration: none;
-    margin-bottom: 10px;
-    transition: color 0.2s;
-    font-weight: 300;
-}
-.footer-col a:hover { color: var(--gold-light); }
-.footer-bottom {
-    border-top: 1px solid rgba(255,255,255,0.06);
-    padding-top: 28px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.footer-copy {
-    font-size: 12px;
-    color: rgba(255,255,255,0.2);
-    font-weight: 300;
-}
-.footer-line {
-    width: 40px;
-    height: 1px;
-    background: var(--gold);
-    opacity: 0.4;
-}
+footer { background: var(--navy-2); padding: 64px clamp(20px, 5vw, 56px) 30px; }
+.foot-top { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px; padding-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.foot-brand { font-size: 22px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.foot-brand .logo-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--grad); display: grid; place-items: center; color: #fff; font-size: 17px; }
+.foot-tag { color: rgba(255,255,255,0.5); font-size: 14.5px; max-width: 340px; }
+.foot-col h4 { color: #fff; font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+.foot-col a { display: block; color: rgba(255,255,255,0.5); text-decoration: none; font-size: 14.5px; margin-bottom: 10px; transition: color 0.2s; }
+.foot-col a:hover { color: var(--purple-light); }
+.foot-bottom { max-width: 1200px; margin: 24px auto 0; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
+.foot-bottom span { color: rgba(255,255,255,0.35); font-size: 13px; }
+@media (max-width: 760px) { .foot-top { grid-template-columns: 1fr 1fr; } .foot-brand-col { grid-column: 1 / -1; } .foot-bottom { flex-direction: column; text-align: center; } }
 
-/* ── ÎNREGISTRARE ── */
-.inreg-section { background: var(--cream); padding: 100px 80px; border-top: 1px solid rgba(201,168,76,0.15); }
-.inreg-wrap { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
-.inreg-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(32px,4vw,48px); font-weight: 300; line-height: 1.15; color: var(--navy); margin-bottom: 16px; }
-.inreg-title em { font-style: italic; color: var(--gold); }
-.inreg-desc { font-size: 15px; color: var(--text-sub); line-height: 1.7; font-weight: 300; }
-.inreg-form-wrap { background: var(--white); border-radius: 16px; padding: 36px; box-shadow: 0 8px 40px rgba(13,17,23,0.08); border: 1px solid rgba(201,168,76,0.15); }
-.field-group { margin-bottom: 16px; }
-.field-group label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-sub); margin-bottom: 6px; }
-.field-group input { width: 100%; padding: 12px 16px; border: 1px solid rgba(13,17,23,0.12); border-radius: var(--radius); font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.2s; background: var(--cream); color: var(--text); }
-.field-group input:focus { border-color: var(--gold); background: var(--white); }
-.inreg-btn { width: 100%; padding: 14px; background: var(--navy); color: var(--white); border: none; border-radius: var(--radius); font-size: 12px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; margin-top: 8px; transition: all 0.3s; font-family: 'DM Sans', sans-serif; }
-.inreg-btn:hover { background: var(--gold); color: var(--navy); }
-.inreg-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.inreg-note { font-size: 11px; color: var(--text-sub); text-align: center; margin-top: 12px; opacity: 0.7; }
-.inreg-success { text-align: center; padding: 48px 24px; }
-.inreg-success .success-icon { font-size: 48px; margin-bottom: 16px; }
-.inreg-success h3 { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; color: var(--navy); margin-bottom: 10px; }
-.inreg-success p { color: var(--text-sub); font-size: 14px; }
-@media (max-width: 1024px) {
-    .inreg-section { padding: 60px 32px; }
-    .inreg-wrap { grid-template-columns: 1fr; gap: 40px; }
-}
-
-/* ── FOOTER SOCIAL ── */
-.footer-social { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
-.footer-social-btn { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.2s, opacity 0.2s; opacity: 0.7; color: rgba(255,255,255,0.6); }
-.footer-social-btn:hover { opacity: 1; transform: translateY(-2px); }
-.footer-social-btn svg { width: 18px; height: 18px; }
-.footer-social-btn.facebook:hover { color: #1877f2; }
-.footer-social-btn.instagram:hover { color: #e1306c; }
-.footer-social-btn.tiktok:hover { color: #fff; }
-.footer-social-btn.whatsapp:hover { color: #25d366; }
-.footer-social-btn.youtube:hover { color: #ff0000; }
-.reveal {
-    opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.8s ease, transform 0.8s ease;
-}
+/* ── REVEAL ── */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
 .reveal.visible { opacity: 1; transform: translateY(0); }
 
-/* ── ANIMATIONS ── */
-@keyframes fadeUp {
-    to { opacity: 1; transform: translateY(0); }
-    from { opacity: 0; transform: translateY(20px); }
+/* ── HERO RESPONSIVE ── */
+@media (max-width: 920px) {
+    .hero-inner { grid-template-columns: 1fr; gap: 44px; text-align: center; }
+    .hero p.lead { margin-left: auto; margin-right: auto; }
+    .hero-actions { justify-content: center; }
+    .hero-visual { order: -1; }
+    .hl { grid-template-columns: 1fr; gap: 28px; padding: 32px; }
+    .hl .hl-art { order: -1; min-height: 180px; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .stat:nth-child(2) { border-right: none; }
+    .stat:nth-child(1), .stat:nth-child(2) { border-bottom: 1px solid var(--border); }
 }
-@keyframes fadeIn { to { opacity: 1; } from { opacity: 0; } }
-
-/* ── RESPONSIVE TABLET (max 1024px) ── */
-@media (max-width: 1024px) {
-    nav { padding: 20px 32px; }
-    nav.scrolled { padding: 14px 32px; }
-    .nav-links { display: none; }
-    .hero { grid-template-columns: 1fr; }
-    .hero-left { padding: 100px 32px 60px; }
-    .hero-right { min-height: auto; padding: 60px 0; }
-    .pricing-panel { padding: 0 32px; }
-    .stats-bar { grid-template-columns: repeat(2, 1fr); padding: 40px; }
-    .features { padding: 80px 32px; }
-    .features-grid { grid-template-columns: 1fr; }
-    .how { padding: 80px 32px; }
-    .how-grid { grid-template-columns: repeat(2, 1fr); }
-    .how-grid::before { display: none; }
-    .testimonial { padding: 80px 32px; }
-    .cta-section { padding: 80px 32px; }
-    footer { padding: 48px 32px 24px; }
-    .footer-top { grid-template-columns: 1fr; gap: 32px; }
-    .footer-bottom { flex-direction: column; gap: 16px; }
-    * { cursor: auto !important; }
-    .cursor, .cursor-ring { display: none; }
-    /* Demo wrapper */
-    .demo-wrapper { max-width: 500px; aspect-ratio: auto; padding: 40px 20px 80px; }
-    .demo-tablet { width: 320px; }
-    .callout { display: none; }
-    .demo-price { bottom: 10px; }
-}
-
-/* ── RESPONSIVE MOBILE (max 600px) ── */
-@media (max-width: 600px) {
-    /* Navbar */
-    nav { padding: 16px 20px; }
-    nav.scrolled { padding: 12px 20px; }
-    .nav-logo { font-size: 18px; }
-    .nav-logo img { height: 40px; }
-
-    /* Hero */
-    .hero { grid-template-columns: 1fr; min-height: auto; }
-    .hero-left { padding: 90px 24px 48px; }
-    .hero-eyebrow { font-size: 10px; margin-bottom: 16px; }
-    .hero-title { font-size: 36px; margin-bottom: 20px; }
-    .hero-desc { font-size: 14px; margin-bottom: 28px; }
-    .hero-actions { flex-direction: column; gap: 12px; }
-    .hero-actions .btn-primary,
-    .hero-actions .btn-secondary { text-align: center; width: 100%; }
-    .hero-right { display: none; }
-
-    /* Stats */
-    .stats-bar { grid-template-columns: repeat(2, 1fr); padding: 28px 20px; gap: 16px; }
-    .stat-num { font-size: 32px; }
-    .stat-lbl { font-size: 10px; }
-
-    /* Features */
-    .features { padding: 60px 20px; }
-    .section-title { font-size: 28px; }
-    .features-grid { grid-template-columns: 1fr; gap: 2px; }
-    .feature-card { padding: 28px 24px; }
-    .feature-icon { font-size: 24px; margin-bottom: 14px; }
-    .feature-title { font-size: 17px; }
-    .feature-desc { font-size: 13px; }
-
-    /* Galerie */
-    .galerie-grid { grid-template-columns: 1fr; grid-template-rows: 220px 220px 220px; }
-
-    /* How it works */
-    .how { padding: 60px 20px; }
-    .how-grid { grid-template-columns: 1fr; gap: 32px; }
-    .step-num { width: 44px; height: 44px; font-size: 18px; }
-    .step-title { font-size: 16px; }
-    .step-desc { font-size: 13px; }
-
-    /* Testimonial */
-    .testimonial { padding: 60px 20px; }
-    .quote-mark { font-size: 80px; }
-    .quote-text { font-size: 20px; }
-
-    /* CTA */
-    .cta-section { padding: 60px 20px; }
-    .cta-title { font-size: 28px; }
-    .cta-desc { font-size: 14px; }
-    .cta-btns { flex-direction: column; align-items: center; gap: 12px; width: 100%; }
-    .btn-gold, .btn-outline { width: 100%; max-width: 320px; text-align: center; padding: 16px 24px; }
-
-    /* Înregistrare */
-    .inreg-section { padding: 60px 20px; }
-    .inreg-wrap { grid-template-columns: 1fr; gap: 32px; }
-    .inreg-title { font-size: 28px; }
-    .inreg-form-wrap { padding: 24px 20px; }
-    .inreg-btn { padding: 14px; font-size: 13px; }
-
-    /* Footer */
-    footer { padding: 48px 20px 24px; }
-    .footer-top { grid-template-columns: 1fr; gap: 28px; }
-    .footer-brand { font-size: 20px; }
-    .footer-tagline { font-size: 13px; }
-    .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
-    .footer-line { display: none; }
+@media (max-width: 460px) {
+    .hero { padding-top: 120px; }
+    .hero h1 { font-size: 33px; }
+    .btn { width: 100%; }
+    .hero-actions .btn, .cta-btns .btn { width: 100%; }
+    .float-chip { display: none; }
+    .hl { padding: 24px; }
 }
 </style>
 </head>
 <body>
 
-<div class="cursor" id="cursor"></div>
-<div class="cursor-ring" id="cursorRing"></div>
-
 <!-- NAV -->
 <nav id="navbar">
-    <a href="#" class="nav-logo">
-        <img src="/uploads/logo-tablerino.png" alt="Tablerino" onerror="this.style.display='none'">
-        Tablerino
-    </a>
+    <a href="#" class="nav-logo"><span class="logo-mark">🍽</span>Tablerino</a>
     <div class="nav-links">
-        <a href="#features" data-ro="Funcționalități" data-en="Features">Funcționalități</a>
-        <a href="#how" data-ro="Cum funcționează" data-en="How it works">Cum funcționează</a>
-        <a href="#inregistrare" data-ro="Înregistrare" data-en="Register">Înregistrare</a>
-        <a href="#contact" data-ro="Contact" data-en="Contact">Contact</a>
+        <a href="#features" class="navlink" data-ro="Funcționalități" data-en="Features">Funcționalități</a>
+        <a href="#how" class="navlink" data-ro="Cum funcționează" data-en="How it works">Cum funcționează</a>
+        <a href="#pret" class="navlink" data-ro="Preț" data-en="Pricing">Preț</a>
+        <a href="#inregistrare" class="navlink" data-ro="Înregistrare" data-en="Register">Înregistrare</a>
+        <a href="#contact" class="navlink" data-ro="Contact" data-en="Contact">Contact</a>
         <div class="lang-toggle">
             <button onclick="setLang('ro')" id="btnRo" class="activ">RO</button>
             <button onclick="setLang('en')" id="btnEn">EN</button>
         </div>
-        <a href="/admin/login.html" class="btn-nav" data-ro="Autentificare" data-en="Login">Autentificare</a>
+        <a href="/admin/login.html" class="btn-login" data-ro="Autentificare" data-en="Login">Autentificare</a>
     </div>
-    <!-- Mobile controls -->
     <div class="nav-mobile-controls">
         <div class="lang-toggle">
             <button onclick="setLang('ro')" id="btnRoM" class="activ">RO</button>
             <button onclick="setLang('en')" id="btnEnM">EN</button>
         </div>
-        <button class="nav-hamburger" onclick="toggleMobileMenu()" id="hamburger">☰</button>
+        <button class="hamburger" onclick="toggleMobileMenu()" id="hamburger">☰</button>
     </div>
 </nav>
 
-<!-- Mobile menu -->
+<!-- MOBILE MENU -->
 <div class="mobile-menu" id="mobileMenu">
-    <a href="#features" onclick="toggleMobileMenu()" data-ro="Funcționalități" data-en="Features">Funcționalități</a>
-    <a href="#how" onclick="toggleMobileMenu()" data-ro="Cum funcționează" data-en="How it works">Cum funcționează</a>
-    <a href="#inregistrare" onclick="toggleMobileMenu()" data-ro="Înregistrare" data-en="Register">Înregistrare</a>
-    <a href="#contact" onclick="toggleMobileMenu()" data-ro="Contact" data-en="Contact">Contact</a>
-    <a href="/admin/login.html" class="mobile-menu-btn" data-ro="Autentificare" data-en="Login">Autentificare</a>
+    <a href="#features" data-ro="Funcționalități" data-en="Features">Funcționalități</a>
+    <a href="#how" data-ro="Cum funcționează" data-en="How it works">Cum funcționează</a>
+    <a href="#pret" data-ro="Preț" data-en="Pricing">Preț</a>
+    <a href="#inregistrare" data-ro="Înregistrare" data-en="Register">Înregistrare</a>
+    <a href="#contact" data-ro="Contact" data-en="Contact">Contact</a>
+    <a href="/admin/login.html" class="mm-login" data-ro="Autentificare" data-en="Login">Autentificare</a>
 </div>
 
 <!-- HERO -->
 <section class="hero">
-    <div class="hero-left">
-        <p class="hero-eyebrow" data-ro="Soluția digitală pentru restaurante" data-en="The digital solution for restaurants">Soluția digitală pentru restaurante</p>
-        <h1 class="hero-title">
-            <span data-ro="Comenzi la masă,&lt;br&gt;&lt;em&gt;reimaginate.&lt;/em&gt;" data-en="Table ordering,&lt;br&gt;&lt;em&gt;reimagined.&lt;/em&gt;">Comenzi la masă,<br><em>reimaginate.</em></span>
-        </h1>
-        <p class="hero-desc" data-ro="" data-en="">
-            Tablerino transformă experiența de comandă în restaurantul tău.        </p>
-        <div class="hero-actions">
-            <a href="#inregistrare" class="btn-primary" data-ro="Înregistrează-ți restaurantul" data-en="Register your restaurant">Înregistrează-ți restaurantul</a>
-            <a href="#how" class="btn-secondary" data-ro="Cum funcționează" data-en="How it works">Cum funcționează</a>
+    <div class="hero-inner">
+        <div class="hero-copy">
+            <span class="hero-pill"><span class="dot"></span><span data-ro="Platforma digitală pentru restaurante" data-en="The digital platform for restaurants">Platforma digitală pentru restaurante</span></span>
+            <h1 data-ro="Comandă la masă prin QR și <em>unelte pentru echipa ta</em>" data-en="QR table ordering and <em>tools for your team</em>">Comandă la masă prin QR și <em>unelte pentru echipa ta</em></h1>
+            <p class="lead" data-ro="Clienții comandă de la masă scanând un cod QR, ospătarii preiau din aplicație, iar tu vezi totul în timp real. Meniu, rezervări, recenzii și rapoarte — într-o singură platformă." data-en="Guests order from the table by scanning a QR code, waiters take orders from the app, and you see everything in real time. Menu, reservations, reviews and reports — in one platform.">Clienții comandă de la masă scanând un cod QR, ospătarii preiau din aplicație, iar tu vezi totul în timp real. Meniu, rezervări, recenzii și rapoarte — într-o singură platformă.</p>
+            <div class="hero-actions">
+                <a href="#inregistrare" class="btn btn-primary" data-ro="Solicită acces" data-en="Request access">Solicită acces</a>
+                <a href="#how" class="btn btn-ghost" data-ro="Cum funcționează" data-en="How it works">Cum funcționează</a>
+            </div>
+            <div class="hero-price">
+                <span class="tag" data-ro="Abonament lunar" data-en="Monthly subscription">Abonament lunar</span>
+                <span class="amt">€100<span data-ro="/lună" data-en="/month">/lună</span></span>
+            </div>
         </div>
-    </div>
-    <div class="hero-right">
-        <div class="demo-wrapper">
-
-            <!-- Tableta centrală -->
-            <div class="demo-tablet">
-                <div class="mockup-tablet">
-                    <div class="mockup-screen">
-                        <div class="mockup-header">
-                            <span class="mockup-logo">🍽 Afacerea Ta</span>
-                            <div class="mockup-btns">
-                                <span class="mockup-btn">📋 Comanda ta</span>
-                                <span class="mockup-btn">🍕 Meniu</span>
-                            </div>
-                        </div>
-                        <div class="mockup-ticker">Bine ai venit! Profită de oferta 2+1 GRATIS →</div>
-                        <div class="mockup-body">
-                            <div class="mockup-status">
-                                <span>✅ Toate servite! Poți solicita nota.</span>
-                            </div>
-                            <div class="mockup-item">
-                                <span>2× Souvlaki Pui cu Bacon</span>
-                                <span class="price">90.00 lei</span>
-                            </div>
-                            <div class="mockup-item">
-                                <span>1× Tzatziki</span>
-                                <span class="price">18.00 lei</span>
-                            </div>
-                            <div class="mockup-item">
-                                <span>2× Limonadă</span>
-                                <span class="price">24.00 lei</span>
-                            </div>
-                            <div class="mockup-total">
-                                <span>Total</span>
-                                <strong>132.00 lei</strong>
-                            </div>
-                            <div class="mockup-cta">🧾 Solicită nota</div>
+        <div class="hero-visual">
+            <div class="device">
+                <div class="device-screen">
+                    <div class="dev-top">
+                        <div class="biz">🍽 <span data-ro="Restaurantul Tău" data-en="Your Restaurant">Restaurantul Tău</span></div>
+                        <div class="chips">
+                            <span class="chip" data-ro="Comanda ta" data-en="Your order">Comanda ta</span>
+                            <span class="chip" data-ro="Meniu" data-en="Menu">Meniu</span>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Săgeți + callout-uri -->
-            <div class="callout callout-tl">
-                <div class="callout-box">
-                    <span class="callout-icon">📱</span>
-                    <div>
-                        <strong data-ro="QR / Tabletă / Telefon" data-en="QR / Tablet / Phone">QR / Tabletă / Telefon</strong>
-                        <span data-ro="Fără aplicație instalată" data-en="No app needed">Fără aplicație instalată</span>
-                    </div>
-                </div>
-                <svg class="callout-arrow arrow-tl" viewBox="0 0 80 50" fill="none">
-                    <path d="M4 4 C20 4, 60 4, 76 46" stroke="#c9a84c" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
-                    <polygon points="70,44 76,46 72,38" fill="#c9a84c"/>
-                </svg>
-            </div>
-
-            <div class="callout callout-tr">
-                <svg class="callout-arrow arrow-tr" viewBox="0 0 80 50" fill="none">
-                    <path d="M76 4 C60 4, 20 4, 4 46" stroke="#c9a84c" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
-                    <polygon points="10,44 4,46 8,38" fill="#c9a84c"/>
-                </svg>
-                <div class="callout-box">
-                    <span class="callout-icon">⚡</span>
-                    <div>
-                        <strong data-ro="Comenzi în timp real" data-en="Real-time orders">Comenzi în timp real</strong>
-                        <span data-ro="Refresh la 5 secunde" data-en="Refresh every 5 seconds">Refresh la 5 secunde</span>
+                    <div class="dev-ticker" data-ro="Bine ai venit! Ofertă 2+1 GRATIS astăzi →" data-en="Welcome! 2+1 FREE offer today →">Bine ai venit! Ofertă 2+1 GRATIS astăzi →</div>
+                    <div class="dev-body">
+                        <div class="dev-alert" data-ro="✅ Toate servite! Poți solicita nota." data-en="✅ All served! You can request the bill.">✅ Toate servite! Poți solicita nota.</div>
+                        <div class="dev-row"><span class="p">2× <span data-ro="Burger de vită" data-en="Beef burger">Burger de vită</span></span><span class="v">90 lei</span></div>
+                        <div class="dev-row"><span class="p">1× <span data-ro="Cartofi prăjiți" data-en="French fries">Cartofi prăjiți</span></span><span class="v">18 lei</span></div>
+                        <div class="dev-row"><span class="p">2× <span data-ro="Limonadă" data-en="Lemonade">Limonadă</span></span><span class="v">24 lei</span></div>
+                        <div class="dev-total"><span data-ro="Total" data-en="Total">Total</span><strong>132 lei</strong></div>
+                        <div class="dev-cta" data-ro="🧾 Solicită nota" data-en="🧾 Request the bill">🧾 Solicită nota</div>
                     </div>
                 </div>
             </div>
-
-            <div class="callout callout-ml">
-                <div class="callout-box">
-                    <span class="callout-icon">📢</span>
-                    <div>
-                        <strong data-ro="Reclame & Promoții" data-en="Ads & Promotions">Reclame & Promoții</strong>
-                        <span data-ro="Ticker animat cu ofertele tale" data-en="Animated ticker with your offers">Ticker animat cu ofertele tale</span>
-                    </div>
-                </div>
-                <svg class="callout-arrow arrow-ml" viewBox="0 0 60 20" fill="none">
-                    <path d="M4 10 L56 10" stroke="#c9a84c" stroke-width="1.5" stroke-dasharray="4 3"/>
-                    <polygon points="50,6 56,10 50,14" fill="#c9a84c"/>
-                </svg>
-            </div>
-
-            <div class="callout callout-mr">
-                <svg class="callout-arrow arrow-mr" viewBox="0 0 60 20" fill="none">
-                    <path d="M56 10 L4 10" stroke="#c9a84c" stroke-width="1.5" stroke-dasharray="4 3"/>
-                    <polygon points="10,6 4,10 10,14" fill="#c9a84c"/>
-                </svg>
-                <div class="callout-box">
-                    <span class="callout-icon">📊</span>
-                    <div>
-                        <strong data-ro="Rapoarte zilnice" data-en="Daily reports">Rapoarte zilnice</strong>
-                        <span data-ro="Export PDF cu un click" data-en="PDF export in one click">Export PDF cu un click</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="callout callout-bl">
-                <div class="callout-box">
-                    <span class="callout-icon">🎨</span>
-                    <div>
-                        <strong data-ro="Design personalizat" data-en="Custom design">Design personalizat</strong>
-                        <span data-ro="Logo, temă, fundal propriu" data-en="Logo, theme, custom background">Logo, temă, fundal propriu</span>
-                    </div>
-                </div>
-                <svg class="callout-arrow arrow-bl" viewBox="0 0 80 50" fill="none">
-                    <path d="M4 46 C20 46, 60 46, 76 4" stroke="#c9a84c" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
-                    <polygon points="70,6 76,4 72,12" fill="#c9a84c"/>
-                </svg>
-            </div>
-
-            <div class="callout callout-br">
-                <svg class="callout-arrow arrow-br" viewBox="0 0 80 50" fill="none">
-                    <path d="M76 46 C60 46, 20 46, 4 4" stroke="#c9a84c" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
-                    <polygon points="10,6 4,4 8,12" fill="#c9a84c"/>
-                </svg>
-                <div class="callout-box">
-                    <span class="callout-icon">💳</span>
-                    <div>
-                        <strong data-ro="Cash sau Card" data-en="Cash or Card">Cash sau Card</strong>
-                        <span data-ro="Clientul alege la masă" data-en="Customer chooses at the table">Clientul alege la masă</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Preț jos -->
-            <div class="demo-price">
-                <span class="demo-price-badge" data-ro="Abonament lunar" data-en="Monthly subscription">Abonament lunar</span>
-                <span class="demo-price-amount">€100<span data-ro="/lună" data-en="/month">/lună</span></span>
-            </div>
-
+            <div class="float-chip fc-1"><span class="ic">⚡</span><div><strong data-ro="Comandă nouă" data-en="New order">Comandă nouă</strong><span data-ro="Masa 7 · acum" data-en="Table 7 · now">Masa 7 · acum</span></div></div>
+            <div class="float-chip fc-2"><span class="ic">📱</span><div><strong data-ro="Ospătar notificat" data-en="Waiter notified">Ospătar notificat</strong><span data-ro="Push în 1s" data-en="Push in 1s">Push în 1s</span></div></div>
         </div>
     </div>
 </section>
 
 <!-- STATS -->
-<div class="stats-bar">
-        <div class="stat-item">
-        <div class="stat-num">∞</div>
-        <div class="stat-lbl" data-ro="Mese configurabile" data-en="Configurable tables">Mese configurabile</div>
-    </div>
-        <div class="stat-item">
-        <div class="stat-num">5s</div>
-        <div class="stat-lbl" data-ro="Timp de refresh comenzi" data-en="Order refresh time">Timp de refresh comenzi</div>
-    </div>
-        <div class="stat-item">
-        <div class="stat-num">2</div>
-        <div class="stat-lbl" data-ro="Limbi disponibile" data-en="Available languages">Limbi disponibile</div>
-    </div>
-        <div class="stat-item">
-        <div class="stat-num">PWA</div>
-        <div class="stat-lbl" data-ro="Funcționează ca aplicație" data-en="Works as an app">Funcționează ca aplicație</div>
-    </div>
-    </div>
+<div class="stats reveal">
+    <div class="stat"><div class="num">5s</div><div class="lbl" data-ro="Refresh comenzi" data-en="Order refresh">Refresh comenzi</div></div>
+    <div class="stat"><div class="num">∞</div><div class="lbl" data-ro="Mese configurabile" data-en="Configurable tables">Mese configurabile</div></div>
+    <div class="stat"><div class="num">RO/EN</div><div class="lbl" data-ro="Interfață bilingvă" data-en="Bilingual interface">Interfață bilingvă</div></div>
+    <div class="stat"><div class="num">📲 .apk</div><div class="lbl" data-ro="App Android ospătari" data-en="Android waiter app">App Android ospătari</div></div>
+</div>
 
 <!-- FEATURES -->
-<section class="features" id="features">
-    <div class="section-header reveal">
-        <p class="section-eyebrow" data-ro="Tot ce ai nevoie" data-en="Everything you need">Tot ce ai nevoie</p>
-        <h2 class="section-title">
-            <span data-ro="" data-en="">Platformă completă,<br><em>gândită pentru restaurante</em></span>
-        </h2>
-    </div>
-        <div class="features-grid">
-                <div class="feature-card reveal">
-            <span class="feature-icon">📱</span>
-            <h3 class="feature-title" data-ro="Comandă de pe orice dispozitiv" data-en="Order from any device">Comandă de pe orice dispozitiv</h3>
-            <p class="feature-desc" data-ro="Clienții scanează codul QR de pe masă cu telefonul personal sau folosesc tableta restaurantului." data-en="Customers scan the QR code from the table with their phone or use the restaurant tablet.">Clienții scanează codul QR de pe masă cu telefonul personal sau folosesc tableta restaurantului.</p>
+<section class="block" id="features">
+    <div class="wrap">
+        <div class="sec-head reveal">
+            <span class="eyebrow" data-ro="Tot ce ai nevoie" data-en="Everything you need">Tot ce ai nevoie</span>
+            <h2 class="sec-title" data-ro="O platformă completă, <em>gândită pentru restaurante</em>" data-en="One complete platform, <em>built for restaurants</em>">O platformă completă, <em>gândită pentru restaurante</em></h2>
+            <p class="sec-sub" data-ro="De la comandă la masă până la rezervări, recenzii și statistici per ospătar — totul lucrează împreună." data-en="From table ordering to reservations, reviews and per-waiter stats — everything works together.">De la comandă la masă până la rezervări, recenzii și statistici per ospătar — totul lucrează împreună.</p>
         </div>
-                <div class="feature-card reveal">
-            <span class="feature-icon">⚡</span>
-            <h3 class="feature-title" data-ro="Dashboard în timp real" data-en="Real-time dashboard">Dashboard în timp real</h3>
-            <p class="feature-desc" data-ro="Restaurantul vede comenzile instant, le gestionează per produs și urmărește statusul fiecărei mese live." data-en="The restaurant sees orders instantly, manages them per product, and tracks each table status live.">Restaurantul vede comenzile instant, le gestionează per produs și urmărește statusul fiecărei mese live.</p>
-        </div>
-                <div class="feature-card reveal">
-            <span class="feature-icon">📊</span>
-            <h3 class="feature-title" data-ro="Rapoarte zilnice" data-en="Daily reports">Rapoarte zilnice</h3>
-            <p class="feature-desc" data-ro="Statistici complete: vânzări totale, top produse, distribuție pe ore, metodă de plată. Export PDF." data-en="Complete statistics: total sales, top products, hourly distribution, payment method. PDF export.">Statistici complete: vânzări totale, top produse, distribuție pe ore, metodă de plată. Export PDF.</p>
-        </div>
-                <div class="feature-card reveal">
-            <span class="feature-icon">🎨</span>
-            <h3 class="feature-title" data-ro="Design personalizabil" data-en="Customizable design">Design personalizabil</h3>
-            <p class="feature-desc" data-ro="Logo, temă vizuală, imagine de fundal, mesaj de bun venit. Tableta arată exact ca brandul tău." data-en="Logo, visual theme, background image, welcome message. The tablet looks exactly like your brand.">Logo, temă vizuală, imagine de fundal, mesaj de bun venit. Tableta arată exact ca brandul tău.</p>
-        </div>
-                <div class="feature-card reveal">
-            <span class="feature-icon">📢</span>
-            <h3 class="feature-title" data-ro="Reclame &amp; Promoții" data-en="Ads &amp; Promotions">Reclame &amp; Promoții</h3>
-            <p class="feature-desc" data-ro="Banner ticker cu oferte speciale pe tableta clientului." data-en="Ticker banner with special offers on the customer tablet.">Banner ticker cu oferte speciale pe tableta clientului.</p>
-        </div>
-                <div class="feature-card reveal">
-            <span class="feature-icon">🌍</span>
-            <h3 class="feature-title" data-ro="Bilingv RO / EN" data-en="Bilingual RO / EN">Bilingv RO / EN</h3>
-            <p class="feature-desc" data-ro="Interfața completă în română și engleză — atât pentru restaurant cât și pentru clienți." data-en="Complete interface in Romanian and English — both for the restaurant and customers.">Interfața completă în română și engleză — atât pentru restaurant cât și pentru clienți.</p>
-        </div>
+
+        <!-- Highlight blocks -->
+        <div class="highlights">
+            <div class="hl reveal">
+                <div>
+                    <span class="hl-badge">★ <span data-ro="NOU" data-en="NEW">NOU</span></span>
+                    <h3 class="hl-title" data-ro="Aplicație mobilă pentru ospătari" data-en="Mobile app for waiters">Aplicație mobilă pentru ospătari</h3>
+                    <p class="hl-desc" data-ro="O aplicație Android reală, instalabilă (.apk), direct pe telefonul ospătarilor. Preiau comenzile din palmă, nu de la o stație fixă." data-en="A real, installable Android app (.apk) on your waiters' phones. They take orders in hand, not from a fixed station.">O aplicație Android reală, instalabilă (.apk), direct pe telefonul ospătarilor. Preiau comenzile din palmă, nu de la o stație fixă.</p>
+                    <ul class="hl-list">
+                        <li class="hl-feat" data-ro="Preiau comenzile și schimbă statusul din mers" data-en="Take orders and change status on the go">Preiau comenzile și schimbă statusul din mers</li>
+                        <li class="hl-feat" data-ro="Marchează produsele servite, masă cu masă" data-en="Mark products as served, table by table">Marchează produsele servite, masă cu masă</li>
+                        <li class="hl-feat" data-ro="Văd istoricul zilei și comenzile active" data-en="See the day's history and active orders">Văd istoricul zilei și comenzile active</li>
+                    </ul>
+                </div>
+                <div class="hl-art"><span class="emoji">📲</span></div>
             </div>
+
+            <div class="hl alt reveal">
+                <div class="hl-art"><span class="emoji">📅</span></div>
+                <div>
+                    <span class="hl-badge">★ <span data-ro="NOU" data-en="NEW">NOU</span></span>
+                    <h3 class="hl-title" data-ro="Rezervări online" data-en="Online reservations">Rezervări online</h3>
+                    <p class="hl-desc" data-ro="Un link public de rezervare cu sloturi orare și capacitate. Clienții rezervă o masă în câteva secunde, iar tu primești totul organizat." data-en="A public reservation link with time slots and capacity. Guests book a table in seconds and you get everything organized.">Un link public de rezervare cu sloturi orare și capacitate. Clienții rezervă o masă în câteva secunde, iar tu primești totul organizat.</p>
+                    <ul class="hl-list">
+                        <li class="hl-feat" data-ro="Sloturi orare și capacitate configurabile" data-en="Configurable time slots and capacity">Sloturi orare și capacitate configurabile</li>
+                        <li class="hl-feat" data-ro="Link public, fără aplicație de instalat" data-en="Public link, no app to install">Link public, fără aplicație de instalat</li>
+                        <li class="hl-feat" data-ro="Rezervările apar direct în panoul tău" data-en="Reservations land straight in your dashboard">Rezervările apar direct în panoul tău</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="hl reveal">
+                <div>
+                    <span class="hl-badge">★ <span data-ro="NOU" data-en="NEW">NOU</span></span>
+                    <h3 class="hl-title" data-ro="Profil public & recenzii verificate" data-en="Public profile & verified reviews">Profil public & recenzii verificate</h3>
+                    <p class="hl-desc" data-ro="O pagină publică brandată, cu QR propriu, care arată meniul, recenziile și un buton de rezervare. Doar clienții care au comandat pot lăsa o recenzie." data-en="A branded public page with its own QR showing your menu, reviews and a reservation button. Only guests who ordered can leave a review.">O pagină publică brandată, cu QR propriu, care arată meniul, recenziile și un buton de rezervare. Doar clienții care au comandat pot lăsa o recenzie.</p>
+                    <ul class="hl-list">
+                        <li class="hl-feat" data-ro="Pagină brandată cu meniu, rating și rezervare" data-en="Branded page with menu, rating and booking">Pagină brandată cu meniu, rating și rezervare</li>
+                        <li class="hl-feat" data-ro="Recenzii verificate — media apare pe profil" data-en="Verified reviews — average shown on the profile">Recenzii verificate — media apare pe profil</li>
+                        <li class="hl-feat" data-ro="Cod QR propriu pentru promovare" data-en="Its own QR code for promotion">Cod QR propriu pentru promovare</li>
+                    </ul>
+                </div>
+                <div class="hl-art"><span class="emoji">⭐</span></div>
+            </div>
+        </div>
+
+        <!-- Feature grid -->
+        <div class="feat-grid">
+            <div class="feat-card reveal">
+                <div class="feat-ic">📱</div>
+                <h3 data-ro="Comandă la masă prin QR" data-en="QR table ordering">Comandă la masă prin QR</h3>
+                <p data-ro="Clientul scanează codul QR de pe masă cu telefonul sau folosește tableta restaurantului. Meniu cu poze, alergeni și preț." data-en="The guest scans the QR code on the table with their phone or uses the restaurant tablet. Menu with photos, allergens and price.">Clientul scanează codul QR de pe masă cu telefonul sau folosește tableta restaurantului. Meniu cu poze, alergeni și preț.</p>
+            </div>
+            <div class="feat-card reveal">
+                <div class="feat-ic">⚡</div>
+                <h3 data-ro="Dashboard în timp real" data-en="Real-time dashboard">Dashboard în timp real</h3>
+                <p data-ro="Comenzile apar instant (refresh ~5s), gestionate per produs, cu status live pentru fiecare masă." data-en="Orders appear instantly (~5s refresh), managed per product, with live status for each table.">Comenzile apar instant (refresh ~5s), gestionate per produs, cu status live pentru fiecare masă.</p>
+            </div>
+            <div class="feat-card is-new reveal">
+                <span class="badge-new" data-ro="NOU" data-en="NEW">NOU</span>
+                <div class="feat-ic">🔔</div>
+                <h3 data-ro="Notificări push" data-en="Push notifications">Notificări push</h3>
+                <p data-ro="Ospătarii primesc notificare la fiecare comandă nouă și o alertă când o comandă e pe cale să le „scape”." data-en="Waiters get a notification on every new order and an alert when an order is about to slip away.">Ospătarii primesc notificare la fiecare comandă nouă și o alertă când o comandă e pe cale să le „scape”.</p>
+            </div>
+            <div class="feat-card is-new reveal">
+                <span class="badge-new" data-ro="NOU" data-en="NEW">NOU</span>
+                <div class="feat-ic">🎯</div>
+                <h3 data-ro="Asignare ospătar & escaladare" data-en="Waiter assignment & escalation">Asignare ospătar & escaladare</h3>
+                <p data-ro="Aloci un ospătar responsabil pentru o masă. Dacă nu preia comanda în intervalul setat, se deblochează automat pentru alt ospătar." data-en="Assign a waiter to a table. If they don't take the order within the set interval, it is automatically released to another waiter.">Aloci un ospătar responsabil pentru o masă. Dacă nu preia comanda în intervalul setat, se deblochează automat pentru alt ospătar.</p>
+            </div>
+            <div class="feat-card is-new reveal">
+                <span class="badge-new" data-ro="NOU" data-en="NEW">NOU</span>
+                <div class="feat-ic">📈</div>
+                <h3 data-ro="Statistici per ospătar" data-en="Per-waiter statistics">Statistici per ospătar</h3>
+                <p data-ro="Număr de comenzi preluate și timp mediu de preluare, pentru fiecare ospătar — resetat zilnic." data-en="Number of orders taken and average pickup time, for each waiter — reset daily.">Număr de comenzi preluate și timp mediu de preluare, pentru fiecare ospătar — resetat zilnic.</p>
+            </div>
+            <div class="feat-card reveal">
+                <div class="feat-ic">📊</div>
+                <h3 data-ro="Rapoarte zilnice" data-en="Daily reports">Rapoarte zilnice</h3>
+                <p data-ro="Vânzări totale, top produse și distribuție pe metode de plată — o imagine clară a zilei." data-en="Total sales, top products and payment-method breakdown — a clear picture of the day.">Vânzări totale, top produse și distribuție pe metode de plată — o imagine clară a zilei.</p>
+            </div>
+            <div class="feat-card reveal">
+                <div class="feat-ic">🎨</div>
+                <h3 data-ro="Design personalizabil" data-en="Customizable design">Design personalizabil</h3>
+                <p data-ro="Logo, temă vizuală, imagine de fundal și mesaj de bun venit. Interfața arată exact ca brandul tău." data-en="Logo, visual theme, background image and welcome message. The interface looks exactly like your brand.">Logo, temă vizuală, imagine de fundal și mesaj de bun venit. Interfața arată exact ca brandul tău.</p>
+            </div>
+            <div class="feat-card reveal">
+                <div class="feat-ic">🌍</div>
+                <h3 data-ro="Bilingv RO / EN" data-en="Bilingual RO / EN">Bilingv RO / EN</h3>
+                <p data-ro="Interfață completă în română și engleză, atât pentru echipă cât și pentru clienți." data-en="Complete interface in Romanian and English, for both your team and your guests.">Interfață completă în română și engleză, atât pentru echipă cât și pentru clienți.</p>
+            </div>
+        </div>
+    </div>
 </section>
 
-<!-- GALERIE FOTO -->
-<section class="galerie reveal">
-    <div class="galerie-grid">
-        <div class="galerie-item">
+<!-- GALLERY -->
+<section class="gallery reveal">
+    <div class="gal-grid">
+        <div class="gal-item">
             <img src="/uploads/landing-img2.jpg" alt="Restaurant cu clienți" loading="lazy">
-            <div class="galerie-overlay">
-                <span data-ro="Experiențe autentice" data-en="Authentic experiences">Experiențe autentice</span>
-            </div>
+            <div class="gal-cap"><span data-ro="Experiențe autentice" data-en="Authentic experiences">Experiențe autentice</span></div>
         </div>
-        <div class="galerie-item">
+        <div class="gal-item">
             <img src="/uploads/landing-img1.jpg" alt="Preparate servite" loading="lazy">
-            <div class="galerie-overlay">
-                <span data-ro="Servire rapidă și precisă" data-en="Fast and precise service">Servire rapidă și precisă</span>
-            </div>
+            <div class="gal-cap"><span data-ro="Servire rapidă și precisă" data-en="Fast, precise service">Servire rapidă și precisă</span></div>
         </div>
-        <div class="galerie-item">
+        <div class="gal-item">
             <img src="/uploads/landing-img3.jpg" alt="Atmosferă restaurant" loading="lazy">
-            <div class="galerie-overlay">
-                <span data-ro="Atmosferă memorabilă" data-en="Memorable atmosphere">Atmosferă memorabilă</span>
-            </div>
+            <div class="gal-cap"><span data-ro="Atmosferă memorabilă" data-en="Memorable atmosphere">Atmosferă memorabilă</span></div>
         </div>
     </div>
 </section>
 
 <!-- HOW IT WORKS -->
-<section class="how" id="how">
-    <div style="max-width:1200px;margin:0 auto">
-        <div class="section-header reveal">
-            <p class="section-eyebrow" data-ro="Simplu de implementat" data-en="Easy to implement">Simplu de implementat</p>
-            <h2 class="section-title">
-                <span data-ro="" data-en="">Pornești în <em>4 pași</em></span>
-            </h2>
+<section class="block how" id="how">
+    <div class="wrap">
+        <div class="sec-head reveal">
+            <span class="eyebrow" data-ro="Simplu de pornit" data-en="Easy to start">Simplu de pornit</span>
+            <h2 class="sec-title" data-ro="Pornești în <em>5 pași</em>" data-en="Get going in <em>5 steps</em>">Pornești în <em>5 pași</em></h2>
+            <p class="sec-sub" data-ro="De la configurare la primele comenzi — fără echipamente scumpe." data-en="From setup to your first orders — no expensive hardware.">De la configurare la primele comenzi — fără echipamente scumpe.</p>
         </div>
-                <div class="how-grid">
-                        <div class="how-step reveal">
-                <div class="step-num">1</div>
-                <h4 class="step-title" data-ro="Primești accesul" data-en="Get access">Primești accesul</h4>
-                <p class="step-desc" data-ro="În baza abonamentului, restaurantul primește acces la platformă și configurează meniul." data-en="Based on your subscription, the restaurant gets access and sets up the menu.">În baza abonamentului, restaurantul primește acces la platformă și configurează meniul.</p>
+        <div class="steps">
+            <div class="step reveal">
+                <div class="n">1</div>
+                <h4 data-ro="Primești accesul" data-en="Get access">Primești accesul</h4>
+                <p data-ro="Îți activăm contul și îți configurezi meniul cu poze, alergeni și prețuri." data-en="We activate your account and you set up your menu with photos, allergens and prices.">Îți activăm contul și îți configurezi meniul cu poze, alergeni și prețuri.</p>
             </div>
-                        <div class="how-step reveal">
-                <div class="step-num">2</div>
-                <h4 class="step-title" data-ro="Adaugi mesele" data-en="Add tables">Adaugi mesele</h4>
-                <p class="step-desc" data-ro="Fiecare masă primește un cod QR unic. Clientul îl scanează cu telefonul sau deschide linkul pe tabletă." data-en="Each table gets a unique QR code. The customer scans it or opens the link on the tablet.">Fiecare masă primește un cod QR unic. Clientul îl scanează cu telefonul sau deschide linkul pe tabletă.</p>
+            <div class="step reveal">
+                <div class="n">2</div>
+                <h4 data-ro="Adaugi mesele" data-en="Add tables">Adaugi mesele</h4>
+                <p data-ro="Fiecare masă primește un cod QR unic, gata de pus pe masă." data-en="Each table gets a unique QR code, ready to place on the table.">Fiecare masă primește un cod QR unic, gata de pus pe masă.</p>
             </div>
-                        <div class="how-step reveal">
-                <div class="step-num">3</div>
-                <h4 class="step-title" data-ro="Clienții comandă" data-en="Customers order">Clienții comandă</h4>
-                <p class="step-desc" data-ro="Clienții văd meniul pe tabletă și comandă. Tu primești instant în dashboard." data-en="Customers see the menu on the tablet and order. You receive it instantly in the dashboard.">Clienții văd meniul pe tabletă și comandă. Tu primești instant în dashboard.</p>
+            <div class="step reveal">
+                <div class="n">3</div>
+                <h4 data-ro="Clienții comandă" data-en="Guests order">Clienții comandă</h4>
+                <p data-ro="Comandă de la masă prin QR sau rezervă online, direct de pe telefon." data-en="They order from the table via QR or book online, straight from their phone.">Comandă de la masă prin QR sau rezervă online, direct de pe telefon.</p>
             </div>
-                        <div class="how-step reveal">
-                <div class="step-num">4</div>
-                <h4 class="step-title" data-ro="Gestionezi &amp; încasezi" data-en="Manage &amp; collect">Gestionezi &amp; încasezi</h4>
-                <p class="step-desc" data-ro="Marchezi produsele ca servite, clientul solicită nota, tu eliberezi masa." data-en="Mark products as served, the customer requests the bill, you release the table.">Marchezi produsele ca servite, clientul solicită nota, tu eliberezi masa.</p>
+            <div class="step reveal">
+                <div class="n">4</div>
+                <h4 data-ro="Ospătarii preiau" data-en="Waiters take orders">Ospătarii preiau</h4>
+                <p data-ro="Primesc notificare și preiau comenzile direct din aplicația de telefon." data-en="They get a notification and take orders straight from the phone app.">Primesc notificare și preiau comenzile direct din aplicația de telefon.</p>
             </div>
-                    </div>
-    </div>
-</section>
-
-<!-- TESTIMONIAL -->
-<section class="testimonial reveal">
-    <span class="quote-mark">"</span>
-    <p class="quote-text" data-ro="" data-en="">"De când am implementat Tablerino, chelnerul nostru se ocupă de servire, nu de luat comenzi."</p>
-    <div class="quote-author">
-        <strong data-ro="Restaurant partener" data-en="Partner restaurant">Restaurant partener</strong>
-        <span data-ro="Client Tablerino" data-en="Tablerino client">Client Tablerino</span>
-    </div>
-</section>
-
-<!-- CTA -->
-<section class="cta-section" id="contact">
-    <h2 class="cta-title reveal">
-        <span data-ro="" data-en="">Gata să <em>transformi</em><br>experiența din restaurant?</span>
-    </h2>
-    <p class="cta-desc reveal" data-ro="" data-en="">Disponibil în baza unui abonament. Orice tabletă sau telefon cu browser funcționează.</p>
-    <div class="cta-btns reveal">
-        <a href="#inregistrare" class="btn-gold" data-ro="Înregistrează-ți restaurantul" data-en="Register your restaurant">Înregistrează-ți restaurantul</a>
-        <a href="mailto:office@tablerino.ro" class="btn-outline" data-ro="Contactează-ne" data-en="Contact us">Contactează-ne</a>
-    </div>
-</section>
-
-<!-- ÎNREGISTRARE -->
-<section class="inreg-section" id="inregistrare">
-    <div class="inreg-wrap">
-        <div class="inreg-left reveal">
-            <p class="section-eyebrow" data-ro="Începe acum" data-en="Get started">Începe acum</p>
-            <h2 class="inreg-title" data-ro="Înregistrează-ți <em>restaurantul</em>" data-en="Register your <em>restaurant</em>">Înregistrează-ți <em>restaurantul</em></h2>
-            <p class="inreg-desc" data-ro="Completează formularul și te contactăm în cel mai scurt timp pentru a activa contul." data-en="Fill in the form and we'll contact you as soon as possible to activate your account.">Completează formularul și te contactăm în cel mai scurt timp pentru a activa contul.</p>
+            <div class="step reveal">
+                <div class="n">5</div>
+                <h4 data-ro="Gestionezi & analizezi" data-en="Manage & analyze">Gestionezi & analizezi</h4>
+                <p data-ro="Marchezi servit, încasezi și vezi rapoarte și statistici per ospătar." data-en="Mark as served, collect payment and see reports and per-waiter stats.">Marchezi servit, încasezi și vezi rapoarte și statistici per ospătar.</p>
+            </div>
         </div>
-        <div class="inreg-right reveal">
-            <div class="inreg-form-wrap" id="inregFormWrap">
-                <div class="field-group">
+    </div>
+</section>
+
+<!-- PRICING -->
+<section class="block pricing" id="pret">
+    <div class="wrap">
+        <div class="sec-head reveal">
+            <span class="eyebrow" data-ro="Preț simplu" data-en="Simple pricing">Preț simplu</span>
+            <h2 class="sec-title" data-ro="Un singur abonament, <em>toate funcțiile</em>" data-en="One subscription, <em>all features</em>">Un singur abonament, <em>toate funcțiile</em></h2>
+            <p class="sec-sub" data-ro="Fără costuri ascunse, fără comision pe comenzi. Plătești lunar, folosești tot." data-en="No hidden costs, no per-order commission. Pay monthly, use everything.">Fără costuri ascunse, fără comision pe comenzi. Plătești lunar, folosești tot.</p>
+        </div>
+        <div class="price-card reveal">
+            <div class="plan" data-ro="Abonament lunar" data-en="Monthly subscription">Abonament lunar</div>
+            <div class="big">€100<span data-ro="/lună" data-en="/month">/lună</span></div>
+            <div class="no-comm" data-ro="✦ Fără comision pe comenzi" data-en="✦ No per-order commission">✦ Fără comision pe comenzi</div>
+            <ul class="price-list">
+                <li data-ro="Comandă la masă prin QR, mese nelimitate" data-en="QR table ordering, unlimited tables">Comandă la masă prin QR, mese nelimitate</li>
+                <li data-ro="Dashboard în timp real & rapoarte zilnice" data-en="Real-time dashboard & daily reports">Dashboard în timp real & rapoarte zilnice</li>
+                <li data-ro="Aplicație Android pentru ospătari + notificări push" data-en="Android waiter app + push notifications">Aplicație Android pentru ospătari + notificări push</li>
+                <li data-ro="Rezervări online, profil public & recenzii" data-en="Online reservations, public profile & reviews">Rezervări online, profil public & recenzii</li>
+                <li data-ro="Statistici per ospătar & design personalizabil" data-en="Per-waiter stats & customizable design">Statistici per ospătar & design personalizabil</li>
+                <li data-ro="Interfață bilingvă RO / EN" data-en="Bilingual RO / EN interface">Interfață bilingvă RO / EN</li>
+            </ul>
+            <a href="#inregistrare" class="btn btn-primary" data-ro="Solicită acces" data-en="Request access">Solicită acces</a>
+        </div>
+    </div>
+</section>
+
+<!-- REGISTER -->
+<section class="block" id="inregistrare">
+    <div class="reg-wrap">
+        <div class="reg-left reveal">
+            <div class="sec-head">
+                <span class="eyebrow" data-ro="Începe acum" data-en="Get started">Începe acum</span>
+                <h2 class="sec-title" data-ro="Înregistrează-ți <em>restaurantul</em>" data-en="Register your <em>restaurant</em>">Înregistrează-ți <em>restaurantul</em></h2>
+                <p class="sec-sub" data-ro="Completează formularul și te contactăm în cel mai scurt timp pentru a-ți activa contul." data-en="Fill in the form and we'll contact you shortly to activate your account.">Completează formularul și te contactăm în cel mai scurt timp pentru a-ți activa contul.</p>
+            </div>
+            <ul class="reg-points">
+                <li>⚡ <span data-ro="<b>Activare rapidă</b> — pornești în aceeași zi" data-en="<b>Fast activation</b> — start the same day"><b>Activare rapidă</b> — pornești în aceeași zi</span></li>
+                <li>🧩 <span data-ro="<b>Fără echipamente scumpe</b> — orice telefon sau tabletă" data-en="<b>No expensive hardware</b> — any phone or tablet"><b>Fără echipamente scumpe</b> — orice telefon sau tabletă</span></li>
+                <li>🤝 <span data-ro="<b>Suport inclus</b> — te ajutăm la configurare" data-en="<b>Support included</b> — we help you set up"><b>Suport inclus</b> — te ajutăm la configurare</span></li>
+            </ul>
+        </div>
+        <div class="reg-right reveal">
+            <div class="reg-form" id="inregFormWrap">
+                <div class="field">
                     <label data-ro="Nume restaurant *" data-en="Restaurant name *">Nume restaurant *</label>
-                    <input type="text" id="irNume" placeholder="Ex: La Mama">
+                    <input type="text" id="irNume" data-ro="Ex: La Mama" data-en="e.g. La Mama" placeholder="Ex: La Mama">
                 </div>
-                <div class="field-group">
+                <div class="field">
                     <label data-ro="Email *" data-en="Email *">Email *</label>
-                    <input type="email" id="irEmail" placeholder="contact@restaurant.ro">
+                    <input type="email" id="irEmail" data-ro="contact@restaurant.ro" data-en="contact@restaurant.com" placeholder="contact@restaurant.ro">
                 </div>
-                <div class="field-group">
+                <div class="field">
                     <label data-ro="Telefon" data-en="Phone">Telefon</label>
-                    <input type="tel" id="irTelefon" placeholder="07XXXXXXXX">
+                    <input type="tel" id="irTelefon" data-ro="07XXXXXXXX" data-en="Phone number" placeholder="07XXXXXXXX">
                 </div>
-                <div class="field-group">
+                <div class="field">
                     <label data-ro="Parolă *" data-en="Password *">Parolă *</label>
-                    <input type="password" id="irParola" placeholder="Minim 6 caractere">
+                    <input type="password" id="irParola" data-ro="Minim 6 caractere" data-en="At least 6 characters" placeholder="Minim 6 caractere">
                 </div>
-                <button class="inreg-btn" onclick="trimiteInregistrare()" id="irBtn" data-ro="Trimite cererea" data-en="Submit request">Trimite cererea</button>
-                <p class="inreg-note" data-ro="Contul va fi activat după confirmarea abonamentului." data-en="The account will be activated after subscription confirmation.">Contul va fi activat după confirmarea abonamentului.</p>
+                <button class="btn btn-dark" id="irBtn" onclick="trimiteInregistrare()" data-ro="Trimite cererea" data-en="Submit request">Trimite cererea</button>
+                <p class="reg-note" data-ro="Contul va fi activat după confirmarea abonamentului." data-en="The account is activated after subscription confirmation.">Contul va fi activat după confirmarea abonamentului.</p>
             </div>
-            <div class="inreg-success" id="inregSuccess" style="display:none">
-                <div class="success-icon">✅</div>
+            <div class="reg-success" id="inregSuccess" style="display:none">
+                <div class="ic">✅</div>
                 <h3 data-ro="Cerere trimisă!" data-en="Request sent!">Cerere trimisă!</h3>
                 <p data-ro="Te vom contacta în curând pentru activarea contului." data-en="We'll contact you soon to activate your account.">Te vom contacta în curând pentru activarea contului.</p>
             </div>
@@ -1371,33 +889,42 @@ footer {
     </div>
 </section>
 
+<!-- CTA / CONTACT -->
+<section class="block cta" id="contact">
+    <div class="inner">
+        <h2 data-ro="Gata să <em>transformi</em> experiența din restaurant?" data-en="Ready to <em>transform</em> your restaurant experience?">Gata să <em>transformi</em> experiența din restaurant?</h2>
+        <p data-ro="Comandă la masă, aplicație pentru ospătari, rezervări și rapoarte — totul într-un singur abonament." data-en="Table ordering, a waiter app, reservations and reports — all in one subscription.">Comandă la masă, aplicație pentru ospătari, rezervări și rapoarte — totul într-un singur abonament.</p>
+        <div class="cta-btns">
+            <a href="#inregistrare" class="btn btn-primary" data-ro="Solicită acces" data-en="Request access">Solicită acces</a>
+            <a href="mailto:office@tablerino.ro" class="btn btn-ghost" data-ro="Contactează-ne" data-en="Contact us">Contactează-ne</a>
+        </div>
+    </div>
+</section>
+
 <!-- FOOTER -->
 <footer>
-    <div class="footer-top">
-        <div>
-            <div class="footer-brand">Tablerino</div>
-            <p class="footer-tagline" data-ro="Tehnologie pentru experiențe culinare. Simplificăm comanda la masă pentru restaurante moderne." data-en="Technology for culinary experiences. Simplifying table ordering for modern restaurants.">Tehnologie pentru experiențe culinare. Simplificăm comanda la masă pentru restaurante moderne.</p>
-            <!-- Social media din setări -->
-            <div class="footer-social" id="footerSocial">
-                            </div>
+    <div class="foot-top">
+        <div class="foot-brand-col">
+            <div class="foot-brand"><span class="logo-mark">🍽</span>Tablerino</div>
+            <p class="foot-tag" data-ro="Platforma digitală pentru restaurante moderne. Comandă la masă, unelte pentru echipă și date utile — într-un singur loc." data-en="The digital platform for modern restaurants. Table ordering, team tools and useful data — all in one place.">Platforma digitală pentru restaurante moderne. Comandă la masă, unelte pentru echipă și date utile — într-un singur loc.</p>
         </div>
-        <div class="footer-col">
+        <div class="foot-col">
             <h4 data-ro="Platformă" data-en="Platform">Platformă</h4>
             <a href="/admin/login.html" data-ro="Autentificare" data-en="Login">Autentificare</a>
             <a href="#inregistrare" data-ro="Înregistrare" data-en="Register">Înregistrare</a>
             <a href="#features" data-ro="Funcționalități" data-en="Features">Funcționalități</a>
             <a href="#how" data-ro="Cum funcționează" data-en="How it works">Cum funcționează</a>
+            <a href="#pret" data-ro="Preț" data-en="Pricing">Preț</a>
         </div>
-        <div class="footer-col">
-            <h4>Contact</h4>
+        <div class="foot-col">
+            <h4 data-ro="Contact" data-en="Contact">Contact</h4>
             <a href="mailto:office@tablerino.ro">office@tablerino.ro</a>
             <a href="https://tablerino.ro">tablerino.ro</a>
         </div>
     </div>
-    <div class="footer-bottom">
-        <span class="footer-copy">© 2026 Tablerino. <span data-ro="Toate drepturile rezervate." data-en="All rights reserved.">Toate drepturile rezervate.</span></span>
-        <div class="footer-line"></div>
-        <span class="footer-copy">Made with ♥ in Romania</span>
+    <div class="foot-bottom">
+        <span>© 2026 Tablerino. <span data-ro="Toate drepturile rezervate." data-en="All rights reserved.">Toate drepturile rezervate.</span></span>
+        <span>Made with ♥ in Romania</span>
     </div>
 </footer>
 
@@ -1421,55 +948,40 @@ async function trimiteInregistrare() {
     btn.disabled = true;
     btn.textContent = 'Se trimite...';
 
-    const r = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nume, email, telefon: tel, parola })
-    });
-    const d = await r.json();
-    btn.disabled = false;
-    btn.textContent = btn.getAttribute('data-ro') || 'Trimite cererea';
+    try {
+        const r = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nume, email, telefon: tel, parola })
+        });
+        const d = await r.json();
+        btn.disabled = false;
+        btn.textContent = btn.getAttribute('data-' + limbaActiva) || btn.getAttribute('data-ro') || 'Trimite cererea';
 
-    if (d.ok) {
-        document.getElementById('inregFormWrap').style.display = 'none';
-        document.getElementById('inregSuccess').style.display = 'block';
-    } else {
-        alert(d.msg || 'Eroare. Încearcă din nou.');
+        if (d.ok) {
+            document.getElementById('inregFormWrap').style.display = 'none';
+            document.getElementById('inregSuccess').style.display = 'block';
+        } else {
+            alert(d.msg || 'Eroare. Încearcă din nou.');
+        }
+    } catch (e) {
+        btn.disabled = false;
+        btn.textContent = btn.getAttribute('data-' + limbaActiva) || btn.getAttribute('data-ro') || 'Trimite cererea';
+        alert('Eroare. Încearcă din nou.');
     }
 }
 
+// === MOBILE MENU ===
 function toggleMobileMenu() {
-    document.getElementById('mobileMenu').classList.toggle('open');
-    document.getElementById('hamburger').textContent =
-        document.getElementById('mobileMenu').classList.contains('open') ? '✕' : '☰';
+    const menu = document.getElementById('mobileMenu');
+    menu.classList.toggle('open');
+    document.getElementById('hamburger').textContent = menu.classList.contains('open') ? '✕' : '☰';
 }
-
-// Inchide menu la click pe link
 document.querySelectorAll('.mobile-menu a').forEach(a => {
     a.addEventListener('click', () => {
         document.getElementById('mobileMenu').classList.remove('open');
         document.getElementById('hamburger').textContent = '☰';
     });
-});
-
-// === CURSOR ===
-const cursor = document.getElementById('cursor');
-const ring = document.getElementById('cursorRing');
-let mx = 0, my = 0, rx = 0, ry = 0;
-document.addEventListener('mousemove', e => {
-    mx = e.clientX; my = e.clientY;
-    cursor.style.transform = `translate(${mx - 4}px, ${my - 4}px)`;
-});
-function animRing() {
-    rx += (mx - rx) * 0.12;
-    ry += (my - ry) * 0.12;
-    ring.style.transform = `translate(${rx - 18}px, ${ry - 18}px)`;
-    requestAnimationFrame(animRing);
-}
-animRing();
-document.querySelectorAll('a, button').forEach(el => {
-    el.addEventListener('mouseenter', () => { ring.style.width = '56px'; ring.style.height = '56px'; ring.style.opacity = '0.3'; });
-    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.6'; });
 });
 
 // === NAVBAR SCROLL ===
@@ -1479,16 +991,15 @@ window.addEventListener('scroll', () => {
 
 // === SCROLL REVEAL ===
 const observer = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
 }, { threshold: 0.1 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-// === LIMBA ===
+// === LIMBA / LANGUAGE ===
 let limbaActiva = 'ro';
 
 function setLang(lang) {
     limbaActiva = lang;
-    // Sincronizeaza toate butoanele RO/EN (desktop + mobile)
     ['btnRo','btnRoM'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.toggle('activ', lang === 'ro');
@@ -1501,11 +1012,9 @@ function setLang(lang) {
 
     document.querySelectorAll('[data-ro]').forEach(el => {
         const txt = el.getAttribute('data-' + lang);
-        if (!txt) return;
+        if (txt === null) return;
         if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
             el.placeholder = txt;
-        } else if (el.tagName === 'A' || el.tagName === 'BUTTON' || el.tagName === 'P' || el.tagName === 'SPAN' || el.tagName === 'DIV') {
-            el.innerHTML = txt;
         } else {
             el.innerHTML = txt;
         }
@@ -1513,7 +1022,6 @@ function setLang(lang) {
     localStorage.setItem('tablerino_lang', lang);
 }
 
-// Detecteaza preferinta salvata sau limba browserului
 const saved = localStorage.getItem('tablerino_lang');
 const browser = navigator.language.startsWith('en') ? 'en' : 'ro';
 setLang(saved || browser);
