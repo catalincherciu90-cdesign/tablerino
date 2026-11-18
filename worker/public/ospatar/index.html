@@ -31,9 +31,6 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #f0f0f5; c
 .icon-btn { background: rgba(255,255,255,.12); color: #fff; border: none; border-radius: 10px; padding: 8px 11px; font-size: 14px; cursor: pointer; }
 
 /* Install banner */
-.install { display: none; background: #ede9ff; color: #4c2bbd; padding: 10px 14px; font-size: 13px; align-items: center; gap: 10px; }
-.install button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 7px 14px; font-weight: 700; font-size: 13px; flex: 0 0 auto; }
-.install-help { display: none; background: #f6f3ff; color: #4c2bbd; padding: 11px 14px; font-size: 13px; line-height: 1.5; border-bottom: 1px solid #e2daf7; }
 
 /* Filter bar */
 .filtre { display: flex; gap: 8px; padding: 10px 12px; background: #fff; position: sticky; top: var(--hdr, 56px); z-index: 20; box-shadow: 0 1px 4px rgba(0,0,0,.05); overflow-x: auto; }
@@ -110,12 +107,6 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #f0f0f5; c
         <button class="icon-btn" onclick="logout()">⎋</button>
     </div>
 </div>
-
-<div class="install" id="installBar">
-    <span style="flex:1">📲 Instalează aplicația pe telefon</span>
-    <button id="installBtn">Instalează</button>
-</div>
-<div class="install-help" id="installHelp"></div>
 
 <div class="filtre" id="filtre">
     <button class="filtru activ" id="fAle" onclick="setFiltru('ale_mele')">Ale mele</button>
@@ -431,29 +422,6 @@ async function logout(){
 // Keep the sticky filter bar below the header.
 function setHdr(){ document.documentElement.style.setProperty('--hdr', document.getElementById('top').offsetHeight + 'px'); }
 
-// ── Install affordance (cross-platform) ──
-const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
-window.addEventListener('appinstalled', () => {
-    document.getElementById('installBar').style.display = 'none';
-    document.getElementById('installHelp').style.display = 'none';
-});
-document.getElementById('installBtn').addEventListener('click', async () => {
-    if (deferredPrompt) {
-        deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null;
-        document.getElementById('installBar').style.display = 'none';
-        return;
-    }
-    const help = document.getElementById('installHelp');
-    help.innerHTML = isIOS()
-        ? 'Pe iPhone (Safari): apasă <b>Share</b> (pătrat cu săgeată ↑) → <b>„Add to Home Screen" / „Adaugă la ecranul principal"</b>.'
-        : 'Apasă meniul <b>⋮</b> al browserului (dreapta sus) → <b>„Instalează aplicația"</b> sau „Adaugă la ecranul principal".';
-    help.style.display = help.style.display === 'block' ? 'none' : 'block';
-});
-// Show the install bar in a browser only — never inside the native app.
-if (!isStandalone() && !isNativeApp()) document.getElementById('installBar').style.display = 'flex';
 
 // ── Boot ──
 fetch('/api/admin/me').then(r => { if(!r.ok){ location.href='/ospatar/login.html'; return null; } return r.json(); }).then(d => {
