@@ -319,7 +319,8 @@ section.block { padding: clamp(70px, 9vw, 120px) clamp(24px, 6vw, 92px); }
     transition: transform 0.25s, border-color 0.25s, background 0.25s;
 }
 .feat-card:hover { transform: translateY(-5px); border-color: var(--gold-line); background: var(--panel-2); }
-.feat-ic { width: 52px; height: 52px; border-radius: 13px; background: var(--gold-soft); border: 1px solid var(--gold-line); display: grid; place-items: center; font-size: 24px; margin-bottom: 20px; }
+.feat-ic { width: 52px; height: 52px; border-radius: 13px; background: var(--gold-soft); border: 1px solid var(--gold-line); display: grid; place-items: center; color: var(--gold); margin-bottom: 20px; }
+.feat-ic svg { width: 26px; height: 26px; }
 .badge-new { position: absolute; top: 22px; right: 22px; color: var(--gold); border: 1px solid var(--gold-line); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; padding: 4px 10px; border-radius: 999px; }
 .feat-card h3 { font-family: var(--serif); font-size: 21px; font-weight: 600; color: var(--cream); margin-bottom: 9px; }
 .feat-card p { font-size: 14.5px; color: var(--cream-dim); }
@@ -573,45 +574,45 @@ footer { background: var(--sidebar); border-top: 1px solid var(--line-soft); pad
         <!-- Feature grid -->
         <div class="feat-grid">
             <div class="feat-card reveal">
-                <div class="feat-ic">📱</div>
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3"/><path d="M14 18v3"/><path d="M18 14v3h3"/><path d="M21 21h.01"/><path d="M18 21h.01"/></svg></div>
                 <h3 data-ro="Comandă la masă prin QR" data-en="QR table ordering">Comandă la masă prin QR</h3>
                 <p data-ro="Clientul scanează codul QR de pe masă cu telefonul sau folosește tableta restaurantului. Meniu cu poze, alergeni și preț." data-en="The guest scans the QR code on the table with their phone or uses the restaurant tablet. Menu with photos, allergens and price.">Clientul scanează codul QR de pe masă cu telefonul sau folosește tableta restaurantului. Meniu cu poze, alergeni și preț.</p>
             </div>
             <div class="feat-card reveal">
-                <div class="feat-ic">⚡</div>
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
                 <h3 data-ro="Dashboard în timp real" data-en="Real-time dashboard">Dashboard în timp real</h3>
                 <p data-ro="Comenzile apar instant (refresh ~5s), gestionate per produs, cu status live pentru fiecare masă." data-en="Orders appear instantly (~5s refresh), managed per product, with live status for each table.">Comenzile apar instant (refresh ~5s), gestionate per produs, cu status live pentru fiecare masă.</p>
             </div>
             <div class="feat-card reveal">
                 <span class="badge-new" data-ro="NOU" data-en="NEW">NOU</span>
-                <div class="feat-ic">🔔</div>
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div>
                 <h3 data-ro="Notificări push" data-en="Push notifications">Notificări push</h3>
                 <p data-ro="Ospătarii primesc notificare la fiecare comandă nouă și o alertă când o comandă e pe cale să le „scape”." data-en="Waiters get a notification on every new order and an alert when an order is about to slip away.">Ospătarii primesc notificare la fiecare comandă nouă și o alertă când o comandă e pe cale să le „scape”.</p>
             </div>
             <div class="feat-card reveal">
                 <span class="badge-new" data-ro="NOU" data-en="NEW">NOU</span>
-                <div class="feat-ic">🎯</div>
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg></div>
                 <h3 data-ro="Asignare ospătar & escaladare" data-en="Waiter assignment & escalation">Asignare ospătar & escaladare</h3>
                 <p data-ro="Aloci un ospătar responsabil pentru o masă. Dacă nu preia comanda în intervalul setat, se deblochează automat pentru alt ospătar." data-en="Assign a waiter to a table. If they don't take the order within the set interval, it is automatically released to another waiter.">Aloci un ospătar responsabil pentru o masă. Dacă nu preia comanda în intervalul setat, se deblochează automat pentru alt ospătar.</p>
             </div>
             <div class="feat-card reveal">
                 <span class="badge-new" data-ro="NOU" data-en="NEW">NOU</span>
-                <div class="feat-ic">📈</div>
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></svg></div>
                 <h3 data-ro="Statistici per ospătar" data-en="Per-waiter statistics">Statistici per ospătar</h3>
                 <p data-ro="Număr de comenzi preluate și timp mediu de preluare, pentru fiecare ospătar — resetat zilnic." data-en="Number of orders taken and average pickup time, for each waiter — reset daily.">Număr de comenzi preluate și timp mediu de preluare, pentru fiecare ospătar — resetat zilnic.</p>
             </div>
             <div class="feat-card reveal">
-                <div class="feat-ic">📊</div>
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="12"/><line x1="10" y1="20" x2="10" y2="5"/><line x1="16" y1="20" x2="16" y2="9"/><line x1="3" y1="20" x2="21" y2="20"/></svg></div>
                 <h3 data-ro="Rapoarte zilnice" data-en="Daily reports">Rapoarte zilnice</h3>
                 <p data-ro="Vânzări totale, top produse și distribuție pe metode de plată — o imagine clară a zilei." data-en="Total sales, top products and payment-method breakdown — a clear picture of the day.">Vânzări totale, top produse și distribuție pe metode de plată — o imagine clară a zilei.</p>
             </div>
             <div class="feat-card reveal">
-                <div class="feat-ic">🎨</div>
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".9" fill="currentColor" stroke="none"/><circle cx="17.5" cy="10.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8.5" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="6.5" cy="12.5" r=".9" fill="currentColor" stroke="none"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.7 1.7-1.7H18c2.2 0 4-1.8 4-4C22 6 17.5 2 12 2z"/></svg></div>
                 <h3 data-ro="Design personalizabil" data-en="Customizable design">Design personalizabil</h3>
                 <p data-ro="Logo, temă vizuală, imagine de fundal și mesaj de bun venit. Interfața arată exact ca brandul tău." data-en="Logo, visual theme, background image and welcome message. The interface looks exactly like your brand.">Logo, temă vizuală, imagine de fundal și mesaj de bun venit. Interfața arată exact ca brandul tău.</p>
             </div>
             <div class="feat-card reveal">
-                <div class="feat-ic">🌍</div>
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19"/><path d="M12 2.5c2.5 2.6 3.9 6 4 9.5-.1 3.5-1.5 6.9-4 9.5-2.5-2.6-3.9-6-4-9.5.1-3.5 1.5-6.9 4-9.5z"/></svg></div>
                 <h3 data-ro="Bilingv RO / EN" data-en="Bilingual RO / EN">Bilingv RO / EN</h3>
                 <p data-ro="Interfață completă în română și engleză, atât pentru echipă cât și pentru clienți." data-en="Complete interface in Romanian and English, for both your team and your guests.">Interfață completă în română și engleză, atât pentru echipă cât și pentru clienți.</p>
             </div>
