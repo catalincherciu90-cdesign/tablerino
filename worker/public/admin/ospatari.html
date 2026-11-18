@@ -124,24 +124,26 @@ td .email { color: #888; font-size: 13px; }
     <div style="background:#ede9ff;border-radius:12px;padding:18px;margin-bottom:22px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
         <div style="text-align:center;flex:0 0 auto">
             <canvas id="qrApp" width="160" height="160" style="border-radius:10px;background:#fff;display:block;padding:8px"></canvas>
-            <div style="font-size:11px;color:#8a7bd1;margin-top:6px">Scanează cu telefonul</div>
+            <div style="font-size:11px;color:#8a7bd1;margin-top:6px">Scanează → descarcă .apk</div>
         </div>
-        <div style="flex:1;min-width:220px">
-            <div style="font-size:15px;font-weight:700;color:#4c2bbd;margin-bottom:4px">📲 Aplicația de telefon pentru ospătari</div>
+        <div style="flex:1;min-width:240px">
+            <div style="font-size:15px;font-weight:700;color:#4c2bbd;margin-bottom:4px">📲 Aplicația Android pentru ospătari</div>
             <div style="font-size:13px;color:#6b5bb5;line-height:1.5">
-                Ospătarul deschide link-ul pe telefon și, în meniul Chrome, alege
-                <b>„Instalează aplicația"</b> → apare ca icon pe ecran, ca o aplicație reală.
+                Aplicație reală (<b>.apk</b>), se instalează ca orice aplicație — icon propriu, pe tot ecranul. Nu depinde de Chrome.
             </div>
             <ol style="font-size:12px;color:#6b5bb5;margin:8px 0 0 16px;line-height:1.6">
-                <li>Scanează codul QR (sau primește link-ul de mai jos).</li>
-                <li>Se deschide aplicația → „Instalează aplicația".</li>
-                <li>Se autentifică cu contul lui de ospătar.</li>
+                <li>Scanează codul QR cu telefonul (sau trimite link-ul de descărcare).</li>
+                <li>Deschide fișierul descărcat → „Instalează".</li>
+                <li>Dacă cere, permite „Instalează din surse necunoscute".</li>
+                <li>Autentificare cu contul de ospătar.</li>
             </ol>
-            <div id="appUrl" style="font-size:13px;color:#6c47ff;font-family:monospace;margin-top:8px;word-break:break-all"></div>
-            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-                <button onclick="copiazaAppUrl()" style="background:#6c47ff;color:#fff;border:none;border-radius:10px;padding:9px 15px;font-weight:700;font-size:13px;cursor:pointer">📋 Copiază link</button>
-                <a href="/ospatar/" target="_blank" style="background:#fff;color:#6c47ff;border:1px solid #c9bef5;border-radius:10px;padding:9px 15px;font-weight:700;font-size:13px;text-decoration:none">🔗 Deschide aplicația</a>
+            <div id="apkUrl" style="font-size:13px;color:#6c47ff;font-family:monospace;margin-top:8px;word-break:break-all"></div>
+            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+                <a href="/download/tablerino-ospatar.apk" download style="background:#16a34a;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;text-decoration:none">⬇️ Descarcă aplicația (.apk)</a>
+                <button onclick="copiazaApkUrl()" style="background:#6c47ff;color:#fff;border:none;border-radius:10px;padding:10px 15px;font-weight:700;font-size:13px;cursor:pointer">📋 Copiază link</button>
+                <a href="/ospatar/" target="_blank" style="background:#fff;color:#6c47ff;border:1px solid #c9bef5;border-radius:10px;padding:10px 15px;font-weight:700;font-size:13px;text-decoration:none">🌐 Varianta web</a>
             </div>
+            <div style="font-size:11px;color:#9a8bd1;margin-top:8px">💡 Varianta web (PWA) are în plus notificări push când aplicația e închisă; .apk-ul are alertele când e deschis.</div>
         </div>
     </div>
 
@@ -212,13 +214,13 @@ async function seteazaMasaOspatar(id, value) {
     else showToast(d.msg || 'Eroare', 'err');
 }
 
-const appUrl = location.origin + '/ospatar/';
-document.getElementById('appUrl').textContent = appUrl;
+const apkUrl = location.origin + '/download/tablerino-ospatar.apk';
+document.getElementById('apkUrl').textContent = apkUrl;
 if (typeof QRious !== 'undefined') {
-    try { new QRious({ element: document.getElementById('qrApp'), value: appUrl, size: 160, level: 'M' }); } catch (e) {}
+    try { new QRious({ element: document.getElementById('qrApp'), value: apkUrl, size: 160, level: 'M' }); } catch (e) {}
 }
-function copiazaAppUrl() {
-    navigator.clipboard.writeText(appUrl).then(() => showToast('Link copiat!')).catch(() => showToast('Nu s-a putut copia', 'err'));
+function copiazaApkUrl() {
+    navigator.clipboard.writeText(apkUrl).then(() => showToast('Link copiat!')).catch(() => showToast('Nu s-a putut copia', 'err'));
 }
 
 function fmtDurata(sec) {
