@@ -50,6 +50,15 @@ body { font-family: system-ui, sans-serif; background: #0f0f1a; color: #e0e0e0; 
 
 .gol { text-align: center; color: #444; padding: 40px; font-size: 14px; }
 .gol-cat { color: #444; font-size: 13px; padding: 20px 0; }
+@media (max-width: 860px) {
+    .sidebar { position: sticky; top: 0; left: 0; right: 0; width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px 12px; gap: 4px 8px; z-index: 100; border-bottom: 1px solid #2a2a3e; }
+    .sidebar .logo { font-size: 16px; margin-bottom: 0; }
+    .sidebar .sub { display: none; }
+    .sidebar a { padding: 7px 10px; font-size: 13px; }
+    .sidebar .logout { margin-top: 0; margin-left: auto; }
+    .main { margin-left: 0; padding: 18px 12px 60px; }
+    .produse-grid { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>

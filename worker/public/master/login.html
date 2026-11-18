@@ -9,8 +9,9 @@
 <title>Tablerino Master</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: system-ui, sans-serif; background: #0f0f1a; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+body { font-family: system-ui, sans-serif; background: #0f0f1a; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
 .card { background: #1a1a2e; border-radius: 16px; padding: 40px; width: 100%; max-width: 400px; box-shadow: 0 8px 40px rgba(0,0,0,0.4); }
+@media (max-width: 480px) { .card { padding: 28px 22px; } }
 h1 { color: #fff; font-size: 22px; margin-bottom: 4px; }
 p.sub { color: #666; font-size: 13px; margin-bottom: 28px; }
 .badge { display: inline-block; background: #6c47ff; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 8px; letter-spacing: .5px; }
