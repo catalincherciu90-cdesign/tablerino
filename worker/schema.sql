@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS restaurante (
     parola_reset    TEXT,                          -- bcrypt hash for audit actions
     rezervare_token TEXT,                          -- public token for the reservation link
     rez_capacitate  INTEGER,                       -- total seats for reservations (NULL = sum of table capacities)
+    escalare_sec    INTEGER,                       -- seconds an order stays reserved for the table's waiter (NULL = default 120)
     activ           INTEGER DEFAULT 1,             -- 0 = pending approval
     created_at      TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -78,6 +79,7 @@ CREATE TABLE IF NOT EXISTS comenzi (
     metoda_plata  TEXT CHECK (metoda_plata IN ('cash','card')),
     observatii    TEXT,
     preluat_de    INTEGER,                 -- waiter (ospatari.id) who claimed it, or NULL
+    preluat_la    TEXT,                    -- when it was claimed (for time-to-claim stats)
     created_at    TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at    TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (masa_id) REFERENCES mese(id) ON DELETE CASCADE,

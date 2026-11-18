@@ -50,6 +50,12 @@ td .email { color: #888; font-size: 13px; }
 .btn-sterge { background: #ffebee; color: #c62828; }
 .btn-sm:hover { opacity: .85; }
 .gol { color: #aaa; font-size: 14px; padding: 40px; text-align: center; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 28px; }
+.stat-card { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); }
+.stat-nume { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #1a1a2e; }
+.stat-row { display: flex; align-items: baseline; justify-content: space-between; margin-top: 6px; }
+.stat-val { font-size: 22px; font-weight: 800; color: #6c47ff; font-variant-numeric: tabular-nums; }
+.stat-lbl { font-size: 12px; color: #888; }
 .toast { position: fixed; bottom: 24px; right: 24px; background: #10b981; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 13px; display: none; z-index: 999; }
 .toast.err { background: #e53e3e; }
 
@@ -114,6 +120,12 @@ td .email { color: #888; font-size: 13px; }
         </div>
     </div>
 
+    <h3 style="font-size:16px;font-weight:700;margin:8px 0 4px">📊 Statistici azi</h3>
+    <p style="font-size:13px;color:#888;margin-bottom:14px">Comenzi preluate și timpul mediu de preluare, per ospătar (resetat zilnic).</p>
+    <div class="stats-grid" id="statsGrid">
+        <div class="gol">Se încarcă...</div>
+    </div>
+
     <div class="tabel-wrap" id="tabelWrap">
         <div class="gol">Se încarcă...</div>
     </div>
@@ -173,6 +185,30 @@ async function seteazaMasaOspatar(id, value) {
     const d = await r.json();
     if (d.ok) showToast('Masă implicită salvată!');
     else showToast(d.msg || 'Eroare', 'err');
+}
+
+function fmtDurata(sec) {
+    if (sec == null) return '—';
+    sec = Math.round(sec);
+    if (sec < 60) return sec + 's';
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return s ? `${m}m ${s}s` : `${m}m`;
+}
+
+async function incarcaStatistici() {
+    const grid = document.getElementById('statsGrid');
+    try {
+        const r = await fetch('/api/admin/statistici_ospatari');
+        const d = await r.json();
+        if (!d.ok || !d.statistici.length) { grid.innerHTML = `<div class="gol">Fără date.</div>`; return; }
+        grid.innerHTML = d.statistici.map(s => `
+            <div class="stat-card">
+                <div class="stat-nume">${escapeHtml(s.nume)}</div>
+                <div class="stat-row"><span class="stat-val">${s.nr_preluate || 0}</span><span class="stat-lbl">comenzi preluate</span></div>
+                <div class="stat-row"><span class="stat-val">${fmtDurata(s.timp_mediu_sec)}</span><span class="stat-lbl">timp mediu preluare</span></div>
+            </div>
+        `).join('');
+    } catch (e) { grid.innerHTML = `<div class="gol">Eroare la încărcare.</div>`; }
 }
 
 async function incarcaOspatari() {
@@ -278,6 +314,7 @@ fetch('/api/admin/me').then(function (r) {
     if (!d) return;
     if (d.role === 'ospatar') { location.href = '/admin/index.html'; return; }
     incarcaMese().then(incarcaOspatari);
+    incarcaStatistici();
 });
 </script>
 </body>

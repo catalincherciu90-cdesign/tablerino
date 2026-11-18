@@ -51,7 +51,11 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
 .card-preluat.da { background: #ede9fe; color: #5b21b6; }
 .card-preluat.nu { background: #f3f4f6; color: #999; }
 .card-preluat.rezervat { background: #fff4e5; color: #b45309; }
-.card-preluat.rezervat .cd { font-variant-numeric: tabular-nums; }
+.card-preluat.mea { background: #e0f2fe; color: #075985; }
+.card-preluat.alerta { background: #fee2e2; color: #b91c1c; animation: pulseAlerta 1s ease-in-out infinite; }
+@keyframes pulseAlerta { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+.card-preluat .cd { font-variant-numeric: tabular-nums; }
+.reassign-sel { width: 100%; padding: 7px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: #faf5ff; color: #6c47ff; font-weight: 600; cursor: pointer; outline: none; }
 .btn-preia { background: #6c47ff; color: #fff; flex: 1; }
 .btn-renunta { background: #fff; color: #6c47ff; border: 2px solid #6c47ff; flex: 1; }
 .card-status { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
@@ -172,7 +176,10 @@ let masaDefaultNume = null;
 let filtruMasa = 'ale_mele'; // 'ale_mele' | 'nepreluate' | 'toate' (waiter order filter)
 let comenziToate = [];       // full orders array from the last fetch (filtered at render time)
 let comenziFetchedAt = Date.now(); // client time of last fetch (for live order-age / countdown)
-const ESCALARE_SEC = 120;    // reserved window: order stays with the table's waiter 2 min
+let escalareSec = 120;       // reserved window (seconds), configurable per restaurant; set from /me
+const ALERTA_SEC = 30;       // warn the responsible waiter this many seconds before escalation
+let ospatariList = [];       // waiters (owner only) for the manual reassign dropdown
+let comenziAlertate = new Set(); // order ids already alerted (avoid repeat beeps)
 
 function escHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -190,7 +197,32 @@ function orderAgeSec(c) {
 function reservedRemaining(c) {
     if (c.preluat_de != null) return 0;
     if (c.masa_ospatar_id == null || c.masa_ospatar_id === ospatarId) return 0;
-    return Math.max(0, ESCALARE_SEC - orderAgeSec(c));
+    return Math.max(0, escalareSec - orderAgeSec(c));
+}
+// For the responsible waiter: seconds until their own unclaimed order escalates (0 = already open to all).
+function myEscalateRemaining(c) {
+    if (c.preluat_de != null) return 0;
+    if (c.masa_ospatar_id == null || c.masa_ospatar_id !== ospatarId) return 0;
+    return Math.max(0, escalareSec - orderAgeSec(c));
+}
+// Short beep via Web Audio (no asset needed). Safe no-op if audio is unavailable.
+function beep() {
+    try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        const ac = beep._ac || (beep._ac = new Ctx());
+        if (ac.state === 'suspended') ac.resume();
+        const t = ac.currentTime;
+        [0, 0.18].forEach(off => {
+            const o = ac.createOscillator(), g = ac.createGain();
+            o.type = 'sine'; o.frequency.value = 880;
+            g.gain.setValueAtTime(0.0001, t + off);
+            g.gain.exponentialRampToValueAtTime(0.25, t + off + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + off + 0.15);
+            o.connect(g); g.connect(ac.destination);
+            o.start(t + off); o.stop(t + off + 0.16);
+        });
+    } catch (e) {}
 }
 const _t = {
     noOrders:     'Nicio comandă momentan.',
@@ -222,6 +254,10 @@ const _t = {
     btnReserved:  '🔒 Rezervată',
     reservedFor:  'Rezervată pentru',
     responsible:  'Responsabil',
+    aboutToEscape:'⏰ îți scapă în',
+    alertToast:   'îți scapă comanda la',
+    assignTo:     'Atribuie →',
+    yourTable:    'Masa ta',
     connError:    'Eroare conexiune, reîncearcă...',
     fullscreen:   'Full Screen',
     exitFS:       'Ieși Full Screen',
@@ -313,12 +349,17 @@ function renderComenzi(comenzi) {
         // Claim status badge (shown for owners and waiters alike).
         const preluat = c.preluat_de != null;
         const rezRem = reservedRemaining(c);
+        const myRem = myEscalateRemaining(c);
         let badgePreluat;
         if (preluat) {
             badgePreluat = `<div class="card-preluat da">👤 ${_t.claimed}: ${escHtml(c.preluat_de_nume)}</div>`;
         } else if (rezRem > 0) {
             // Reserved for the table's responsible waiter — live countdown until it opens up.
             badgePreluat = `<div class="card-preluat rezervat" data-exp="${Date.now() + rezRem * 1000}">🔒 ${_t.reservedFor} ${escHtml(c.masa_ospatar_nume)} · <span class="cd">${fmtMMSS(rezRem)}</span></div>`;
+        } else if (myRem > 0) {
+            // It's my own table and still unclaimed — countdown until it escalates to others.
+            const urgent = myRem <= ALERTA_SEC;
+            badgePreluat = `<div class="card-preluat ${urgent ? 'alerta' : 'mea'}" data-myexp="${Date.now() + myRem * 1000}" data-cid="${c.id}" data-masa="${escHtml(c.masa_nume)}">${urgent ? _t.aboutToEscape : '👤 ' + _t.yourTable + ' ·'} <span class="cd">${fmtMMSS(myRem)}</span></div>`;
         } else if (c.masa_ospatar_nume) {
             badgePreluat = `<div class="card-preluat nu">${_t.unclaimed} · 👤 ${escHtml(c.masa_ospatar_nume)}</div>`;
         } else {
@@ -338,6 +379,15 @@ function renderComenzi(comenzi) {
             }
         }
 
+        // Owner: manual (re)assign of an order to any waiter.
+        let reassignUI = '';
+        if (!esteOspatar && ospatariList.length) {
+            const opts = [`<option value="">${_t.assignTo}</option>`]
+                .concat(ospatariList.map(o => `<option value="${o.id}" ${o.id === c.preluat_de ? 'selected' : ''}>${escHtml(o.nume)}</option>`))
+                .join('');
+            reassignUI = `<select class="reassign-sel" onchange="atribuieComanda(${c.id}, this)">${opts}</select>`;
+        }
+
         return `
         <div class="comanda-card ${c.status}">
             <div class="card-header">
@@ -351,6 +401,7 @@ function renderComenzi(comenzi) {
             ${bannerPlata}
             <ul class="card-produse">${produse}</ul>
             <div class="card-total">${_t.total}: ${total.toFixed(2)} ${_t.lei}</div>
+            ${reassignUI ? `<div class="card-actiuni" style="margin-bottom:8px">${reassignUI}</div>` : ''}
             ${actiuneClaim ? `<div class="card-actiuni" style="margin-bottom:8px">${actiuneClaim}</div>` : ''}
             <div class="card-actiuni">${actiuni}</div>
         </div>`;
@@ -460,6 +511,21 @@ async function preiaComanda(comandaId) {
     incarcaComenzi();
 }
 
+// Owner manually (re)assigns an order to a chosen waiter (empty = unassign).
+async function atribuieComanda(comandaId, sel) {
+    const ospatarId = Number(sel.value) || null;
+    try {
+        const r = await fetch('/api/admin/atribuie_comanda', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ comanda_id: comandaId, ospatar_id: ospatarId })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok && d.msg) toast(d.msg);
+    } catch (e) {}
+    incarcaComenzi();
+}
+
 // Waiter releases their own claim (owner could release any, but has no button).
 async function renuntaComanda(comandaId) {
     await fetch('/api/admin/renunta_comanda', {
@@ -493,11 +559,28 @@ document.querySelectorAll('.filtre:not(.filtre-masa) .filtru-btn').forEach(btn =
 // a reservation window closes, re-render so the order becomes claimable by anyone.
 function tickReservari() {
     let expired = false;
+    // Orders reserved for another waiter: update the countdown, re-render when it opens up.
     document.querySelectorAll('.card-preluat.rezervat[data-exp]').forEach(el => {
         const rem = (Number(el.dataset.exp) - Date.now()) / 1000;
         if (rem <= 0) { expired = true; return; }
         const cd = el.querySelector('.cd');
         if (cd) cd.textContent = fmtMMSS(rem);
+    });
+    // My own unclaimed orders: update countdown, flash+beep in the last ALERTA_SEC seconds.
+    document.querySelectorAll('.card-preluat[data-myexp]').forEach(el => {
+        const rem = (Number(el.dataset.myexp) - Date.now()) / 1000;
+        const cid = el.dataset.cid;
+        if (rem <= 0) { expired = true; return; }
+        const cd = el.querySelector('.cd');
+        if (cd) cd.textContent = fmtMMSS(rem);
+        if (rem <= ALERTA_SEC) {
+            if (!el.classList.contains('alerta')) expired = true; // re-render to switch to urgent style
+            if (cid && !comenziAlertate.has(cid)) {
+                comenziAlertate.add(cid);
+                beep();
+                toast(`⏰ ${_t.alertToast} ${el.dataset.masa || ''}!`);
+            }
+        }
     });
     if (expired && comenziToate.length) renderComenzi(comenziToate);
 }
@@ -530,8 +613,15 @@ fetch('/api/admin/me').then(function (r) {
     ospatarId = d.ospatar_id || null;
     masaDefaultId = d.masa_default_id || null;
     masaDefaultNume = d.masa_default_nume || null;
+    escalareSec = Number(d.escalare_sec) || 120;
     if (esteOspatar) {
         document.querySelectorAll('.owner-only').forEach(el => el.style.display = 'none');
+    } else {
+        // Owner: load waiters for the manual reassign dropdown on each order.
+        fetch('/api/admin/ospatari').then(r => r.json()).then(o => {
+            ospatariList = (o && o.ospatari) ? o.ospatari.filter(w => w.activ) : [];
+            if (comenziToate.length) renderComenzi(comenziToate);
+        }).catch(() => {});
     }
     // Any waiter gets the "Ale mele / Nepreluate / Toate mesele" toggle,
     // defaulting to their own orders. If they have a default table, name it.

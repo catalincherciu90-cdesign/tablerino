@@ -64,7 +64,7 @@ admin.get('/profil', requireRestaurant, requireOwner, async (c) => {
   const profil = await one(
     c.env.DB,
     `SELECT id, nume, email, telefon, tema, logo, text_bun_venit, bg_imagine,
-            facebook, instagram, tiktok, whatsapp, limba,
+            facebook, instagram, tiktok, whatsapp, limba, escalare_sec,
             CASE WHEN parola_reset IS NULL THEN 0 ELSE 1 END AS are_parola_reset
      FROM restaurante WHERE id = ?`,
     c.get('restaurant')!.rid
@@ -75,9 +75,9 @@ admin.get('/profil', requireRestaurant, requireOwner, async (c) => {
 admin.get('/me', async (c) => {
   const sess = await currentRestaurant(c);
   if (!sess) return c.json({ ok: false }, 401);
-  const r = await one<{ tema: string; limba: string }>(
+  const r = await one<{ tema: string; limba: string; escalare_sec: number | null }>(
     c.env.DB,
-    'SELECT tema, limba FROM restaurante WHERE id = ?',
+    'SELECT tema, limba, escalare_sec FROM restaurante WHERE id = ?',
     sess.rid
   );
   // Waiter's default table (for pre-filtering their orders view).
@@ -102,6 +102,7 @@ admin.get('/me', async (c) => {
     ospatar_id: sess.role === 'ospatar' ? (sess.uid ?? null) : null,
     tema: r?.tema ?? 'italian',
     limba: r?.limba ?? 'ro',
+    escalare_sec: r?.escalare_sec ?? 120,
     masa_default_id,
     masa_default_nume,
   });
@@ -111,6 +112,18 @@ admin.get('/me', async (c) => {
 admin.use('/*', requireRestaurant);
 
 const rid = (c: import('../types').AppContext) => c.get('restaurant')!.rid;
+
+// The restaurant's order-reservation window in seconds (default 120, clamp 30..600).
+async function restaurantEscalareSec(c: import('../types').AppContext): Promise<number> {
+  const r = await one<{ escalare_sec: number | null }>(
+    c.env.DB,
+    'SELECT escalare_sec FROM restaurante WHERE id = ?',
+    rid(c)
+  );
+  const v = r?.escalare_sec;
+  if (v == null) return 120;
+  return Math.min(600, Math.max(30, v));
+}
 
 // ── Dashboard / orders ──
 
@@ -287,9 +300,9 @@ admin.post('/preia_comanda', async (c) => {
   const id = Number(body.comanda_id ?? 0);
 
   // Escalation rule: if the order's table has a responsible waiter, only they can
-  // claim it for the first 2 minutes. After that (or with no responsible waiter)
-  // any waiter may claim it.
-  const ESCALARE_SEC = 120;
+  // claim it for the restaurant's reserved window (default 120s). After that (or
+  // with no responsible waiter) any waiter may claim it.
+  const escalareSec = await restaurantEscalareSec(c);
   const info = await one<{ preluat_de: number | null; masa_osp: number | null; varsta: number }>(
     c.env.DB,
     `SELECT c.preluat_de, m.ospatar_id AS masa_osp,
@@ -301,8 +314,8 @@ admin.post('/preia_comanda', async (c) => {
   );
   if (!info) return c.json({ ok: false, msg: 'Comanda nu există.' }, 404);
   if (info.preluat_de != null) return c.json({ ok: false, msg: 'Comanda a fost deja preluată.' }, 409);
-  if (info.masa_osp != null && info.masa_osp !== sess.uid && info.varsta < ESCALARE_SEC) {
-    const ramase = ESCALARE_SEC - info.varsta;
+  if (info.masa_osp != null && info.masa_osp !== sess.uid && info.varsta < escalareSec) {
+    const ramase = escalareSec - info.varsta;
     return c.json(
       { ok: false, msg: `Comanda e rezervată pentru ospătarul mesei încă ${ramase}s.`, rezervat_sec: ramase },
       409
@@ -311,7 +324,7 @@ admin.post('/preia_comanda', async (c) => {
 
   const res = await run(
     c.env.DB,
-    'UPDATE comenzi SET preluat_de = ? WHERE id = ? AND restaurant_id = ? AND preluat_de IS NULL',
+    "UPDATE comenzi SET preluat_de = ?, preluat_la = CURRENT_TIMESTAMP WHERE id = ? AND restaurant_id = ? AND preluat_de IS NULL",
     sess.uid,
     id,
     sess.rid
@@ -339,6 +352,43 @@ admin.post('/renunta_comanda', async (c) => {
     await run(c.env.DB, 'UPDATE comenzi SET preluat_de = NULL WHERE id = ? AND restaurant_id = ?', id, sess.rid);
   }
   return c.json({ ok: true });
+});
+
+// Owner manually (re)assigns an order to a specific waiter, bypassing the
+// reservation window. ospatar_id = 0/empty clears the claim.
+admin.post('/atribuie_comanda', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.comanda_id ?? 0);
+  if (!id) return c.json({ ok: false }, 400);
+  const ospatarId = Number(body.ospatar_id ?? 0) || null;
+  if (ospatarId != null) {
+    const o = await one<{ id: number }>(
+      c.env.DB,
+      'SELECT id FROM ospatari WHERE id = ? AND restaurant_id = ?',
+      ospatarId,
+      rid(c)
+    );
+    if (!o) return c.json({ ok: false, msg: 'Ospătar invalid.' }, 400);
+  }
+  await run(
+    c.env.DB,
+    "UPDATE comenzi SET preluat_de = ?, preluat_la = CASE WHEN ? IS NULL THEN NULL ELSE CURRENT_TIMESTAMP END WHERE id = ? AND restaurant_id = ?",
+    ospatarId,
+    ospatarId,
+    id,
+    rid(c)
+  );
+  return c.json({ ok: true, preluat_de: ospatarId });
+});
+
+// Owner sets the order-reservation window (minutes in the UI, stored as seconds).
+admin.post('/salveaza_escalare', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  let sec = Number(body.escalare_sec ?? 0);
+  if (!Number.isFinite(sec) || sec <= 0) return c.json({ ok: false, msg: 'Valoare invalidă.' }, 400);
+  sec = Math.min(600, Math.max(30, Math.round(sec)));
+  await run(c.env.DB, 'UPDATE restaurante SET escalare_sec = ? WHERE id = ?', sec, rid(c));
+  return c.json({ ok: true, escalare_sec: sec });
 });
 
 // ── Menu: categories & products ──
@@ -773,6 +823,28 @@ admin.get('/ospatari', requireOwner, async (c) => {
     rid(c)
   );
   return c.json({ ok: true, ospatari });
+});
+
+// Per-waiter stats for today: how many orders each claimed and the average
+// time-to-claim (seconds between an order being placed and claimed).
+admin.get('/statistici_ospatari', requireOwner, async (c) => {
+  const statistici = await all(
+    c.env.DB,
+    `SELECT o.id, o.nume,
+            COUNT(c.id) AS nr_preluate,
+            AVG(CASE WHEN c.preluat_la IS NOT NULL
+                     THEN strftime('%s', c.preluat_la) - strftime('%s', c.created_at) END) AS timp_mediu_sec
+     FROM ospatari o
+     LEFT JOIN comenzi c
+       ON c.preluat_de = o.id
+      AND c.restaurant_id = o.restaurant_id
+      AND date(c.created_at) = date('now')
+     WHERE o.restaurant_id = ?
+     GROUP BY o.id, o.nume
+     ORDER BY nr_preluate DESC, o.nume`,
+    rid(c)
+  );
+  return c.json({ ok: true, statistici });
 });
 
 // Validate a table id belongs to this restaurant; returns the id or null.
