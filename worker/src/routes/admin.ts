@@ -435,6 +435,29 @@ admin.post('/push_unsubscribe', async (c) => {
   return c.json({ ok: true });
 });
 
+// A waiter registers this native-app device's FCM token for background push.
+admin.post('/fcm_subscribe', async (c) => {
+  const sess = c.get('restaurant')!;
+  if (sess.role !== 'ospatar' || !sess.uid) return c.json({ ok: false, msg: 'Doar ospătarii pot primi notificări.' }, 400);
+  const body = await c.req.json().catch(() => ({}));
+  const token = (body.token ?? '').trim();
+  if (!token) return c.json({ ok: false, msg: 'Token invalid.' }, 400);
+  await run(
+    c.env.DB,
+    `INSERT INTO fcm_tokens (restaurant_id, ospatar_id, token) VALUES (?, ?, ?)
+     ON CONFLICT(token) DO UPDATE SET ospatar_id = excluded.ospatar_id, restaurant_id = excluded.restaurant_id`,
+    sess.rid, sess.uid, token
+  );
+  return c.json({ ok: true });
+});
+
+admin.post('/fcm_unsubscribe', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const token = (body.token ?? '').trim();
+  if (token) await run(c.env.DB, 'DELETE FROM fcm_tokens WHERE token = ?', token);
+  return c.json({ ok: true });
+});
+
 // ── Menu: categories & products ──
 
 admin.get('/categorii', async (c) => {

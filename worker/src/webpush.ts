@@ -153,7 +153,7 @@ export async function pushToOspatari(
  *  from escalating to other waiters. Runs every minute. */
 export async function notifyEscalations(db: D1Database): Promise<void> {
   const cfg = await getVapidConfig(db);
-  if (!cfg) return;
+  const { pushFcmToOspatari } = await import('./fcm');
   const rows = await all<{ id: number; masa_nume: string; ospatar_id: number }>(
     db,
     `SELECT c.id, m.nume AS masa_nume, m.ospatar_id
@@ -168,13 +168,15 @@ export async function notifyEscalations(db: D1Database): Promise<void> {
        AND (strftime('%s','now') - strftime('%s', c.created_at)) <  COALESCE(r.escalare_sec, 120)`
   );
   for (const row of rows) {
-    await pushToOspatari(db, cfg, [row.ospatar_id], {
+    const payload = {
       type: 'escalare',
       title: '⏰ Îți scapă o comandă',
       body: `${row.masa_nume} — preia acum, altfel trece la alt ospătar`,
       url: '/ospatar/',
       tag: `escalare-${row.id}`,
-    });
+    };
+    if (cfg) await pushToOspatari(db, cfg, [row.ospatar_id], payload);
+    await pushFcmToOspatari(db, [row.ospatar_id], payload);
     await db.prepare('UPDATE comenzi SET push_escalare_trimis = 1 WHERE id = ?').bind(row.id).run();
   }
 }

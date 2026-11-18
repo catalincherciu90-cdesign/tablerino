@@ -145,9 +145,6 @@ table.post('/trimite_comanda', async (c) => {
 // active waiters when the table has none assigned.
 async function notifyNewOrder(db: D1Database, restaurantId: number, masaId: number, masaNume: string, comandaId: number): Promise<void> {
   try {
-    const { getVapidConfig, pushToOspatari } = await import('../webpush');
-    const cfg = await getVapidConfig(db);
-    if (!cfg) return;
     const masa = await one<{ ospatar_id: number | null }>(db, 'SELECT ospatar_id FROM mese WHERE id = ?', masaId);
     let targets: number[];
     if (masa?.ospatar_id) {
@@ -156,13 +153,20 @@ async function notifyNewOrder(db: D1Database, restaurantId: number, masaId: numb
       const rows = await all<{ id: number }>(db, 'SELECT id FROM ospatari WHERE restaurant_id = ? AND activ = 1', restaurantId);
       targets = rows.map((r) => r.id);
     }
-    await pushToOspatari(db, cfg, targets, {
+    const payload = {
       type: 'nou',
       title: '🔔 Comandă nouă',
       body: `${masaNume} are o comandă nouă`,
       url: '/ospatar/',
       tag: `comanda-${comandaId}`,
-    });
+    };
+    // Web Push (PWA) — only if VAPID is configured.
+    const { getVapidConfig, pushToOspatari } = await import('../webpush');
+    const cfg = await getVapidConfig(db);
+    if (cfg) await pushToOspatari(db, cfg, targets, payload);
+    // FCM (native Android app) — only if a service account is configured.
+    const { pushFcmToOspatari } = await import('../fcm');
+    await pushFcmToOspatari(db, targets, payload);
     await run(db, 'UPDATE comenzi SET push_nou_trimis = 1 WHERE id = ?', comandaId);
   } catch (e) { /* best-effort */ }
 }

@@ -211,3 +211,15 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
     FOREIGN KEY (ospatar_id) REFERENCES ospatari(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_push_ospatar ON push_subscriptions(ospatar_id);
+
+-- FCM device tokens for the native Android app (background push via Firebase).
+CREATE TABLE IF NOT EXISTS fcm_tokens (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER NOT NULL,
+    ospatar_id    INTEGER NOT NULL,
+    token         TEXT NOT NULL UNIQUE,
+    created_at    TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE,
+    FOREIGN KEY (ospatar_id) REFERENCES ospatari(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_fcm_ospatar ON fcm_tokens(ospatar_id);

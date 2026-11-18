@@ -189,8 +189,34 @@ function urlB64ToUint8Array(b64){
     for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
     return arr;
 }
-// Subscribe this device to Web Push and register it on the server.
+// ── Native app bridge (the Android .apk injects window.TablerinoNative) ──
+const isNativeApp = () => (typeof window.TablerinoNative !== 'undefined') || /TablerinoApp/.test(navigator.userAgent);
+let nativeFcmToken = null;
+try { nativeFcmToken = localStorage.getItem('fcmToken') || null; } catch (e) {}
+
+// The native layer calls this once it has an FCM device token.
+window.onNativeFcmToken = function (token) {
+    if (!token) return;
+    nativeFcmToken = token;
+    try { localStorage.setItem('fcmToken', token); } catch (e) {}
+    trySendFcmToken();
+};
+// Register the FCM token with the server (needs the waiter to be logged in).
+async function trySendFcmToken(){
+    if (!nativeFcmToken || !ospatarId) return;
+    try {
+        await fetch('/api/admin/fcm_subscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: nativeFcmToken }) });
+    } catch (e) {}
+}
+
+// Subscribe this device to notifications. Native app → FCM; browser → Web Push.
 async function registerPush(){
+    if (isNativeApp()) {
+        // Ask the native layer for notification permission + FCM token.
+        try { if (window.TablerinoNative && window.TablerinoNative.requestNotifications) window.TablerinoNative.requestNotifications(); } catch (e) {}
+        trySendFcmToken();
+        return;
+    }
     try {
         if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
         const perm = await Notification.requestPermission();
@@ -348,6 +374,10 @@ async function logout(){
         const sub = reg && await reg.pushManager.getSubscription();
         if (sub) await fetch('/api/admin/push_unsubscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ endpoint: sub.endpoint }) });
     } catch(e){}
+    // Native app: stop this device's FCM token from receiving the old waiter's pushes.
+    try {
+        if (nativeFcmToken) await fetch('/api/admin/fcm_unsubscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: nativeFcmToken }) });
+    } catch(e){}
     fetch('/api/admin/logout',{method:'POST'}).finally(()=>location.href='/ospatar/login.html');
 }
 
@@ -375,7 +405,8 @@ document.getElementById('installBtn').addEventListener('click', async () => {
         : 'Apasă meniul <b>⋮</b> al browserului (dreapta sus) → <b>„Instalează aplicația"</b> sau „Adaugă la ecranul principal".';
     help.style.display = help.style.display === 'block' ? 'none' : 'block';
 });
-if (!isStandalone()) document.getElementById('installBar').style.display = 'flex';
+// Show the install bar in a browser only — never inside the native app.
+if (!isStandalone() && !isNativeApp()) document.getElementById('installBar').style.display = 'flex';
 
 // ── Boot ──
 fetch('/api/admin/me').then(r => { if(!r.ok){ location.href='/ospatar/login.html'; return null; } return r.json(); }).then(d => {
@@ -390,9 +421,16 @@ fetch('/api/admin/me').then(r => { if(!r.ok){ location.href='/ospatar/login.html
     document.getElementById('ospNume').textContent = d.masa_default_nume ? (ospNume + ' · ' + d.masa_default_nume) : ospNume;
     setHdr();
     try { if (localStorage.getItem('sunetOk')==='1') sunetOk = true; } catch(e){}
-    const pushGranted = ('Notification' in window) && Notification.permission === 'granted';
-    if (pushGranted) registerPush();  // refresh the server-side subscription silently
-    if (!sunetOk || !pushGranted) document.getElementById('enableSound').style.display = 'block';
+    if (isNativeApp()) {
+        // Native app: register notifications automatically (FCM), no install button.
+        registerPush();
+        trySendFcmToken();
+        if (!sunetOk) document.getElementById('enableSound').style.display = 'block';
+    } else {
+        const pushGranted = ('Notification' in window) && Notification.permission === 'granted';
+        if (pushGranted) registerPush();  // refresh the server-side subscription silently
+        if (!sunetOk || !pushGranted) document.getElementById('enableSound').style.display = 'block';
+    }
     incarca();
     setInterval(incarca, 5000);
 });
