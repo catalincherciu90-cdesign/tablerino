@@ -174,6 +174,11 @@ admin.get('/comenzi', async (c) => {
   for (const cmd of comenzi) {
     cmd.produse = await all(c.env.DB, 'SELECT * FROM comanda_produse WHERE comanda_id = ?', cmd.id);
   }
+  // Opportunistic escalation-notification check (throttled; no cron needed).
+  c.executionCtx.waitUntil((async () => {
+    try { const { maybeRunEscalations } = await import('../webpush'); await maybeRunEscalations(c.env.DB); }
+    catch (e) { /* best-effort */ }
+  })());
   return c.json({ ok: true, comenzi });
 });
 

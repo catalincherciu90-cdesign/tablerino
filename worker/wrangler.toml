@@ -2,10 +2,9 @@ name = "tablerino"
 main = "src/index.ts"
 compatibility_date = "2024-12-18"
 compatibility_flags = ["nodejs_compat"]
-
-# Cron: run the escalation-notification check every minute.
-[triggers]
-crons = ["* * * * *"]
+# Note: escalation-notification checks run opportunistically off dashboard polling
+# (see maybeRunEscalations) rather than a cron trigger, to stay within the Workers
+# Free plan's 5-cron-per-account limit.
 
 # Static frontend (home, masa, admin, master HTML/CSS/JS) served from ./public
 [assets]

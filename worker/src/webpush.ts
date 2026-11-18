@@ -179,4 +179,18 @@ export async function notifyEscalations(db: D1Database): Promise<void> {
   }
 }
 
+/** Opportunistic escalation check: runs at most once per ~20s (throttled via
+ *  app_config), triggered off dashboard polling instead of a cron. Safe to call
+ *  on every request; the push_escalare_trimis flag dedupes actual notifications. */
+export async function maybeRunEscalations(db: D1Database): Promise<void> {
+  const now = Math.floor(Date.now() / 1000);
+  const row = await one<{ valoare: string }>(db, "SELECT valoare FROM app_config WHERE cheie = 'escalare_last_run'");
+  const last = row ? Number(row.valoare) : 0;
+  if (now - last < 20) return;
+  await db.prepare(
+    "INSERT INTO app_config (cheie, valoare) VALUES ('escalare_last_run', ?) ON CONFLICT(cheie) DO UPDATE SET valoare = excluded.valoare"
+  ).bind(String(now)).run();
+  await notifyEscalations(db);
+}
+
 export { one };
