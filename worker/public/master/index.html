@@ -170,7 +170,14 @@ tr:hover td { background: rgba(108,71,255,0.05); }
         <input type="hidden" id="mId">
         <label>Nume restaurant</label>
         <input type="text" id="mNume" placeholder="Ex: La Mama">
-        <label>Tip restaurant</label>
+        <label>Tip (servicii)</label>
+        <select id="mTip">
+            <option value="normal">🍽️ Restaurant normal (comandă la masă)</option>
+            <option value="evenimente">🎉 Săli de evenimente</option>
+            <option value="ambele">✨ Ambele</option>
+            <option value="">— nespecificat —</option>
+        </select>
+        <label>Temă (aspect vizual)</label>
         <select id="mTema">
             <option value="italian">🍕 Italian</option>
             <option value="asian">🍣 Asian</option>
@@ -262,6 +269,7 @@ async function incarcaRestaurante() {
             <td>
                 <div class="td-num">${r.nume}</div>
                 <div class="td-muted">ID #${r.id} · ${r.tema || 'italian'}</div>
+                ${(r.rezervari_publice || r.evenimente_publice) ? `<div style="margin-top:5px">${tipServChip(r)}</div>` : ''}
             </td>
             <td data-label="Email">${r.email}</td>
             <td data-label="Mese">${r.nr_mese}</td>
@@ -275,7 +283,7 @@ async function incarcaRestaurante() {
                 <div class="td-actiuni">
                     <button class="btn-sm btn-vezi" onclick="window.open('/master/comenzi.html?id=${r.id}','_blank')">Comenzi</button>
                     <button class="btn-sm btn-vezi" onclick="window.open('/master/meniu.html?id=${r.id}','_blank')" style="background:rgba(16,185,129,0.15);color:#10b981">Meniu</button>
-                    <button class="btn-sm btn-edit" onclick="deschideModalEditare(${r.id},'${r.nume.replace(/'/g,"\\'")}','${r.email}','${r.telefon||''}','${r.tema||'italian'}')">Editează</button>
+                    <button class="btn-sm btn-edit" onclick="deschideModalEditare(${r.id},'${r.nume.replace(/'/g,"\\'")}','${r.email}','${r.telefon||''}','${r.tema||'italian'}',${r.rezervari_publice?1:0},${r.evenimente_publice?1:0})">Editează</button>
                     <button class="btn-sm ${r.activ == 1 ? 'btn-toggle-on' : 'btn-toggle-off'}" onclick="toggleActiv(${r.id})">${r.activ == 1 ? 'Dezactivează' : 'Activează'}</button>
                     <button class="btn-sm" onclick="togglePromovat(${r.id})" style="background:${r.promovat == 1 ? 'rgba(201,166,107,0.3)' : 'rgba(255,255,255,0.08)'};color:${r.promovat == 1 ? '#e2c48a' : '#888'}">${r.promovat == 1 ? '★ Promovat' : '☆ Promovează'}</button>
                     <button class="btn-sm" onclick="deschideAbonament(${r.id},'${r.nume.replace(/'/g,"\\'")}','${r.abonament_status||'activ'}',${r.abonament_pret==null?'null':r.abonament_pret},'${r.abonament_expira||''}')" style="background:rgba(201,166,107,0.15);color:#c9a66b">💳 Abonament</button>
@@ -289,6 +297,7 @@ function deschideModalAdauga() {
     document.getElementById('modalTitlu').textContent = 'Restaurant nou';
     document.getElementById('mId').value = '';
     document.getElementById('mNume').value = '';
+    document.getElementById('mTip').value = 'normal';
     document.getElementById('mTema').value = 'italian';
     document.getElementById('mEmail').value = '';
     document.getElementById('mTel').value = '';
@@ -298,10 +307,12 @@ function deschideModalAdauga() {
     document.getElementById('overlay').classList.add('open');
 }
 
-function deschideModalEditare(id, nume, email, tel, tema) {
+function deschideModalEditare(id, nume, email, tel, tema, rezPub, evPub) {
     document.getElementById('modalTitlu').textContent = 'Editează restaurant';
     document.getElementById('mId').value = id;
     document.getElementById('mNume').value = nume;
+    const tip = (rezPub && evPub) ? 'ambele' : (evPub ? 'evenimente' : (rezPub ? 'normal' : ''));
+    document.getElementById('mTip').value = tip;
     document.getElementById('mTema').value = tema || 'italian';
     document.getElementById('mEmail').value = email;
     document.getElementById('mTel').value = tel;
@@ -313,6 +324,13 @@ function deschideModalEditare(id, nume, email, tel, tema) {
 
 function inchideModal() {
     document.getElementById('overlay').classList.remove('open');
+}
+
+function tipServChip(r) {
+    const chips = [];
+    if (r.rezervari_publice) chips.push('<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(108,71,255,0.15);color:#a78bfa">🍽️ Normal</span>');
+    if (r.evenimente_publice) chips.push('<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(201,166,107,0.18);color:#e2c48a">🎉 Evenimente</span>');
+    return chips.join(' ');
 }
 
 // ---- Abonament ----
@@ -378,6 +396,7 @@ async function salveaza() {
     const id     = document.getElementById('mId').value;
     const nume   = document.getElementById('mNume').value.trim();
     const tema   = document.getElementById('mTema').value;
+    const tip    = document.getElementById('mTip').value;
     const email  = document.getElementById('mEmail').value.trim();
     const tel    = document.getElementById('mTel').value.trim();
     const parola = document.getElementById('mParola').value;
@@ -386,6 +405,7 @@ async function salveaza() {
 
     const actiune = id ? 'editeaza_restaurant' : 'adauga_restaurant';
     const body = { actiune, id: parseInt(id)||0, nume, tema, email, telefon: tel, parola };
+    if (tip) body.tip = tip;
 
     const r = await fetch('/api/master/' + actiune, {
         method: 'POST',

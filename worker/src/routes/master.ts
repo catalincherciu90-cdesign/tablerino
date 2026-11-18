@@ -8,6 +8,7 @@ import {
   currentMaster,
   verifyPassword,
   hashPassword,
+  generateToken,
 } from '../auth';
 import { LANDING_DEFAULTS } from '../landingDefaults';
 import { extToContentType, fileExt } from '../r2';
@@ -86,6 +87,13 @@ master.get('/cereri_inregistrare', async (c) => {
 });
 
 const TEME_VALIDE = ['italian', 'asian', 'fastfood', 'finedining', 'streetfood', 'cafe', 'grecesc', 'romanesc'];
+const TIPURI_SERVICIU = ['normal', 'evenimente', 'ambele'];
+
+// Map a service type to the public-service flags.
+function flaguriTip(tip: string): { rez: number; ev: number } {
+  const t = TIPURI_SERVICIU.includes(tip) ? tip : 'normal';
+  return { rez: t === 'normal' || t === 'ambele' ? 1 : 0, ev: t === 'evenimente' || t === 'ambele' ? 1 : 0 };
+}
 
 master.post('/adauga_restaurant', async (c) => {
   const body = await c.req.json().catch(() => ({}));
@@ -94,16 +102,22 @@ master.post('/adauga_restaurant', async (c) => {
   const tel = (body.telefon ?? '').trim();
   const parola = body.parola ?? '';
   const tema = TEME_VALIDE.includes(body.tema) ? body.tema : 'italian';
+  const { rez, ev } = flaguriTip(body.tip);
+  const token = rez || ev ? generateToken() : null;
   if (!nume || !email || !parola) return c.json({ ok: false, msg: 'Date incomplete' }, 400);
   const hash = await hashPassword(parola);
   const res = await run(
     c.env.DB,
-    "INSERT INTO restaurante (nume, email, telefon, parola, activ, tema, limba) VALUES (?,?,?,?,1,?,'ro')",
+    `INSERT INTO restaurante (nume, email, telefon, parola, activ, tema, limba, rezervari_publice, evenimente_publice, rezervare_token)
+     VALUES (?,?,?,?,1,?,'ro',?,?,?)`,
     nume,
     email,
     tel || null,
     hash,
-    tema
+    tema,
+    rez,
+    ev,
+    token
   );
   return c.json({ ok: true, id: res.meta.last_row_id });
 });
@@ -124,6 +138,14 @@ master.post('/editeaza_restaurant', async (c) => {
   }
   if (TEME_VALIDE.includes(body.tema)) {
     await run(c.env.DB, 'UPDATE restaurante SET tema=? WHERE id=?', body.tema, id);
+  }
+  if (TIPURI_SERVICIU.includes(body.tip)) {
+    const { rez, ev } = flaguriTip(body.tip);
+    if (rez || ev) {
+      const row = await one<{ rezervare_token: string | null }>(c.env.DB, 'SELECT rezervare_token FROM restaurante WHERE id = ?', id);
+      if (!row?.rezervare_token) await run(c.env.DB, 'UPDATE restaurante SET rezervare_token=? WHERE id=?', generateToken(), id);
+    }
+    await run(c.env.DB, 'UPDATE restaurante SET rezervari_publice=?, evenimente_publice=? WHERE id=?', rez, ev, id);
   }
   return c.json({ ok: true });
 });
