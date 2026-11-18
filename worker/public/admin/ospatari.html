@@ -120,6 +120,15 @@ td .email { color: #888; font-size: 13px; }
         </div>
     </div>
 
+    <div style="background:#ede9ff;border-radius:12px;padding:16px 18px;margin-bottom:22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px">
+            <div style="font-size:15px;font-weight:700;color:#4c2bbd;margin-bottom:3px">📲 Aplicația de telefon pentru ospătari</div>
+            <div style="font-size:13px;color:#6b5bb5">Trimite ospătarilor acest link. Îl deschid pe telefon și aleg „Instalează aplicația".</div>
+            <div id="appUrl" style="font-size:13px;color:#6c47ff;font-family:monospace;margin-top:6px;word-break:break-all"></div>
+        </div>
+        <button onclick="copiazaAppUrl()" style="background:#6c47ff;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer">📋 Copiază link</button>
+    </div>
+
     <h3 style="font-size:16px;font-weight:700;margin:8px 0 4px">📊 Statistici azi</h3>
     <p style="font-size:13px;color:#888;margin-bottom:14px">Comenzi preluate și timpul mediu de preluare, per ospătar (resetat zilnic).</p>
     <div class="stats-grid" id="statsGrid">
@@ -185,6 +194,12 @@ async function seteazaMasaOspatar(id, value) {
     const d = await r.json();
     if (d.ok) showToast('Masă implicită salvată!');
     else showToast(d.msg || 'Eroare', 'err');
+}
+
+const appUrl = location.origin + '/ospatar/';
+document.getElementById('appUrl').textContent = appUrl;
+function copiazaAppUrl() {
+    navigator.clipboard.writeText(appUrl).then(() => showToast('Link copiat!')).catch(() => showToast('Nu s-a putut copia', 'err'));
 }
 
 function fmtDurata(sec) {

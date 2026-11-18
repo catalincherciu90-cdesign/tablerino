@@ -1,0 +1,25 @@
+{
+    "name": "Tablerino Ospătar",
+    "short_name": "Ospătar",
+    "description": "Panou de ospătar — comenzi, preluare, statusuri",
+    "start_url": "/ospatar/",
+    "scope": "/ospatar/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#1a1a2e",
+    "theme_color": "#6c47ff",
+    "icons": [
+        {
+            "src": "/uploads/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/uploads/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

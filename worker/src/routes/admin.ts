@@ -75,9 +75,9 @@ admin.get('/profil', requireRestaurant, requireOwner, async (c) => {
 admin.get('/me', async (c) => {
   const sess = await currentRestaurant(c);
   if (!sess) return c.json({ ok: false }, 401);
-  const r = await one<{ tema: string; limba: string; escalare_sec: number | null }>(
+  const r = await one<{ tema: string; limba: string; escalare_sec: number | null; restaurant_nume: string }>(
     c.env.DB,
-    'SELECT tema, limba, escalare_sec FROM restaurante WHERE id = ?',
+    'SELECT tema, limba, escalare_sec, nume AS restaurant_nume FROM restaurante WHERE id = ?',
     sess.rid
   );
   // Waiter's default table (for pre-filtering their orders view).
@@ -103,6 +103,7 @@ admin.get('/me', async (c) => {
     tema: r?.tema ?? 'italian',
     limba: r?.limba ?? 'ro',
     escalare_sec: r?.escalare_sec ?? 120,
+    restaurant_nume: r?.restaurant_nume ?? null,
     masa_default_id,
     masa_default_nume,
   });
