@@ -248,11 +248,12 @@ function render(){
     if (!baza.length) { wrap.innerHTML = `<div class="gol">Nicio comandă aici momentan.</div>`; return; }
 
     wrap.innerHTML = baza.map(c => {
+        const mine = c.preluat_de === ospatarId; // claimed by this waiter
         const produse = (c.produse||[]).map(p => {
             const nou = p.status === 'nou' || !p.status;
             return `<li class="${nou?'':'livrat'}">
                 <span>${p.cantitate}x ${escHtml(p.nume_produs)} ${nou?'<span class="tag nou">NOU</span>':'<span class="tag livrat">✓</span>'}</span>
-                <span class="pcol"><span>${parseFloat(p.total).toFixed(2)}</span>${nou?`<button class="mini" onclick="livreazaProdus(${p.id})">Servit</button>`:''}</span>
+                <span class="pcol"><span>${parseFloat(p.total).toFixed(2)}</span>${(nou && mine)?`<button class="mini" onclick="livreazaProdus(${p.id})">Servit</button>`:''}</span>
             </li>`;
         }).join('');
         const total = (c.produse||[]).reduce((s,p)=>s+parseFloat(p.total),0);
@@ -286,12 +287,18 @@ function render(){
             claim = `<button class="btn btn-renunta" onclick="renunta(${c.id})">Renunță</button>`;
         }
 
-        // Status actions
+        // Status actions — only once the order is claimed by this waiter, so an
+        // unclaimed order shows just the "Preia comanda" button (no clutter).
         let act = '';
-        if (c.status === 'plata_aleasa') act = `<button class="btn btn-elibereaza" onclick="elibereaza(${c.masa_id})">✓ Eliberează masa</button>`;
-        else if (toateLivrate) act = `<div class="servite">✅ Toate servite — așteaptă nota</div>`;
-        else if (c.status === 'noua' && areNoi) act = `<button class="btn btn-pregatire" onclick="status(${c.id},'in_pregatire')">În pregătire</button><button class="btn btn-servita" onclick="serveste(${c.id})">Servește tot</button>`;
-        else if (c.status === 'in_pregatire' && areNoi) act = `<button class="btn btn-servita" onclick="serveste(${c.id})">Servește tot</button>`;
+        if (mine) {
+            if (c.status === 'plata_aleasa') act = `<button class="btn btn-elibereaza" onclick="elibereaza(${c.masa_id})">✓ Eliberează masa</button>`;
+            else if (toateLivrate) act = `<div class="servite">✅ Toate servite — așteaptă nota</div>`;
+            else if (c.status === 'noua' && areNoi) act = `<button class="btn btn-pregatire" onclick="status(${c.id},'in_pregatire')">În pregătire</button><button class="btn btn-servita" onclick="serveste(${c.id})">Servește tot</button>`;
+            else if (c.status === 'in_pregatire' && areNoi) act = `<button class="btn btn-servita" onclick="serveste(${c.id})">Servește tot</button>`;
+        } else if (c.status === 'plata_aleasa' && !preluat) {
+            // Edge: order reached payment but nobody holds it — still allow releasing the table.
+            act = `<button class="btn btn-elibereaza" onclick="elibereaza(${c.masa_id})">✓ Eliberează masa</button>`;
+        }
 
         const banner = c.status==='plata_aleasa' ? `<div class="banner ${c.metoda_plata}">${c.metoda_plata==='cash'?'💵 Clientul plătește CASH':'💳 Clientul plătește CARD'}</div>` : '';
 
