@@ -2,10 +2,12 @@ name = "tablerino"
 main = "src/index.ts"
 compatibility_date = "2024-12-18"
 compatibility_flags = ["nodejs_compat"]
-# Escalation-notification checks run opportunistically off dashboard polling
-# (see maybeRunEscalations). A cron trigger would be more robust but the hosting
-# Cloudflare account is still on the Free plan (5-cron-per-account limit); re-add
-# `[triggers] crons = ["* * * * *"]` once it is on Workers Paid.
+
+# Cron: run the escalation-notification check every minute (account is on Workers Paid).
+# A throttled opportunistic check (maybeRunEscalations, off dashboard polling) also
+# runs as a backup; the push_escalare_trimis flag prevents duplicate notifications.
+[triggers]
+crons = ["* * * * *"]
 
 # Static frontend (home, masa, admin, master HTML/CSS/JS) served from ./public
 [assets]
