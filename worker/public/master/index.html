@@ -64,8 +64,8 @@ tr:hover td { background: rgba(108,71,255,0.05); }
 .modal { background: #1a1a2e; border-radius: 14px; padding: 28px; width: 100%; max-width: 440px; border: 1px solid #2a2a3e; }
 .modal h3 { font-size: 17px; color: #fff; margin-bottom: 20px; }
 .modal label { display: block; font-size: 12px; font-weight: 600; color: #666; margin-bottom: 6px; }
-.modal input { width: 100%; padding: 10px 12px; border: 1px solid #2a2a3e; border-radius: 8px; font-size: 14px; margin-bottom: 14px; outline: none; background: #0f0f1a; color: #fff; }
-.modal input:focus { border-color: #6c47ff; }
+.modal input, .modal select { width: 100%; padding: 10px 12px; border: 1px solid #2a2a3e; border-radius: 8px; font-size: 14px; margin-bottom: 14px; outline: none; background: #0f0f1a; color: #fff; }
+.modal input:focus, .modal select:focus { border-color: #6c47ff; }
 .modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
 .btn-cancel { padding: 10px 18px; border: 1px solid #2a2a3e; background: transparent; color: #aaa; border-radius: 8px; cursor: pointer; font-size: 14px; }
 .btn-save { padding: 10px 18px; background: #6c47ff; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
@@ -170,6 +170,17 @@ tr:hover td { background: rgba(108,71,255,0.05); }
         <input type="hidden" id="mId">
         <label>Nume restaurant</label>
         <input type="text" id="mNume" placeholder="Ex: La Mama">
+        <label>Tip restaurant</label>
+        <select id="mTema">
+            <option value="italian">🍕 Italian</option>
+            <option value="asian">🍣 Asian</option>
+            <option value="fastfood">🍔 Fast Food</option>
+            <option value="finedining">🥂 Fine Dining</option>
+            <option value="streetfood">🌮 Street Food</option>
+            <option value="cafe">☕ Cafe &amp; Bistro</option>
+            <option value="grecesc">🫒 Grecesc</option>
+            <option value="romanesc">🥩 Românesc</option>
+        </select>
         <label>Email (folosit la login)</label>
         <input type="email" id="mEmail">
         <label>Telefon (opțional)</label>
@@ -264,7 +275,7 @@ async function incarcaRestaurante() {
                 <div class="td-actiuni">
                     <button class="btn-sm btn-vezi" onclick="window.open('/master/comenzi.html?id=${r.id}','_blank')">Comenzi</button>
                     <button class="btn-sm btn-vezi" onclick="window.open('/master/meniu.html?id=${r.id}','_blank')" style="background:rgba(16,185,129,0.15);color:#10b981">Meniu</button>
-                    <button class="btn-sm btn-edit" onclick="deschideModalEditare(${r.id},'${r.nume.replace(/'/g,"\\'")}','${r.email}','${r.telefon||''}')">Editează</button>
+                    <button class="btn-sm btn-edit" onclick="deschideModalEditare(${r.id},'${r.nume.replace(/'/g,"\\'")}','${r.email}','${r.telefon||''}','${r.tema||'italian'}')">Editează</button>
                     <button class="btn-sm ${r.activ == 1 ? 'btn-toggle-on' : 'btn-toggle-off'}" onclick="toggleActiv(${r.id})">${r.activ == 1 ? 'Dezactivează' : 'Activează'}</button>
                     <button class="btn-sm" onclick="togglePromovat(${r.id})" style="background:${r.promovat == 1 ? 'rgba(201,166,107,0.3)' : 'rgba(255,255,255,0.08)'};color:${r.promovat == 1 ? '#e2c48a' : '#888'}">${r.promovat == 1 ? '★ Promovat' : '☆ Promovează'}</button>
                     <button class="btn-sm" onclick="deschideAbonament(${r.id},'${r.nume.replace(/'/g,"\\'")}','${r.abonament_status||'activ'}',${r.abonament_pret==null?'null':r.abonament_pret},'${r.abonament_expira||''}')" style="background:rgba(201,166,107,0.15);color:#c9a66b">💳 Abonament</button>
@@ -278,6 +289,7 @@ function deschideModalAdauga() {
     document.getElementById('modalTitlu').textContent = 'Restaurant nou';
     document.getElementById('mId').value = '';
     document.getElementById('mNume').value = '';
+    document.getElementById('mTema').value = 'italian';
     document.getElementById('mEmail').value = '';
     document.getElementById('mTel').value = '';
     document.getElementById('mParola').value = '';
@@ -286,10 +298,11 @@ function deschideModalAdauga() {
     document.getElementById('overlay').classList.add('open');
 }
 
-function deschideModalEditare(id, nume, email, tel) {
+function deschideModalEditare(id, nume, email, tel, tema) {
     document.getElementById('modalTitlu').textContent = 'Editează restaurant';
     document.getElementById('mId').value = id;
     document.getElementById('mNume').value = nume;
+    document.getElementById('mTema').value = tema || 'italian';
     document.getElementById('mEmail').value = email;
     document.getElementById('mTel').value = tel;
     document.getElementById('mParola').value = '';
@@ -364,6 +377,7 @@ async function salveazaAbonament() {
 async function salveaza() {
     const id     = document.getElementById('mId').value;
     const nume   = document.getElementById('mNume').value.trim();
+    const tema   = document.getElementById('mTema').value;
     const email  = document.getElementById('mEmail').value.trim();
     const tel    = document.getElementById('mTel').value.trim();
     const parola = document.getElementById('mParola').value;
@@ -371,7 +385,7 @@ async function salveaza() {
     if (!nume || !email) { alert('Completează numele și emailul.'); return; }
 
     const actiune = id ? 'editeaza_restaurant' : 'adauga_restaurant';
-    const body = { actiune, id: parseInt(id)||0, nume, email, telefon: tel, parola };
+    const body = { actiune, id: parseInt(id)||0, nume, tema, email, telefon: tel, parola };
 
     const r = await fetch('/api/master/' + actiune, {
         method: 'POST',

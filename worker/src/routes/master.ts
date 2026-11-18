@@ -85,21 +85,25 @@ master.get('/cereri_inregistrare', async (c) => {
   return c.json({ ok: true, cereri });
 });
 
+const TEME_VALIDE = ['italian', 'asian', 'fastfood', 'finedining', 'streetfood', 'cafe', 'grecesc', 'romanesc'];
+
 master.post('/adauga_restaurant', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const nume = (body.nume ?? '').trim();
   const email = (body.email ?? '').trim();
   const tel = (body.telefon ?? '').trim();
   const parola = body.parola ?? '';
+  const tema = TEME_VALIDE.includes(body.tema) ? body.tema : 'italian';
   if (!nume || !email || !parola) return c.json({ ok: false, msg: 'Date incomplete' }, 400);
   const hash = await hashPassword(parola);
   const res = await run(
     c.env.DB,
-    "INSERT INTO restaurante (nume, email, telefon, parola, activ, tema, limba) VALUES (?,?,?,?,1,'italian','ro')",
+    "INSERT INTO restaurante (nume, email, telefon, parola, activ, tema, limba) VALUES (?,?,?,?,1,?,'ro')",
     nume,
     email,
     tel || null,
-    hash
+    hash,
+    tema
   );
   return c.json({ ok: true, id: res.meta.last_row_id });
 });
@@ -117,6 +121,9 @@ master.post('/editeaza_restaurant', async (c) => {
     await run(c.env.DB, 'UPDATE restaurante SET nume=?, email=?, telefon=?, parola=? WHERE id=?', nume, email, tel || null, hash, id);
   } else {
     await run(c.env.DB, 'UPDATE restaurante SET nume=?, email=?, telefon=? WHERE id=?', nume, email, tel || null, id);
+  }
+  if (TEME_VALIDE.includes(body.tema)) {
+    await run(c.env.DB, 'UPDATE restaurante SET tema=? WHERE id=?', body.tema, id);
   }
   return c.json({ ok: true });
 });
