@@ -15,6 +15,13 @@ const app = new Hono<HonoEnv>();
 // ── Health check ──
 app.get('/api/health', (c) => c.json({ ok: true, service: 'tablerino', ts: Date.now() }));
 
+// ── Is the public portal / reservations directory live? (global "production" switch) ──
+async function portalActiv(env: HonoEnv['Bindings']): Promise<boolean> {
+  const { one } = await import('./db');
+  const row = await one<{ valoare: string }>(env.DB, "SELECT valoare FROM app_config WHERE cheie = 'portal_activ'");
+  return row?.valoare === '1';
+}
+
 // ── Public landing settings (defaults merged with master overrides) ──
 app.get('/api/landing', async (c) => {
   const { all } = await import('./db');
@@ -22,7 +29,7 @@ app.get('/api/landing', async (c) => {
   const settings: Record<string, string> = { ...LANDING_DEFAULTS };
   const rows = await all<{ cheie: string; valoare: string }>(c.env.DB, 'SELECT cheie, valoare FROM landing_settings');
   for (const row of rows) settings[row.cheie] = row.valoare;
-  return c.json({ ok: true, settings });
+  return c.json({ ok: true, settings, portal_activ: (await portalActiv(c.env)) ? 1 : 0 });
 });
 
 // ── Uploaded images: R2 first (user uploads) when configured, then static
@@ -47,11 +54,19 @@ app.route('/api/ai', ai); // admin/ai_meniu.php
 
 // ── Root: serve the diner portal when enabled, else the B2B landing ──
 app.get('/', async (c) => {
-  const { one } = await import('./db');
-  const row = await one<{ valoare: string }>(c.env.DB, "SELECT valoare FROM app_config WHERE cheie = 'portal_activ'");
-  const file = row?.valoare === '1' ? '/portal.html' : '/index.html';
+  const file = (await portalActiv(c.env)) ? '/portal.html' : '/index.html';
   const url = new URL(c.req.url);
   url.pathname = file;
+  return c.env.ASSETS.fetch(new Request(url.toString(), { headers: c.req.raw.headers }));
+});
+
+// ── Public reservations directory: only live when the portal is ON (production). ──
+//    When OFF, bounce to the landing so the feature is never reachable early.
+app.get('/rezerva', async (c) => c.redirect((await portalActiv(c.env)) ? '/rezerva/' : '/', 302));
+app.get('/rezerva/', async (c) => {
+  if (!(await portalActiv(c.env))) return c.redirect('/', 302);
+  const url = new URL(c.req.url);
+  url.pathname = '/rezerva/index.html';
   return c.env.ASSETS.fetch(new Request(url.toString(), { headers: c.req.raw.headers }));
 });
 

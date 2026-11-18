@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tablerino — Comandă la masă prin QR și unelte pentru restaurante</title>
-<meta name="description" content="Tablerino este platforma digitală pentru restaurante: comandă la masă prin QR, dashboard în timp real, aplicație Android pentru ospătari, rezervări online, recenzii și rapoarte. Abonament €100/lună, fără comision pe comenzi.">
+<title>Tablerino — Platforma utilă pentru restaurantul tău</title>
+<meta name="description" content="Tablerino este platforma care îți ajută restaurantul: comandă la masă prin QR, aplicație pentru ospătari, rezervări online, recenzii și rapoarte în timp real — tot ce-ți trebuie ca să-ți conduci restaurantul. Un singur abonament €100/lună, fără comision pe comenzi.">
 <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
 <link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -442,7 +442,7 @@ footer { background: var(--sidebar); border-top: 1px solid var(--line-soft); pad
 <nav id="navbar" class="sidebar">
     <div class="side-head">
         <a href="#top" class="side-logo"><img src="/uploads/logo-tablerino-trim.png" alt="Tablerino"></a>
-        <div class="side-tagline" data-ro="Platformă pentru restaurante" data-en="Platform for restaurants" style="margin-top:16px">Platformă pentru restaurante</div>
+        <div class="side-tagline" data-ro="Platforma pentru restaurantul tău" data-en="The platform for your restaurant" style="margin-top:16px">Platforma pentru restaurantul tău</div>
     </div>
     <div class="side-nav">
         <a href="#features" data-ro="Funcționalități" data-en="Features">Funcționalități</a>
@@ -450,7 +450,7 @@ footer { background: var(--sidebar); border-top: 1px solid var(--line-soft); pad
         <a href="#pret" data-ro="Preț" data-en="Pricing">Preț</a>
         <a href="#inregistrare" data-ro="Înregistrare" data-en="Register">Înregistrare</a>
         <a href="#contact" data-ro="Contact" data-en="Contact">Contact</a>
-        <a href="/rezerva/" style="color:var(--gold)" data-ro="◦ Rezervă o masă" data-en="◦ Book a table">◦ Rezervă o masă</a>
+        <a href="/rezerva/" id="navRezerva" style="color:var(--gold);display:none" data-ro="◦ Rezervă o masă" data-en="◦ Book a table">◦ Rezervă o masă</a>
     </div>
     <div class="side-spacer"></div>
     <div class="side-actions">
@@ -486,7 +486,7 @@ footer { background: var(--sidebar); border-top: 1px solid var(--line-soft); pad
     <a href="#pret" data-ro="Preț" data-en="Pricing">Preț</a>
     <a href="#inregistrare" data-ro="Înregistrare" data-en="Register">Înregistrare</a>
     <a href="#contact" data-ro="Contact" data-en="Contact">Contact</a>
-    <a href="/rezerva/" style="color:var(--gold)" data-ro="Rezervă o masă" data-en="Book a table">Rezervă o masă</a>
+    <a href="/rezerva/" id="mmRezerva" style="color:var(--gold);display:none" data-ro="Rezervă o masă" data-en="Book a table">Rezervă o masă</a>
     <a href="/admin/login.html" class="mm-login" data-ro="Autentificare" data-en="Login">Autentificare</a>
 </div>
 
@@ -495,9 +495,9 @@ footer { background: var(--sidebar); border-top: 1px solid var(--line-soft); pad
 <!-- HERO -->
 <section class="hero" id="top">
     <div class="hero-inner">
-        <span class="hero-pill"><span class="dot"></span><span data-ro="Platforma digitală pentru restaurante" data-en="The digital platform for restaurants">Platforma digitală pentru restaurante</span></span>
-        <h1 class="hero-title" data-ro="Comandă la masă prin QR și <em>unelte pentru echipa ta</em>" data-en="QR table ordering and <em>tools for your team</em>">Comandă la masă prin QR și <em>unelte pentru echipa ta</em></h1>
-        <p class="lead" data-ro="Clienții comandă de la masă scanând un cod QR, ospătarii preiau din aplicație, iar tu vezi totul în timp real. Meniu, rezervări, recenzii și rapoarte — într-o singură platformă." data-en="Guests order from the table by scanning a QR code, waiters take orders from the app, and you see everything in real time. Menu, reservations, reviews and reports — in one platform.">Clienții comandă de la masă scanând un cod QR, ospătarii preiau din aplicație, iar tu vezi totul în timp real. Meniu, rezervări, recenzii și rapoarte — într-o singură platformă.</p>
+        <span class="hero-pill"><span class="dot"></span><span data-ro="Platforma pentru restaurantul tău" data-en="The platform for your restaurant">Platforma pentru restaurantul tău</span></span>
+        <h1 class="hero-title" data-ro="O platformă utilă <em>pentru restaurantul tău</em>" data-en="One useful platform <em>for your restaurant</em>">O platformă utilă <em>pentru restaurantul tău</em></h1>
+        <p class="lead" data-ro="Comandă la masă prin QR, aplicație pentru ospătari, rezervări, recenzii și rapoarte în timp real — tot ce-ți trebuie ca să-ți conduci restaurantul, într-un singur loc." data-en="QR table ordering, a waiter app, reservations, reviews and real-time reports — everything you need to run your restaurant, in one place.">Comandă la masă prin QR, aplicație pentru ospătari, rezervări, recenzii și rapoarte în timp real — tot ce-ți trebuie ca să-ți conduci restaurantul, într-un singur loc.</p>
         <div class="hero-actions">
             <a href="#inregistrare" class="btn btn-primary" data-ro="Solicită acces" data-en="Request access">Solicită acces</a>
             <a href="#how" class="btn btn-ghost" data-ro="Cum funcționează" data-en="How it works">Cum funcționează</a>
@@ -522,8 +522,8 @@ footer { background: var(--sidebar); border-top: 1px solid var(--line-soft); pad
     <div class="wrap">
         <div class="sec-head reveal">
             <span class="eyebrow" data-ro="Tot ce ai nevoie" data-en="Everything you need">Tot ce ai nevoie</span>
-            <h2 class="sec-title" data-ro="O platformă completă, <em>gândită pentru restaurante</em>" data-en="One complete platform, <em>built for restaurants</em>">O platformă completă, <em>gândită pentru restaurante</em></h2>
-            <p class="sec-sub" data-ro="De la comandă la masă până la rezervări, recenzii și statistici per ospătar — totul lucrează împreună." data-en="From table ordering to reservations, reviews and per-waiter stats — everything works together.">De la comandă la masă până la rezervări, recenzii și statistici per ospătar — totul lucrează împreună.</p>
+            <h2 class="sec-title" data-ro="Tot ce-i util <em>pentru restaurantul tău</em>" data-en="Everything useful <em>for your restaurant</em>">Tot ce-i util <em>pentru restaurantul tău</em></h2>
+            <p class="sec-sub" data-ro="De la comanda la masă până la rezervări, recenzii și statistici per ospătar — fiecare unealtă îți ușurează ziua și lucrează cu celelalte." data-en="From table ordering to reservations, reviews and per-waiter stats — every tool makes your day easier and works with the rest.">De la comanda la masă până la rezervări, recenzii și statistici per ospătar — fiecare unealtă îți ușurează ziua și lucrează cu celelalte.</p>
         </div>
 
         <!-- Highlight blocks -->
@@ -884,6 +884,16 @@ function setLang(lang) {
 const saved = localStorage.getItem('tablerino_lang');
 const browser = navigator.language.startsWith('en') ? 'en' : 'ro';
 setLang(saved || browser);
+
+// === REZERVĂ O MASĂ — vizibil doar când portalul public e pornit (producție) ===
+fetch('/api/landing').then(r => r.json()).then(d => {
+    if (d && d.portal_activ == 1) {
+        ['navRezerva', 'mmRezerva'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = '';
+        });
+    }
+}).catch(() => {});
 </script>
 </body>
 </html>
