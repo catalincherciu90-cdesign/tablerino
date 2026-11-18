@@ -7,6 +7,7 @@
 <link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tablerino - Ospătari</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
@@ -120,13 +121,28 @@ td .email { color: #888; font-size: 13px; }
         </div>
     </div>
 
-    <div style="background:#ede9ff;border-radius:12px;padding:16px 18px;margin-bottom:22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <div style="flex:1;min-width:220px">
-            <div style="font-size:15px;font-weight:700;color:#4c2bbd;margin-bottom:3px">📲 Aplicația de telefon pentru ospătari</div>
-            <div style="font-size:13px;color:#6b5bb5">Trimite ospătarilor acest link. Îl deschid pe telefon și aleg „Instalează aplicația".</div>
-            <div id="appUrl" style="font-size:13px;color:#6c47ff;font-family:monospace;margin-top:6px;word-break:break-all"></div>
+    <div style="background:#ede9ff;border-radius:12px;padding:18px;margin-bottom:22px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+        <div style="text-align:center;flex:0 0 auto">
+            <canvas id="qrApp" width="160" height="160" style="border-radius:10px;background:#fff;display:block;padding:8px"></canvas>
+            <div style="font-size:11px;color:#8a7bd1;margin-top:6px">Scanează cu telefonul</div>
         </div>
-        <button onclick="copiazaAppUrl()" style="background:#6c47ff;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer">📋 Copiază link</button>
+        <div style="flex:1;min-width:220px">
+            <div style="font-size:15px;font-weight:700;color:#4c2bbd;margin-bottom:4px">📲 Aplicația de telefon pentru ospătari</div>
+            <div style="font-size:13px;color:#6b5bb5;line-height:1.5">
+                Ospătarul deschide link-ul pe telefon și, în meniul Chrome, alege
+                <b>„Instalează aplicația"</b> → apare ca icon pe ecran, ca o aplicație reală.
+            </div>
+            <ol style="font-size:12px;color:#6b5bb5;margin:8px 0 0 16px;line-height:1.6">
+                <li>Scanează codul QR (sau primește link-ul de mai jos).</li>
+                <li>Se deschide aplicația → „Instalează aplicația".</li>
+                <li>Se autentifică cu contul lui de ospătar.</li>
+            </ol>
+            <div id="appUrl" style="font-size:13px;color:#6c47ff;font-family:monospace;margin-top:8px;word-break:break-all"></div>
+            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+                <button onclick="copiazaAppUrl()" style="background:#6c47ff;color:#fff;border:none;border-radius:10px;padding:9px 15px;font-weight:700;font-size:13px;cursor:pointer">📋 Copiază link</button>
+                <a href="/ospatar/" target="_blank" style="background:#fff;color:#6c47ff;border:1px solid #c9bef5;border-radius:10px;padding:9px 15px;font-weight:700;font-size:13px;text-decoration:none">🔗 Deschide aplicația</a>
+            </div>
+        </div>
     </div>
 
     <h3 style="font-size:16px;font-weight:700;margin:8px 0 4px">📊 Statistici azi</h3>
@@ -198,6 +214,9 @@ async function seteazaMasaOspatar(id, value) {
 
 const appUrl = location.origin + '/ospatar/';
 document.getElementById('appUrl').textContent = appUrl;
+if (typeof QRious !== 'undefined') {
+    try { new QRious({ element: document.getElementById('qrApp'), value: appUrl, size: 160, level: 'M' }); } catch (e) {}
+}
 function copiazaAppUrl() {
     navigator.clipboard.writeText(appUrl).then(() => showToast('Link copiat!')).catch(() => showToast('Nu s-a putut copia', 'err'));
 }
