@@ -416,6 +416,28 @@ footer { background: var(--sidebar); border-top: 1px solid var(--line-soft); pad
 .reveal { opacity: 0; transform: translateY(26px); transition: opacity 0.7s ease, transform 0.7s ease; }
 .reveal.visible { opacity: 1; transform: translateY(0); }
 
+/* ─────────────  FEATURE MODAL  ───────────── */
+.feat-btn { margin-top: 16px; display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: var(--gold); font-family: var(--sans); font-size: 13px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; padding: 0; transition: gap 0.2s; }
+.feat-btn:hover { gap: 10px; }
+.feat-btn svg { width: 15px; height: 15px; }
+.fmodal-ov { display: none; position: fixed; inset: 0; background: rgba(10,7,5,0.82); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 300; align-items: center; justify-content: center; padding: 20px; }
+.fmodal-ov.open { display: flex; }
+.fmodal { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; max-width: 920px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); position: relative; }
+.fmodal-head { position: sticky; top: 0; background: var(--panel); border-bottom: 1px solid var(--line-soft); padding: 20px 26px; display: flex; align-items: center; gap: 14px; z-index: 2; }
+.fmodal-ic { width: 44px; height: 44px; border-radius: 12px; background: var(--gold-soft); border: 1px solid var(--gold-line); display: grid; place-items: center; font-size: 22px; flex-shrink: 0; }
+.fmodal-head h3 { font-family: var(--serif); font-size: 24px; font-weight: 600; color: var(--cream); flex: 1; }
+.fmodal-x { background: rgba(255,255,255,0.06); border: 1px solid var(--line); color: var(--cream-dim); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; flex-shrink: 0; transition: background 0.2s, color 0.2s; }
+.fmodal-x:hover { background: var(--gold); color: var(--espresso); }
+.fmodal-body { padding: 24px 26px 30px; }
+.fmodal-lead { font-size: 15.5px; color: var(--cream-dim); margin-bottom: 22px; }
+.fmodal-gallery { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
+.fmodal-gallery.phone img { width: 205px; max-width: 46%; border-radius: 18px; border: 5px solid #0d0a08; box-shadow: var(--shadow-sm); }
+.fmodal-gallery.web img { width: 100%; border-radius: 12px; border: 1px solid var(--gold-line); box-shadow: var(--shadow-sm); }
+.fmodal-points { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.fmodal-points li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; color: var(--cream); }
+.fmodal-points li::before { content: '✓'; color: var(--espresso); background: var(--gold); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
+@media (max-width: 600px) { .fmodal-gallery.phone img { width: 44%; } .fmodal-head h3 { font-size: 20px; } .fmodal-body { padding: 20px 18px 24px; } .fmodal-head { padding: 16px 18px; } }
+
 /* ─────────────  RESPONSIVE  ───────────── */
 @media (max-width: 980px) {
     .sidebar { display: none; }
@@ -793,6 +815,22 @@ footer { background: var(--sidebar); border-top: 1px solid var(--line-soft); pad
 
 </div><!-- /.page -->
 
+<!-- Feature detail modal -->
+<div class="fmodal-ov" id="fmodalOv" onclick="if(event.target===this)closeFeat()">
+    <div class="fmodal">
+        <div class="fmodal-head">
+            <div class="fmodal-ic" id="fmIcon">⭐</div>
+            <h3 id="fmTitlu">—</h3>
+            <button class="fmodal-x" onclick="closeFeat()" aria-label="Închide">✕</button>
+        </div>
+        <div class="fmodal-body">
+            <p class="fmodal-lead" id="fmLead"></p>
+            <div class="fmodal-gallery" id="fmGallery"></div>
+            <ul class="fmodal-points" id="fmPoints"></ul>
+        </div>
+    </div>
+</div>
+
 <script>
 async function trimiteInregistrare() {
     const nume   = document.getElementById('irNume').value.trim();
@@ -900,6 +938,79 @@ fetch('/api/landing').then(r => r.json()).then(d => {
         });
     }
 }).catch(() => {});
+
+// === FEATURE DETAIL MODALS ===
+const FEATURES = {
+    qr: { icon:'📲', tip:'phone', imgs:['/uploads/feat/qr-1.jpg','/uploads/feat/qr-2.jpg','/uploads/feat/qr-3.jpg'],
+        titlu:{ro:'Comandă la masă prin QR',en:'QR table ordering'},
+        lead:{ro:'Clientul scanează codul QR de pe masă și comandă singur, de pe telefon — fără să aștepte ospătarul.',en:'The guest scans the QR code on the table and orders from their phone — no waiting for a waiter.'},
+        puncte:{ro:['Meniu digital cu poze, alergeni și preț','Adaugă în coș, ajustează cantitățile și trimite','Vede statusul comenzii în timp real, produs cu produs'],en:['Digital menu with photos, allergens and price','Add to cart, adjust quantities and send','See the order status live, product by product']} },
+    evenimente: { icon:'🎉', tip:'phone', imgs:['/uploads/feat/ev-1.jpg','/uploads/feat/ev-2.jpg'],
+        titlu:{ro:'Evenimente & săli',en:'Events & halls'},
+        lead:{ro:'Primești cereri pentru nunți, botezuri, aniversări și evenimente corporate — direct de pe pagina ta publică.',en:'Receive requests for weddings, baptisms, parties and corporate events — right from your public page.'},
+        puncte:{ro:['Catalog de săli cu poze și capacitate','Clientul alege sala dorită din formular','Cererea ajunge la tine, cu notificare instant'],en:['Hall catalog with photos and capacity','The guest picks the hall from the form','The request reaches you, with an instant notification']} },
+    dashboard: { icon:'⚡', tip:'web', imgs:['/uploads/feat/dashboard.jpg'],
+        titlu:{ro:'Dashboard în timp real',en:'Real-time dashboard'},
+        lead:{ro:'Toate comenzile apar instant pe panou, cu status live pentru fiecare masă.',en:'All orders appear instantly on the dashboard, with live status for each table.'},
+        puncte:{ro:['Comenzi gestionate per produs','Status: nouă → în pregătire → servită','Vânzări și metode de plată, la zi'],en:['Orders managed per product','Status: new → preparing → served','Sales and payment methods, up to date']} },
+    push: { icon:'🔔', tip:'phone', imgs:['/uploads/feat/push.jpg'],
+        titlu:{ro:'Notificări push',en:'Push notifications'},
+        lead:{ro:'Ospătarii primesc notificare la fiecare comandă nouă, direct pe telefon.',en:'Waiters get a notification on every new order, right on their phone.'},
+        puncte:{ro:['Alertă la fiecare comandă nouă','Avertizare când o comandă e pe cale să „scape”','Funcționează și în aplicația Android'],en:['Alert on every new order','Warning when an order is about to slip away','Works in the Android app too']} },
+    asignare: { icon:'🎯', tip:'web', imgs:['/uploads/feat/dashboard.jpg'],
+        titlu:{ro:'Asignare ospătar & escaladare',en:'Waiter assignment & escalation'},
+        lead:{ro:'Aloci un ospătar responsabil pentru o masă, cu rezervă automată dacă nu preia la timp.',en:'Assign a responsible waiter to a table, with an automatic fallback if they do not take it in time.'},
+        puncte:{ro:['Atribui comanda unui ospătar anume','Dacă nu o preia în intervalul setat, se deblochează','Alt ospătar o poate prelua — fără comenzi uitate'],en:['Assign the order to a specific waiter','If not taken within the interval, it unlocks','Another waiter can take it — no forgotten orders']} },
+    statistici: { icon:'📈', tip:'web', imgs:['/uploads/feat/statistici.jpg'],
+        titlu:{ro:'Statistici per ospătar',en:'Per-waiter statistics'},
+        lead:{ro:'Vezi câte comenzi a preluat fiecare ospătar și cât de repede.',en:'See how many orders each waiter took and how fast.'},
+        puncte:{ro:['Număr de comenzi preluate','Timp mediu de preluare','Resetat zilnic, pentru fiecare ospătar'],en:['Number of orders taken','Average pickup time','Reset daily, for each waiter']} },
+    rapoarte: { icon:'📊', tip:'web', imgs:['/uploads/feat/rapoarte.jpg'],
+        titlu:{ro:'Rapoarte zilnice',en:'Daily reports'},
+        lead:{ro:'O imagine clară a zilei: vânzări, top produse și metode de plată.',en:'A clear picture of the day: sales, top products and payment methods.'},
+        puncte:{ro:['Vânzări totale pe zi','Cele mai vândute produse','Distribuție cash / card'],en:['Total sales per day','Best-selling products','Cash / card breakdown']} },
+    design: { icon:'🎨', tip:'web', imgs:['/uploads/feat/design.jpg'],
+        titlu:{ro:'Design personalizabil',en:'Customizable design'},
+        lead:{ro:'Interfața arată exact ca brandul tău — logo, culori, fundal.',en:'The interface looks exactly like your brand — logo, colors, background.'},
+        puncte:{ro:['Logo și temă vizuală','Imagine de fundal și mesaj de bun venit','Aspect unitar pe toate paginile'],en:['Logo and visual theme','Background image and welcome message','Consistent look across all pages']} },
+    bilingv: { icon:'🌐', tip:'none', imgs:[],
+        titlu:{ro:'Bilingv RO / EN',en:'Bilingual RO / EN'},
+        lead:{ro:'Toată platforma funcționează în română și engleză, pentru echipă și pentru clienți.',en:'The whole platform works in Romanian and English, for your team and your guests.'},
+        puncte:{ro:['Comută limba dintr-un clic','Meniul și comanda, în ambele limbi','Potrivit pentru clienți străini'],en:['Switch language in one click','Menu and ordering in both languages','Great for foreign guests']} },
+};
+const FEAT_ORDER = ['qr','evenimente','dashboard','push','asignare','statistici','rapoarte','design','bilingv'];
+
+function openFeat(key) {
+    const f = FEATURES[key]; if (!f) return;
+    const L = (typeof limbaActiva !== 'undefined' && limbaActiva === 'en') ? 'en' : 'ro';
+    document.getElementById('fmIcon').textContent = f.icon;
+    document.getElementById('fmTitlu').textContent = f.titlu[L];
+    document.getElementById('fmLead').textContent = f.lead[L];
+    const g = document.getElementById('fmGallery');
+    g.className = 'fmodal-gallery ' + (f.tip === 'phone' ? 'phone' : 'web');
+    g.innerHTML = f.imgs.map(src => '<img src="' + src + '" alt="" loading="lazy">').join('');
+    g.style.display = f.imgs.length ? 'flex' : 'none';
+    document.getElementById('fmPoints').innerHTML = f.puncte[L].map(p => '<li>' + escapeFeat(p) + '</li>').join('');
+    document.getElementById('fmodalOv').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closeFeat() {
+    document.getElementById('fmodalOv').classList.remove('open');
+    document.body.style.overflow = '';
+}
+function escapeFeat(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFeat(); });
+
+// Inject a "Vezi detalii" button into each feature card.
+document.querySelectorAll('.feat-grid .feat-card').forEach((card, i) => {
+    const key = FEAT_ORDER[i]; if (!key) return;
+    const btn = document.createElement('button');
+    btn.className = 'feat-btn';
+    btn.innerHTML = '<span data-ro="Vezi detalii" data-en="See details">' + (limbaActiva === 'en' ? 'See details' : 'Vezi detalii') + '</span>' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>';
+    btn.addEventListener('click', () => openFeat(key));
+    card.appendChild(btn);
+});
 </script>
 </body>
 </html>
