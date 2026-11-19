@@ -291,3 +291,20 @@ CREATE TABLE IF NOT EXISTS owner_push_subscriptions (
     FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_owner_push_restaurant ON owner_push_subscriptions(restaurant_id);
+
+-- Subscription payments history (online billing — Netopia/PayU, processor-agnostic).
+CREATE TABLE IF NOT EXISTS abonament_plati (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id  INTEGER NOT NULL,
+    suma           REAL NOT NULL,
+    valuta         TEXT DEFAULT 'RON',
+    perioada_start TEXT,                            -- YYYY-MM-DD covered period start
+    perioada_end   TEXT,                            -- YYYY-MM-DD covered period end
+    status         TEXT NOT NULL DEFAULT 'initiata',-- initiata | platita | esuata | anulata
+    procesator     TEXT,                            -- netopia | payu | manual
+    ref_extern     TEXT,                            -- processor transaction / order id
+    creat_la       TEXT NOT NULL DEFAULT (datetime('now')),
+    platit_la      TEXT,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_abonament_plati_restaurant ON abonament_plati(restaurant_id);

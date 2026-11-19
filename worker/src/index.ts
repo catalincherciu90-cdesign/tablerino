@@ -9,6 +9,7 @@ import rezervare from './routes/rezervari';
 import local from './routes/local';
 import upload from './routes/upload';
 import ai from './routes/ai';
+import plati from './routes/plati';
 
 const app = new Hono<HonoEnv>();
 
@@ -51,6 +52,7 @@ app.route('/api/rezervare', rezervare); // public reservations
 app.route('/api/local', local); // public restaurant profile
 app.route('/api/upload', upload); // admin/upload_*.php
 app.route('/api/ai', ai); // admin/ai_meniu.php
+app.route('/api/plati', plati); // online subscription payments (Netopia/PayU)
 
 // ── Root: serve the diner portal when enabled, else the B2B landing ──
 app.get('/', async (c) => {

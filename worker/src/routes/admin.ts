@@ -1303,6 +1303,39 @@ admin.post('/owner_push_unsubscribe', requireOwner, async (c) => {
   return c.json({ ok: true });
 });
 
+// ── Subscription / billing (restaurant side) ──
+admin.get('/abonament', requireOwner, async (c) => {
+  const { platiActive } = await import('../plati');
+  const r = await one<{ abonament_status: string | null; abonament_pret: number | null; abonament_expira: string | null }>(
+    c.env.DB, 'SELECT abonament_status, abonament_pret, abonament_expira FROM restaurante WHERE id = ?', rid(c)
+  );
+  const plati = await all(
+    c.env.DB,
+    `SELECT suma, valuta, perioada_start, perioada_end, status, procesator, platit_la, creat_la
+     FROM abonament_plati WHERE restaurant_id = ? ORDER BY id DESC LIMIT 12`,
+    rid(c)
+  );
+  return c.json({
+    ok: true,
+    status: r?.abonament_status ?? 'activ',
+    pret: r?.abonament_pret ?? null,
+    expira: r?.abonament_expira ?? null,
+    plati,
+    plati_active: await platiActive(c.env.DB),
+  });
+});
+
+// Start an online subscription payment. Until a processor is connected this
+// returns a friendly "coming soon"; later it creates the Netopia/PayU payment
+// and returns its redirect URL.
+admin.post('/abonament_plateste', requireOwner, async (c) => {
+  const { platiActive } = await import('../plati');
+  if (!(await platiActive(c.env.DB))) {
+    return c.json({ ok: false, msg: 'Plățile online vor fi disponibile în curând.' }, 503);
+  }
+  return c.json({ ok: false, msg: 'Procesatorul de plăți nu este încă conectat.' }, 503);
+});
+
 // ── Offers (oferte) for the public portal ──
 
 admin.get('/oferte', requireOwner, async (c) => {

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16.png">
+<link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablerino - Abonament</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #1a1a2e; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; }
+.sidebar .logo { margin-bottom: 20px; padding: 4px; display: flex; align-items: center; justify-content: center; }
+.sidebar .logo img { height: 64px; width: auto; object-fit: contain; background: #fff; border-radius: 10px; padding: 6px; }
+.sidebar a { color: #aaa; text-decoration: none; padding: 10px 12px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; transition: background .15s, color .15s; }
+.sidebar a:hover, .sidebar a.activ { background: #6c47ff; color: #fff; }
+.sidebar .logout { margin-top: auto; }
+.main { margin-left: 220px; padding: 32px; max-width: 820px; }
+.main h2 { font-size: 20px; margin-bottom: 6px; }
+.main p.sub { color: #888; font-size: 14px; margin-bottom: 28px; }
+.card { background: #fff; border-radius: 14px; padding: 26px 28px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); margin-bottom: 22px; }
+.card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+.ab-top { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.ab-pret { font-size: 40px; font-weight: 800; color: #6c47ff; }
+.ab-pret span { font-size: 15px; font-weight: 500; color: #999; }
+.badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+.b-activ { background: rgba(16,185,129,.15); color: #10b981; }
+.b-trial { background: rgba(201,166,107,.18); color: #b4842f; }
+.b-expirat { background: rgba(229,62,62,.15); color: #e53e3e; }
+.b-anulat { background: rgba(136,136,136,.18); color: #777; }
+.ab-meta { color: #555; font-size: 14px; margin-top: 14px; line-height: 1.7; }
+.ab-meta b { color: #111; }
+.ab-warn { color: #e53e3e; font-weight: 600; }
+.btn-pay { margin-top: 20px; padding: 13px 26px; background: #6c47ff; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.btn-pay:hover { background: #5a38e0; }
+.btn-pay:disabled { opacity: .6; cursor: default; }
+.pay-note { font-size: 12.5px; color: #999; margin-top: 10px; }
+.ptable { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.ptable th { text-align: left; color: #999; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; padding: 8px 10px; border-bottom: 1px solid #eee; }
+.ptable td { padding: 11px 10px; border-bottom: 1px solid #f3f3f3; color: #333; }
+.ptable tr:last-child td { border-bottom: none; }
+.p-status { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; }
+.ps-platita { background: rgba(16,185,129,.15); color: #10b981; }
+.ps-initiata { background: rgba(201,166,107,.18); color: #b4842f; }
+.ps-esuata, .ps-anulata { background: rgba(229,62,62,.12); color: #e53e3e; }
+.gol { color: #aaa; font-size: 13.5px; padding: 6px 0; }
+.toast { position: fixed; bottom: 24px; right: 24px; background: #10b981; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 13px; display: none; z-index: 999; }
+.toast.err { background: #e53e3e; }
+@media (max-width: 768px) {
+    .sidebar { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: 100%; height: 62px; flex-direction: row; padding: 0; justify-content: space-around; align-items: center; border-top: 1px solid #2a2a3e; z-index: 100; overflow-x: auto; }
+    .sidebar .logo { display: none; }
+    .sidebar .logout { margin-top: 0; }
+    .sidebar a { flex-direction: column; gap: 2px; font-size: 10px; padding: 6px 8px; border-radius: 6px; flex: 0 0 auto; justify-content: center; text-align: center; font-weight: 600; }
+    .main { margin-left: 0 !important; padding: 14px 12px 80px !important; }
+    .card { padding: 18px; }
+    .ab-pret { font-size: 32px; }
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="logo"><img src="/uploads/logo-tablerino.png" alt="Tablerino"></div>
+    <a href="/admin/index.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg> Comenzi</a>
+    <a href="/admin/meniu.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 7v14"/><path d="M4 5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2 2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v12a1 1 0 0 1-1 1h-6a2 2 0 0 0-2 2 2 2 0 0 0-2-2H5a1 1 0 0 1-1-1z"/></svg> Meniu</a>
+    <a href="/admin/mese.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M3 10h18"/><path d="M5 10V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M6 10v9"/><path d="M18 10v9"/></svg> Mese</a>
+    <a href="/admin/istoric.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg> Istoric</a>
+    <a href="/admin/rezervari.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg> Rezervări</a>
+    <a href="/admin/recenzii.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 2.5l2.9 6 6.6.6-5 4.3 1.5 6.5L12 16.9 6 19.9l1.5-6.5-5-4.3 6.6-.6z"/></svg> Recenzii</a>
+    <a href="/admin/raport.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><line x1="4" y1="20" x2="4" y2="12"/><line x1="10" y1="20" x2="10" y2="5"/><line x1="16" y1="20" x2="16" y2="9"/><line x1="3" y1="20" x2="21" y2="20"/></svg> Rapoarte</a>
+    <a href="/admin/setari.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><circle cx="13.5" cy="6.5" r=".9" fill="currentColor" stroke="none"/><circle cx="17.5" cy="10.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8.5" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="6.5" cy="12.5" r=".9" fill="currentColor" stroke="none"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.7 1.7-1.7H18c2.2 0 4-1.8 4-4C22 6 17.5 2 12 2z"/></svg> Design</a>
+    <a href="/admin/abonament.html" class="owner-only activ"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Abonament</a>
+    <a href="/admin/reclame.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="m3 11 18-5v12L3 14z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg> Reclame</a>
+    <a href="/admin/audit.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> Audit</a>
+    <a href="/admin/ospatari.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></svg> Ospătari</a>
+    <a href="#" class="logout" onclick="logout(event)">🚪 Ieșire</a>
+</div>
+
+<div class="main">
+    <h2>Abonamentul meu</h2>
+    <p class="sub">Starea abonamentului tău Tablerino și plățile.</p>
+
+    <div class="card">
+        <div class="ab-top">
+            <div class="ab-pret" id="abPret">—</div>
+            <span class="badge" id="abBadge">—</span>
+        </div>
+        <div class="ab-meta" id="abMeta"></div>
+        <button class="btn-pay" id="btnPay" onclick="plateste()">💳 Plătește abonamentul</button>
+        <div class="pay-note" id="payNote"></div>
+    </div>
+
+    <div class="card">
+        <h3>Istoric plăți</h3>
+        <div id="istoricPlati"><div class="gol">Se încarcă...</div></div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function logout(e) {
+    if (e) e.preventDefault();
+    fetch('/api/admin/logout', { method: 'POST' }).finally(() => location.href = '/admin/login.html');
+}
+function showToast(msg, tip = 'ok') {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = 'toast' + (tip === 'err' ? ' err' : '');
+    t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3200);
+}
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function dfmt(s) { if (!s) return '—'; try { return new Date(s + 'T00:00:00').toLocaleDateString('ro-RO', { day:'numeric', month:'long', year:'numeric' }); } catch (e) { return s; } }
+
+const BADGE = { activ:['b-activ','Activ'], trial:['b-trial','Trial'], expirat:['b-expirat','Expirat'], anulat:['b-anulat','Anulat'] };
+let platiActive = false;
+
+async function incarca() {
+    try {
+        const d = await (await fetch('/api/admin/abonament')).json();
+        if (!d.ok) return;
+        platiActive = !!d.plati_active;
+        const pret = (d.pret == null ? 100 : d.pret);
+        document.getElementById('abPret').innerHTML = pret + ' €<span>/lună</span>';
+        const bd = BADGE[d.status] || BADGE.activ;
+        const badge = document.getElementById('abBadge');
+        badge.className = 'badge ' + bd[0]; badge.textContent = bd[1];
+
+        let meta = '';
+        if (d.expira) {
+            const azi = new Date(); azi.setHours(0,0,0,0);
+            const exp = new Date(d.expira + 'T00:00:00');
+            const zile = Math.round((exp - azi) / 86400000);
+            meta += '<div>Următoarea plată / expirare: <b>' + dfmt(d.expira) + '</b>';
+            if (zile < 0) meta += ' <span class="ab-warn">(depășit)</span>';
+            else if (zile <= 7) meta += ' <span class="ab-warn">(în ' + zile + ' zile)</span>';
+            meta += '</div>';
+        } else {
+            meta += '<div>Fără dată de expirare setată.</div>';
+        }
+        document.getElementById('abMeta').innerHTML = meta;
+
+        const btn = document.getElementById('btnPay');
+        const note = document.getElementById('payNote');
+        if (!platiActive) {
+            btn.disabled = true;
+            btn.textContent = '💳 Plata online — în curând';
+            note.textContent = 'Plata online a abonamentului se configurează (Netopia). Revino în curând.';
+        } else {
+            btn.disabled = false;
+            note.textContent = 'Vei fi redirecționat către pagina securizată de plată.';
+        }
+        renderPlati(d.plati || []);
+    } catch (e) { showToast('Eroare la încărcare', 'err'); }
+}
+
+function renderPlati(plati) {
+    const wrap = document.getElementById('istoricPlati');
+    if (!plati.length) { wrap.innerHTML = '<div class="gol">Nicio plată înregistrată încă.</div>'; return; }
+    const PS = { platita:['ps-platita','Plătită'], initiata:['ps-initiata','Inițiată'], esuata:['ps-esuata','Eșuată'], anulata:['ps-anulata','Anulată'] };
+    wrap.innerHTML = '<table class="ptable"><thead><tr><th>Data</th><th>Perioadă</th><th>Sumă</th><th>Status</th><th>Metodă</th></tr></thead><tbody>' +
+        plati.map(p => {
+            const ps = PS[p.status] || PS.initiata;
+            const data = (p.platit_la || p.creat_la || '').slice(0, 10);
+            const per = (p.perioada_start && p.perioada_end) ? (dfmt(p.perioada_start) + ' → ' + dfmt(p.perioada_end)) : '—';
+            return '<tr><td>' + esc(data) + '</td><td>' + esc(per) + '</td><td>' + esc(p.suma) + ' ' + esc(p.valuta || 'RON') +
+                '</td><td><span class="p-status ' + ps[0] + '">' + ps[1] + '</span></td><td>' + esc(p.procesator || '—') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+}
+
+async function plateste() {
+    if (!platiActive) { showToast('Plata online va fi disponibilă în curând.'); return; }
+    const btn = document.getElementById('btnPay');
+    btn.disabled = true; btn.textContent = 'Se inițiază...';
+    try {
+        const r = await fetch('/api/admin/abonament_plateste', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const d = await r.json().catch(() => ({}));
+        if (d && d.ok && d.redirect) { location.href = d.redirect; return; }
+        showToast(d.msg || 'Plata nu a putut fi inițiată.', 'err');
+    } catch (e) { showToast('Eroare de conexiune.', 'err'); }
+    btn.disabled = false; btn.textContent = '💳 Plătește abonamentul';
+}
+
+(async function () {
+    const rMe = await fetch('/api/admin/me');
+    if (!rMe.ok) { location.href = '/admin/login.html'; return; }
+    const me = await rMe.json();
+    if (me.role === 'ospatar') { location.href = '/admin/index.html'; return; }
+    incarca();
+})();
+</script>
+</body>
+</html>
