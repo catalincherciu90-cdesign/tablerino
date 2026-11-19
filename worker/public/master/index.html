@@ -143,6 +143,17 @@ tr:hover td { background: rgba(108,71,255,0.05); }
         <button class="btn-add" onclick="deschideModalAdauga()">+ Restaurant nou</button>
     </div>
 
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+        <input type="text" id="cauta" oninput="aplicaFiltre()" placeholder="🔍 Caută după nume sau email" style="flex:1;min-width:220px;padding:10px 14px;border:1px solid #2a2a3e;border-radius:8px;background:#0f0f1a;color:#fff;font-size:14px;outline:none">
+        <select id="filtruStatus" onchange="aplicaFiltre()" style="padding:10px 14px;border:1px solid #2a2a3e;border-radius:8px;background:#0f0f1a;color:#fff;font-size:14px;outline:none">
+            <option value="toate">Toate</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="expirate">Abonament expirat</option>
+        </select>
+        <span id="filtruCount" style="font-size:13px;color:#666"></span>
+    </div>
+
     <div class="tabel-wrap">
         <table>
             <thead>
@@ -256,15 +267,29 @@ async function incarcaStats() {
     }
 }
 
+let toateRestaurantele = [];
 async function incarcaRestaurante() {
     const r = await fetch('/api/master/restaurante');
     const d = await r.json();
+    toateRestaurantele = d.restaurante || [];
+    aplicaFiltre();
+}
+function aplicaFiltre() {
+    const q = (document.getElementById('cauta').value || '').trim().toLowerCase();
+    const st = document.getElementById('filtruStatus').value;
+    const azi = new Date().toISOString().slice(0, 10);
+    const list = toateRestaurantele.filter(r => {
+        if (q && !((r.nume || '').toLowerCase().includes(q) || (r.email || '').toLowerCase().includes(q))) return false;
+        if (st === 'active' && r.activ != 1) return false;
+        if (st === 'inactive' && r.activ == 1) return false;
+        if (st === 'expirate' && !(r.abonament_status === 'expirat' || r.abonament_status === 'anulat' || (r.abonament_expira && r.abonament_expira < azi))) return false;
+        return true;
+    });
+    const cnt = document.getElementById('filtruCount');
+    if (cnt) cnt.textContent = list.length + ' din ' + toateRestaurantele.length;
     const body = document.getElementById('tabelBody');
-    if (!d.restaurante.length) {
-        body.innerHTML = '<tr><td colspan="7" class="gol">Niciun restaurant înregistrat.</td></tr>';
-        return;
-    }
-    body.innerHTML = d.restaurante.map(r => `
+    if (!list.length) { body.innerHTML = '<tr><td colspan="7" class="gol">Niciun restaurant găsit.</td></tr>'; return; }
+    body.innerHTML = list.map(r => `
         <tr>
             <td>
                 <div class="td-num">${r.nume}</div>
