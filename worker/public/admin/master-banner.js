@@ -6,7 +6,7 @@
     var nume = me.restaurant_nume || me.nume || '';
     var bar = document.createElement('div');
     bar.id = 'masterBanner';
-    bar.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:99999;' +
+    bar.style.cssText = 'position:fixed;top:10px;right:16px;z-index:99999;' +
       'background:#6c47ff;color:#fff;font:600 13px system-ui,-apple-system,sans-serif;display:flex;align-items:center;' +
       'gap:12px;padding:8px 10px 8px 16px;border-radius:999px;box-shadow:0 8px 24px rgba(108,71,255,.45);max-width:94vw';
     var txt = document.createElement('span');
