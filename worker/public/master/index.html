@@ -306,6 +306,7 @@ function aplicaFiltre() {
             </td>
             <td>
                 <div class="td-actiuni">
+                    <button class="btn-sm" onclick="gestioneaza(${r.id})" style="background:rgba(108,71,255,0.28);color:#c4b5fd;font-weight:700">⚙️ Gestionează</button>
                     <button class="btn-sm btn-vezi" onclick="window.open('/master/comenzi.html?id=${r.id}','_blank')">Comenzi</button>
                     <button class="btn-sm btn-vezi" onclick="window.open('/master/meniu.html?id=${r.id}','_blank')" style="background:rgba(16,185,129,0.15);color:#10b981">Meniu</button>
                     <button class="btn-sm btn-edit" onclick="deschideModalEditare(${r.id},'${r.nume.replace(/'/g,"\\'")}','${r.email}','${r.telefon||''}','${r.tema||'italian'}',${r.rezervari_publice?1:0},${r.evenimente_publice?1:0})">Editează</button>
@@ -455,6 +456,20 @@ async function toggleActiv(id) {
     });
     incarcaRestaurante();
     incarcaStats();
+}
+
+// Open a restaurant's admin panel as its owner (no password needed).
+async function gestioneaza(id) {
+    try {
+        const r = await fetch('/api/master/gestioneaza', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (d.ok) window.open(d.cale || '/admin/index.html', '_blank');
+        else alert(d.msg || 'Nu am putut deschide panoul restaurantului.');
+    } catch (e) { alert('Eroare de conexiune.'); }
 }
 
 async function togglePromovat(id) {

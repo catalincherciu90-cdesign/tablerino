@@ -9,6 +9,7 @@ import {
   verifyPassword,
   hashPassword,
   generateToken,
+  loginRestaurant,
 } from '../auth';
 import { LANDING_DEFAULTS } from '../landingDefaults';
 import { extToContentType, fileExt } from '../r2';
@@ -155,6 +156,18 @@ master.post('/toggle_activ', async (c) => {
   const id = Number(body.id ?? 0);
   await run(c.env.DB, 'UPDATE restaurante SET activ = 1 - activ WHERE id = ?', id);
   return c.json({ ok: true });
+});
+
+// Manage a restaurant as its owner without its password: opens an owner session
+// for that restaurant (the master session cookie is kept — separate cookie).
+master.post('/gestioneaza', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  if (!id) return c.json({ ok: false }, 400);
+  const rest = await one<{ id: number; nume: string }>(c.env.DB, 'SELECT id, nume FROM restaurante WHERE id = ?', id);
+  if (!rest) return c.json({ ok: false, msg: 'Restaurant inexistent' }, 404);
+  await loginRestaurant(c, { rid: rest.id, nume: rest.nume, role: 'owner' });
+  return c.json({ ok: true, cale: '/admin/index.html' });
 });
 
 // Feature/un-feature a restaurant on the public portal (promovat).
