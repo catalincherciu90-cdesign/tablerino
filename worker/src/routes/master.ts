@@ -166,7 +166,7 @@ master.post('/gestioneaza', async (c) => {
   if (!id) return c.json({ ok: false }, 400);
   const rest = await one<{ id: number; nume: string }>(c.env.DB, 'SELECT id, nume FROM restaurante WHERE id = ?', id);
   if (!rest) return c.json({ ok: false, msg: 'Restaurant inexistent' }, 404);
-  await loginRestaurant(c, { rid: rest.id, nume: rest.nume, role: 'owner' });
+  await loginRestaurant(c, { rid: rest.id, nume: rest.nume, role: 'owner', viaMaster: true });
   return c.json({ ok: true, cale: '/admin/index.html' });
 });
 

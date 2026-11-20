@@ -99,6 +99,7 @@ admin.get('/me', async (c) => {
     id: sess.rid,
     nume: sess.nume,
     role: sess.role,
+    via_master: sess.viaMaster === true,
     ospatar_id: sess.role === 'ospatar' ? (sess.uid ?? null) : null,
     tema: r?.tema ?? 'italian',
     limba: r?.limba ?? 'ro',

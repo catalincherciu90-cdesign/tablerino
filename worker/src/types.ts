@@ -28,6 +28,8 @@ export interface RestaurantSession {
   role: 'owner' | 'ospatar';
   /** Waiter's own id (only for role 'ospatar'). */
   uid?: number;
+  /** True when a platform admin (Master) opened this session via "Gestionează". */
+  viaMaster?: boolean;
 }
 
 /** Authenticated master session payload (replaces $_SESSION master_*). */
