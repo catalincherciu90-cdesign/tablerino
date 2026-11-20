@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#6c47ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/ospatar/manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
+<title>Tablerino Ospătar</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root { --accent: #6c47ff; }
+html, body { height: 100%; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #f0f0f5; color: #111;
+       display: flex; flex-direction: column; min-height: 100svh; }
+
+/* Header */
+.top { background: #1a1a2e; color: #fff; padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+       display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; z-index: 30; }
+.top .who { min-width: 0; }
+.top .who .r { font-size: 12px; color: #a9a4c7; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top .who .n { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top .right { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.live { font-size: 10px; color: #8de08d; display: flex; align-items: center; gap: 4px; }
+.live .dot { width: 7px; height: 7px; border-radius: 50%; background: #34d399; animation: pulse 1.6s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+.icon-btn { background: rgba(255,255,255,.12); color: #fff; border: none; border-radius: 10px; padding: 8px 11px; font-size: 14px; cursor: pointer; }
+
+/* Install banner */
+
+/* Filter bar */
+.filtre { display: flex; gap: 8px; padding: 10px 12px; background: #fff; position: sticky; top: var(--hdr, 56px); z-index: 20; box-shadow: 0 1px 4px rgba(0,0,0,.05); overflow-x: auto; }
+.filtru { flex: 1 0 auto; padding: 9px 14px; border-radius: 20px; border: 2px solid #e5e5ef; background: #fff; font-size: 13px; font-weight: 700; color: #555; white-space: nowrap; }
+.filtru.activ { border-color: var(--accent); background: var(--accent); color: #fff; }
+
+/* Orders */
+.wrap { flex: 1; padding: 12px 12px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; }
+.gol { text-align: center; color: #aaa; padding: 48px 20px; font-size: 14px; }
+.card { background: #fff; border-radius: 16px; padding: 15px; box-shadow: 0 1px 8px rgba(0,0,0,.07); border-left: 5px solid #ccc; }
+.card.noua { border-left-color: #f59e0b; }
+.card.in_pregatire { border-left-color: #3b82f6; }
+.card.plata_aleasa { border-left-color: #10b981; }
+.card.alerta-card { border-left-color: #ef4444; box-shadow: 0 0 0 2px #fecaca, 0 1px 8px rgba(0,0,0,.07); }
+.ch { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.masa { font-size: 17px; font-weight: 800; }
+.nr { color: #aaa; font-weight: 600; font-size: 13px; }
+.ora { font-size: 12px; color: #999; margin-top: 2px; }
+.status { font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
+.status.noua { background: #fef3c7; color: #92400e; }
+.status.in_pregatire { background: #dbeafe; color: #1e40af; }
+.status.plata_aleasa { background: #d1fae5; color: #065f46; }
+.badge { display: inline-block; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px; margin-top: 8px; }
+.badge.da { background: #ede9fe; color: #5b21b6; }
+.badge.nu { background: #f3f4f6; color: #999; }
+.badge.rezervat { background: #fff4e5; color: #b45309; }
+.badge.mea { background: #e0f2fe; color: #075985; }
+.badge.alerta { background: #fee2e2; color: #b91c1c; animation: pulse 1s infinite; }
+.badge .cd { font-variant-numeric: tabular-nums; }
+.produse { list-style: none; margin: 12px 0 6px; }
+.produse li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 0; border-bottom: 1px solid #f2f2f5; font-size: 14px; }
+.produse li:last-child { border-bottom: none; }
+.produse li.livrat { opacity: .5; text-decoration: line-through; }
+.tag { font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 6px; margin-left: 6px; vertical-align: middle; }
+.tag.nou { background: #fef3c7; color: #92400e; }
+.tag.livrat { background: #d1fae5; color: #065f46; }
+.pcol { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.mini { background: #ede9ff; color: var(--accent); border: none; border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 700; }
+.total { font-weight: 800; font-size: 15px; text-align: right; margin: 8px 0; }
+.banner { padding: 10px; border-radius: 10px; font-weight: 800; font-size: 13px; text-align: center; margin: 8px 0; }
+.banner.cash { background: #dcfce7; color: #166534; }
+.banner.card { background: #dbeafe; color: #1e40af; }
+.actiuni { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.btn { width: 100%; padding: 13px; border: none; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; }
+.btn-preia { background: var(--accent); color: #fff; }
+.btn-preia[disabled] { opacity: .45; }
+.btn-renunta { background: #f3f4f6; color: #666; }
+.btn-pregatire { background: #3b82f6; color: #fff; }
+.btn-servita { background: #10b981; color: #fff; }
+.btn-elibereaza { background: #111827; color: #fff; }
+.servite { text-align: center; color: #10b981; font-weight: 700; font-size: 13px; padding: 8px; }
+.ist-sumar { background: #ecfdf5; color: #065f46; border-radius: 12px; padding: 12px 14px; font-size: 14px; text-align: center; }
+.istoric-card { border-left-color: #94a3b8; opacity: .95; }
+.istoric-card .status.servita { background: #e2e8f0; color: #475569; }
+.istoric-card .produse li { opacity: 1; text-decoration: none; }
+.ist-meta { font-size: 12px; color: #64748b; font-weight: 600; margin-top: 8px; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+         background: #111827; color: #fff; padding: 12px 18px; border-radius: 12px; font-size: 14px; font-weight: 600;
+         box-shadow: 0 8px 24px rgba(0,0,0,.3); opacity: 0; transition: opacity .2s; z-index: 50; pointer-events: none; max-width: 90vw; text-align: center; }
+.toast.show { opacity: 1; }
+.enable-sound { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+        background: var(--accent); color: #fff; border: none; padding: 11px 18px; border-radius: 24px; font-size: 13px; font-weight: 700;
+        box-shadow: 0 8px 24px rgba(108,71,255,.4); z-index: 40; display: none; }
+</style>
+</head>
+<body>
+<div class="top" id="top">
+    <div class="who">
+        <div class="r" id="restNume">Tablerino</div>
+        <div class="n" id="ospNume">Ospătar</div>
+    </div>
+    <div class="right">
+        <span class="live"><span class="dot"></span><span id="liveTxt">live</span></span>
+        <button class="icon-btn" onclick="logout()">⎋</button>
+    </div>
+</div>
+
+<div class="filtre" id="filtre">
+    <button class="filtru activ" id="fAle" onclick="setFiltru('ale_mele')">Ale mele</button>
+    <button class="filtru" id="fNe" onclick="setFiltru('nepreluate')">Nepreluate</button>
+    <button class="filtru" id="fTot" onclick="setFiltru('toate')">Toate</button>
+    <button class="filtru" id="fIst" onclick="setFiltru('istoric')">Istoric azi</button>
+</div>
+
+<div class="wrap" id="wrap">
+    <div class="gol">Se încarcă...</div>
+</div>
+
+<button class="enable-sound" id="enableSound" onclick="activeazaNotificari()">🔔 Activează notificările</button>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──
+let ospatarId = null, masaDefaultId = null, restNume = '', ospNume = '';
+let escalareSec = 120;
+const ALERTA_SEC = 30;
+let filtru = 'ale_mele';
+let comenziToate = [];
+let comenziFetchedAt = Date.now();
+let cunoscute = new Set();          // known order ids (to detect new orders)
+let alertate = new Set();           // order ids already alerted (about to escape)
+let sunetOk = false;                // user enabled audio (needs a gesture on mobile)
+let primaIncarcare = true;
+
+// ── Helpers ──
+function escHtml(s){ return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function fmtMMSS(sec){ sec = Math.max(0, Math.ceil(sec)); const m = Math.floor(sec/60), s = sec%60; return m>0 ? `${m}:${String(s).padStart(2,'0')}` : `${s}s`; }
+function fmtOra(dt){ return new Date((dt||'').replace(' ','T') + 'Z').toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}); }
+function orderAgeSec(c){ return (Number(c.varsta_sec)||0) + (Date.now()-comenziFetchedAt)/1000; }
+function reservedRemaining(c){ if(c.preluat_de!=null)return 0; if(c.masa_ospatar_id==null||c.masa_ospatar_id===ospatarId)return 0; return Math.max(0, escalareSec-orderAgeSec(c)); }
+function myEscalateRemaining(c){ if(c.preluat_de!=null)return 0; if(c.masa_ospatar_id==null||c.masa_ospatar_id!==ospatarId)return 0; return Math.max(0, escalareSec-orderAgeSec(c)); }
+
+let toastT = null;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),3200); }
+
+// Short beep (Web Audio) + vibration. Mobile needs a user gesture first (see activeazaSunet).
+function beep(){
+    try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx) {
+            const ac = beep._ac || (beep._ac = new Ctx());
+            if (ac.state === 'suspended') ac.resume();
+            const t = ac.currentTime;
+            [0,0.18].forEach(off => {
+                const o=ac.createOscillator(), g=ac.createGain();
+                o.type='sine'; o.frequency.value=880;
+                g.gain.setValueAtTime(0.0001,t+off);
+                g.gain.exponentialRampToValueAtTime(0.3,t+off+0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001,t+off+0.15);
+                o.connect(g); g.connect(ac.destination); o.start(t+off); o.stop(t+off+0.16);
+            });
+        }
+    } catch(e){}
+    try { if (navigator.vibrate) navigator.vibrate([120,60,120]); } catch(e){}
+}
+function activeazaSunet(){
+    sunetOk = true;
+    try { const Ctx=window.AudioContext||window.webkitAudioContext; if(Ctx){ const ac=beep._ac||(beep._ac=new Ctx()); ac.resume(); } } catch(e){}
+    try { localStorage.setItem('sunetOk','1'); } catch(e){}
+}
+// One tap: unlock in-app sound AND subscribe to real push notifications.
+async function activeazaNotificari(){
+    activeazaSunet();
+    beep();
+    document.getElementById('enableSound').style.display='none';
+    await registerPush();
+}
+
+function urlB64ToUint8Array(b64){
+    const pad = '='.repeat((4 - b64.length % 4) % 4);
+    const base = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base); const arr = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+}
+// ── Native app bridge (the Android .apk injects window.TablerinoNative) ──
+const isNativeApp = () => (typeof window.TablerinoNative !== 'undefined') || /TablerinoApp/.test(navigator.userAgent);
+let nativeFcmToken = null;
+try { nativeFcmToken = localStorage.getItem('fcmToken') || null; } catch (e) {}
+
+// The native layer calls this once it has an FCM device token.
+window.onNativeFcmToken = function (token) {
+    if (!token) return;
+    nativeFcmToken = token;
+    try { localStorage.setItem('fcmToken', token); } catch (e) {}
+    trySendFcmToken();
+};
+// Register the FCM token with the server (needs the waiter to be logged in).
+async function trySendFcmToken(){
+    if (!nativeFcmToken || !ospatarId) return;
+    try {
+        await fetch('/api/admin/fcm_subscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: nativeFcmToken }) });
+    } catch (e) {}
+}
+
+// Subscribe this device to notifications. Native app → FCM; browser → Web Push.
+async function registerPush(){
+    if (isNativeApp()) {
+        // Ask the native layer for notification permission + FCM token.
+        try { if (window.TablerinoNative && window.TablerinoNative.requestNotifications) window.TablerinoNative.requestNotifications(); } catch (e) {}
+        trySendFcmToken();
+        return;
+    }
+    try {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') return;
+        const reg = await navigator.serviceWorker.ready;
+        const kr = await fetch('/api/admin/push_public_key').then(r => r.json()).catch(() => null);
+        if (!kr || !kr.ok || !kr.key) return;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(kr.key) });
+        await fetch('/api/admin/push_subscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(sub.toJSON()) });
+    } catch (e) {}
+}
+
+// ── Rendering ──
+function setFiltru(f){
+    filtru = f;
+    document.getElementById('fAle').classList.toggle('activ', f==='ale_mele');
+    document.getElementById('fNe').classList.toggle('activ', f==='nepreluate');
+    document.getElementById('fTot').classList.toggle('activ', f==='toate');
+    document.getElementById('fIst').classList.toggle('activ', f==='istoric');
+    if (f === 'istoric') incarcaIstoric();
+    else render();
+}
+
+// Read-only view of today's completed orders.
+async function incarcaIstoric(){
+    const wrap = document.getElementById('wrap');
+    try {
+        const r = await fetch('/api/admin/istoric_azi');
+        if (r.status === 401){ location.href='/ospatar/login.html'; return; }
+        const d = await r.json();
+        if (filtru !== 'istoric') return; // user switched tabs while loading
+        if (!d.ok || !d.comenzi.length){ wrap.innerHTML = `<div class="gol">Nicio comandă finalizată azi.</div>`; return; }
+        const head = `<div class="ist-sumar">✅ ${d.nr} comenzi finalizate azi · <b>${Number(d.total_zi).toFixed(2)} lei</b></div>`;
+        wrap.innerHTML = head + d.comenzi.map(c => {
+            const produse = (c.produse||[]).map(p => `<li class="livrat"><span>${p.cantitate}x ${escHtml(p.nume_produs)}</span><span>${parseFloat(p.total).toFixed(2)}</span></li>`).join('');
+            const total = (c.produse||[]).reduce((s,p)=>s+parseFloat(p.total),0);
+            const plata = c.metoda_plata === 'cash' ? '💵 Cash' : (c.metoda_plata === 'card' ? '💳 Card' : '');
+            const cine = c.preluat_de_nume ? ('👤 ' + escHtml(c.preluat_de_nume)) : '';
+            const meta = ['✓ Finalizată', cine, plata].filter(Boolean).join(' · ');
+            return `<div class="card istoric-card">
+                <div class="ch">
+                    <div><div class="masa">${escHtml(c.masa_nume)} <span class="nr">#${c.nr_ordine_zi||'—'}</span></div><div class="ora">${fmtOra(c.created_at)}</div></div>
+                    <span class="status servita">✓</span>
+                </div>
+                <ul class="produse">${produse}</ul>
+                <div class="total">Total: ${total.toFixed(2)} lei</div>
+                <div class="ist-meta">${meta}</div>
+            </div>`;
+        }).join('');
+    } catch(e){
+        if (filtru === 'istoric') wrap.innerHTML = `<div class="gol">Eroare la încărcarea istoricului.</div>`;
+    }
+}
+
+function render(){
+    if (filtru === 'istoric') return; // the history view renders itself
+    const wrap = document.getElementById('wrap');
+    let baza = comenziToate;
+    if (filtru === 'ale_mele') baza = baza.filter(c => (masaDefaultId && c.masa_id===masaDefaultId) || c.masa_ospatar_id===ospatarId || c.preluat_de===ospatarId);
+    else if (filtru === 'nepreluate') baza = baza.filter(c => c.preluat_de==null);
+
+    if (!baza.length) { wrap.innerHTML = `<div class="gol">Nicio comandă aici momentan.</div>`; return; }
+
+    wrap.innerHTML = baza.map(c => {
+        const mine = c.preluat_de === ospatarId; // claimed by this waiter
+        const produse = (c.produse||[]).map(p => {
+            const nou = p.status === 'nou' || !p.status;
+            return `<li class="${nou?'':'livrat'}">
+                <span>${p.cantitate}x ${escHtml(p.nume_produs)} ${nou?'<span class="tag nou">NOU</span>':'<span class="tag livrat">✓</span>'}</span>
+                <span class="pcol"><span>${parseFloat(p.total).toFixed(2)}</span>${(nou && mine)?`<button class="mini" onclick="livreazaProdus(${p.id})">Servit</button>`:''}</span>
+            </li>`;
+        }).join('');
+        const total = (c.produse||[]).reduce((s,p)=>s+parseFloat(p.total),0);
+        const areNoi = (c.produse||[]).some(p => p.status==='nou' || !p.status);
+        const toateLivrate = (c.produse||[]).length>0 && (c.produse||[]).every(p => p.status==='livrat');
+
+        const preluat = c.preluat_de != null;
+        const rezRem = reservedRemaining(c);
+        const myRem = myEscalateRemaining(c);
+        let badge, alertaCard = false;
+        if (preluat) {
+            badge = `<div class="badge da">👤 Preluată: ${escHtml(c.preluat_de_nume)}</div>`;
+        } else if (rezRem > 0) {
+            badge = `<div class="badge rezervat" data-exp="${Date.now()+rezRem*1000}">🔒 Rezervată: ${escHtml(c.masa_ospatar_nume)} · <span class="cd">${fmtMMSS(rezRem)}</span></div>`;
+        } else if (myRem > 0) {
+            const urg = myRem <= ALERTA_SEC; alertaCard = urg;
+            badge = `<div class="badge ${urg?'alerta':'mea'}" data-myexp="${Date.now()+myRem*1000}" data-cid="${c.id}" data-masa="${escHtml(c.masa_nume)}">${urg?'⏰ îți scapă în':'👤 Masa ta ·'} <span class="cd">${fmtMMSS(myRem)}</span></div>`;
+        } else if (c.masa_ospatar_nume) {
+            badge = `<div class="badge nu">Nepreluată · 👤 ${escHtml(c.masa_ospatar_nume)}</div>`;
+        } else {
+            badge = `<div class="badge nu">Nepreluată</div>`;
+        }
+
+        // Claim / release
+        let claim = '';
+        if (!preluat) {
+            claim = rezRem > 0
+                ? `<button class="btn btn-preia" disabled>🔒 Rezervată</button>`
+                : `<button class="btn btn-preia" onclick="preia(${c.id})">Preia comanda</button>`;
+        } else if (c.preluat_de === ospatarId) {
+            claim = `<button class="btn btn-renunta" onclick="renunta(${c.id})">Renunță</button>`;
+        }
+
+        // Status actions — only once the order is claimed by this waiter, so an
+        // unclaimed order shows just the "Preia comanda" button (no clutter).
+        let act = '';
+        if (mine) {
+            if (c.status === 'plata_aleasa') act = `<button class="btn btn-elibereaza" onclick="elibereaza(${c.masa_id})">✓ Eliberează masa</button>`;
+            else if (toateLivrate) act = `<div class="servite">✅ Toate servite — așteaptă nota</div>`;
+            else if (c.status === 'noua' && areNoi) act = `<button class="btn btn-pregatire" onclick="status(${c.id},'in_pregatire')">În pregătire</button><button class="btn btn-servita" onclick="serveste(${c.id})">Servește tot</button>`;
+            else if (c.status === 'in_pregatire' && areNoi) act = `<button class="btn btn-servita" onclick="serveste(${c.id})">Servește tot</button>`;
+        } else if (c.status === 'plata_aleasa' && !preluat) {
+            // Edge: order reached payment but nobody holds it — still allow releasing the table.
+            act = `<button class="btn btn-elibereaza" onclick="elibereaza(${c.masa_id})">✓ Eliberează masa</button>`;
+        }
+
+        const banner = c.status==='plata_aleasa' ? `<div class="banner ${c.metoda_plata}">${c.metoda_plata==='cash'?'💵 Clientul plătește CASH':'💳 Clientul plătește CARD'}</div>` : '';
+
+        return `<div class="card ${c.status}${alertaCard?' alerta-card':''}">
+            <div class="ch">
+                <div><div class="masa">${escHtml(c.masa_nume)} <span class="nr">#${c.nr_ordine_zi||'—'}</span></div><div class="ora">${fmtOra(c.created_at)}</div>${badge}</div>
+                <span class="status ${c.status}">${c.status==='plata_aleasa'?(c.metoda_plata==='cash'?'💵':'💳'):(c.status==='noua'?'NOUĂ':'PREGĂTIRE')}</span>
+            </div>
+            ${banner}
+            <ul class="produse">${produse}</ul>
+            <div class="total">Total: ${total.toFixed(2)} lei</div>
+            <div class="actiuni">${claim}${act}</div>
+        </div>`;
+    }).join('');
+}
+
+// Live countdowns + alerts
+function tick(){
+    let reRender = false;
+    document.querySelectorAll('.badge.rezervat[data-exp]').forEach(el => {
+        const rem = (Number(el.dataset.exp)-Date.now())/1000;
+        if (rem<=0){ reRender=true; return; }
+        const cd=el.querySelector('.cd'); if(cd) cd.textContent=fmtMMSS(rem);
+    });
+    document.querySelectorAll('.badge[data-myexp]').forEach(el => {
+        const rem = (Number(el.dataset.myexp)-Date.now())/1000;
+        const cid = el.dataset.cid;
+        if (rem<=0){ reRender=true; return; }
+        const cd=el.querySelector('.cd'); if(cd) cd.textContent=fmtMMSS(rem);
+        if (rem<=ALERTA_SEC){
+            if (!el.classList.contains('alerta')) reRender=true;
+            if (cid && !alertate.has(cid)){
+                alertate.add(cid);
+                beep();
+                toast(`⏰ Îți scapă comanda la ${el.dataset.masa||''}!`);
+            }
+        }
+    });
+    if (reRender && comenziToate.length) render();
+}
+setInterval(tick, 1000);
+
+// ── Data ──
+async function incarca(){
+    try {
+        const r = await fetch('/api/admin/comenzi');
+        if (r.status === 401){ location.href='/ospatar/login.html'; return; }
+        const d = await r.json();
+        if (!d.ok) return;
+        // New-order alert (skip the very first load).
+        const nou = d.comenzi.find(c => c.status==='noua' && !cunoscute.has(c.id));
+        if (nou && !primaIncarcare){ beep(); toast(`🔔 Comandă nouă — ${nou.masa_nume}`); }
+        d.comenzi.forEach(c => cunoscute.add(c.id));
+        comenziToate = d.comenzi;
+        comenziFetchedAt = Date.now();
+        primaIncarcare = false;
+        render();
+        document.getElementById('liveTxt').textContent = new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    } catch(e){
+        document.getElementById('liveTxt').textContent = 'offline';
+    }
+}
+
+async function post(url, body){
+    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const d = await r.json().catch(()=>({}));
+    if (!r.ok && d.msg) toast(d.msg);
+    return d;
+}
+async function preia(id){ await post('/api/admin/preia_comanda', {comanda_id:id}); incarca(); }
+async function renunta(id){ await post('/api/admin/renunta_comanda', {comanda_id:id}); incarca(); }
+async function status(id, s){ await post('/api/admin/schimba_status', {comanda_id:id, status:s}); incarca(); }
+async function livreazaProdus(pid){ await post('/api/admin/livreaza_produs', {comanda_produs_id:pid}); incarca(); }
+async function serveste(id){ await post('/api/admin/livreaza_toate', {comanda_id:id}); incarca(); }
+async function elibereaza(masaId){ if(!confirm('Eliberezi masa? Comanda curentă va fi arhivată.'))return; await post('/api/admin/elibereaza_masa', {masa_id:masaId}); incarca(); }
+
+async function logout(){
+    try {
+        const reg = await navigator.serviceWorker.getRegistration('/ospatar/');
+        const sub = reg && await reg.pushManager.getSubscription();
+        if (sub) await fetch('/api/admin/push_unsubscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ endpoint: sub.endpoint }) });
+    } catch(e){}
+    // Native app: stop this device's FCM token from receiving the old waiter's pushes.
+    try {
+        if (nativeFcmToken) await fetch('/api/admin/fcm_unsubscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: nativeFcmToken }) });
+    } catch(e){}
+    fetch('/api/admin/logout',{method:'POST'}).finally(()=>location.href='/ospatar/login.html');
+}
+
+// Keep the sticky filter bar below the header.
+function setHdr(){ document.documentElement.style.setProperty('--hdr', document.getElementById('top').offsetHeight + 'px'); }
+
+
+// ── Boot ──
+fetch('/api/admin/me').then(r => { if(!r.ok){ location.href='/ospatar/login.html'; return null; } return r.json(); }).then(d => {
+    if (!d) return;
+    if (d.role !== 'ospatar'){ location.href = '/admin/index.html'; return; }  // owners → admin panel
+    ospatarId = d.ospatar_id || null;
+    masaDefaultId = d.masa_default_id || null;
+    escalareSec = Number(d.escalare_sec) || 120;
+    restNume = d.restaurant_nume || 'Tablerino';   // restaurant name
+    ospNume = d.nume || 'Ospătar';                  // for a waiter, /me.nume is their own name
+    document.getElementById('restNume').textContent = restNume;
+    document.getElementById('ospNume').textContent = d.masa_default_nume ? (ospNume + ' · ' + d.masa_default_nume) : ospNume;
+    setHdr();
+    try { if (localStorage.getItem('sunetOk')==='1') sunetOk = true; } catch(e){}
+    if (isNativeApp()) {
+        // Native app: register notifications automatically (FCM), no install button.
+        registerPush();
+        trySendFcmToken();
+        if (!sunetOk) document.getElementById('enableSound').style.display = 'block';
+    } else {
+        const pushGranted = ('Notification' in window) && Notification.permission === 'granted';
+        if (pushGranted) registerPush();  // refresh the server-side subscription silently
+        if (!sunetOk || !pushGranted) document.getElementById('enableSound').style.display = 'block';
+    }
+    incarca();
+    // Keep active orders fresh (and new-order alerts live) even while viewing history;
+    // refresh the history list too when that tab is open.
+    setInterval(() => { incarca(); if (filtru === 'istoric') incarcaIstoric(); }, 5000);
+});
+window.addEventListener('resize', setHdr);
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/ospatar/sw.js').catch(() => {});
+</script>
+</body>
+</html>

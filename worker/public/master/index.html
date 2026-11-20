@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16.png">
+<link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablerino Master</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #0f0f1a; color: #e0e0e0; min-height: 100vh; }
+
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #1a1a2e; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; }
+.sidebar .logo { color: #fff; font-size: 18px; font-weight: 700; margin-bottom: 4px; padding: 0 8px; }
+.sidebar .badge { display: inline-block; background: #6c47ff; color: #fff; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; margin-left: 6px; letter-spacing: .5px; }
+.sidebar .sub { color: #555; font-size: 11px; padding: 0 8px; margin-bottom: 20px; }
+.sidebar a { color: #aaa; text-decoration: none; padding: 10px 12px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; transition: background .15s, color .15s; }
+.sidebar a:hover, .sidebar a.activ { background: #6c47ff; color: #fff; }
+.sidebar .logout { margin-top: auto; }
+
+.main { margin-left: 220px; padding: 32px; }
+.main h2 { font-size: 20px; margin-bottom: 6px; color: #fff; }
+.main p.sub { color: #666; font-size: 13px; margin-bottom: 28px; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; margin-bottom: 32px; }
+.stat-card { background: #1a1a2e; border-radius: 12px; padding: 18px 20px; border: 1px solid #2a2a3e; }
+.stat-card .val { font-size: 28px; font-weight: 800; color: #6c47ff; }
+.stat-card .val.verde { color: #10b981; }
+.stat-card .val.alb { color: #fff; }
+.stat-card .lbl { font-size: 12px; color: #666; margin-top: 4px; }
+
+.toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.toolbar h3 { font-size: 16px; color: #fff; }
+.btn-add { padding: 9px 18px; background: #6c47ff; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-add:hover { background: #5a38e0; }
+
+.tabel-wrap { background: #1a1a2e; border-radius: 12px; overflow: hidden; border: 1px solid #2a2a3e; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 12px 16px; font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #2a2a3e; }
+td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid #1f1f2e; color: #ccc; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(108,71,255,0.05); }
+
+.badge-activ { background: rgba(16,185,129,0.15); color: #10b981; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.badge-inactiv { background: rgba(239,68,68,0.15); color: #ef4444; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+
+.btn-sm { padding: 5px 12px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-edit { background: #2a2a3e; color: #aaa; }
+.btn-edit:hover { background: #6c47ff; color: #fff; }
+.btn-toggle-on { background: rgba(239,68,68,0.15); color: #ef4444; }
+.btn-toggle-on:hover { background: rgba(239,68,68,0.3); }
+.btn-toggle-off { background: rgba(16,185,129,0.15); color: #10b981; }
+.btn-toggle-off:hover { background: rgba(16,185,129,0.3); }
+.btn-vezi { background: rgba(108,71,255,0.15); color: #a78bfa; }
+.btn-vezi:hover { background: rgba(108,71,255,0.3); }
+
+.td-actiuni { display: flex; gap: 6px; }
+.td-num { font-weight: 700; color: #fff; }
+.td-muted { color: #555; font-size: 12px; }
+
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center; }
+.overlay.open { display: flex; }
+.modal { background: #1a1a2e; border-radius: 14px; padding: 28px; width: 100%; max-width: 440px; border: 1px solid #2a2a3e; }
+.modal h3 { font-size: 17px; color: #fff; margin-bottom: 20px; }
+.modal label { display: block; font-size: 12px; font-weight: 600; color: #666; margin-bottom: 6px; }
+.modal input, .modal select { width: 100%; padding: 10px 12px; border: 1px solid #2a2a3e; border-radius: 8px; font-size: 14px; margin-bottom: 14px; outline: none; background: #0f0f1a; color: #fff; }
+.modal input:focus, .modal select:focus { border-color: #6c47ff; }
+.modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+.btn-cancel { padding: 10px 18px; border: 1px solid #2a2a3e; background: transparent; color: #aaa; border-radius: 8px; cursor: pointer; font-size: 14px; }
+.btn-save { padding: 10px 18px; background: #6c47ff; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.modal-note { font-size: 11px; color: #555; margin-bottom: 14px; margin-top: -8px; }
+.gol { text-align: center; color: #444; padding: 40px; font-size: 14px; }
+
+/* ───────── Mobile ───────── */
+@media (max-width: 860px) {
+    .sidebar {
+        position: sticky; top: 0; left: 0; right: 0; width: 100%; height: auto;
+        flex-direction: row; flex-wrap: wrap; align-items: center;
+        padding: 10px 12px; gap: 4px 8px; z-index: 100; border-bottom: 1px solid #2a2a3e;
+    }
+    .sidebar .logo { font-size: 16px; margin-bottom: 0; }
+    .sidebar .sub { display: none; }
+    .sidebar a { padding: 7px 10px; font-size: 13px; }
+    .sidebar .logout { margin-top: 0; margin-left: auto; }
+    .main { margin-left: 0; padding: 18px 12px 60px; }
+    .main h2 { font-size: 18px; }
+    .stats-grid { grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px; margin-bottom: 24px; }
+    .stat-card { padding: 14px 15px; }
+    .stat-card .val { font-size: 22px; }
+    .toolbar { flex-wrap: wrap; gap: 10px; }
+
+    /* table → cards */
+    .tabel-wrap { background: transparent; border: none; border-radius: 0; overflow: visible; }
+    table, thead, tbody, tr, td { display: block; width: 100%; }
+    thead { display: none; }
+    tr { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; margin-bottom: 12px; padding: 4px 0 10px; }
+    tr:hover td { background: transparent; }
+    td { border: none; padding: 5px 15px; font-size: 13.5px; color: #ccc; }
+    td[data-label]::before { content: attr(data-label) ": "; color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+    td:first-child { padding: 12px 15px 8px; border-bottom: 1px solid #22222f; margin-bottom: 4px; }
+    .td-actiuni { flex-wrap: wrap; gap: 7px; margin-top: 4px; }
+    .td-actiuni .btn-sm { padding: 8px 13px; font-size: 12.5px; }
+    .gol { padding: 24px; }
+    .overlay { padding: 16px; }
+    .modal { padding: 22px 20px; max-height: 90vh; overflow-y: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="logo">🍽️ Tablerino <span class="badge">MASTER</span></div>
+    <div class="sub">Panou platformă</div>
+    <a href="/master/index.html" class="activ">🏢 Restaurante</a>
+    <a href="/master/cereri.html" id="linkCereri">📋 Cereri înregistrare</a>
+    <a href="/master/landing.html">🌐 Landing Page</a>
+    <a href="#" class="logout" onclick="logout(event)">🚪 Ieșire</a>
+</div>
+
+<div class="main">
+    <h2>Panou Master</h2>
+    <p class="sub">Vizualizare și administrare toate restaurantele din platformă.</p>
+
+    <div id="portalCard" style="background:#1f1b2e;border:1px solid #2a2a3e;border-radius:14px;padding:18px 20px;margin-bottom:22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="flex:1;min-width:260px">
+            <div style="font-size:15px;font-weight:700;color:#e2c48a">🌍 Portal public pentru clienți</div>
+            <div style="font-size:13px;color:#999;margin-top:4px">Când e PORNIT, pagina principală (tablerino.ro) devine portalul unde clienții descoperă restaurante și rezervă. Când e OPRIT, se afișează landing-ul pentru restaurante (recomandat până ai suficiente restaurante pe platformă).</div>
+            <div id="portalStare" style="font-size:13px;margin-top:6px;font-weight:600"></div>
+        </div>
+        <button id="portalBtn" class="btn-add" onclick="togglePortal()" style="min-width:150px">...</button>
+    </div>
+
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="val alb">—</div><div class="lbl">Total restaurante</div></div>
+        <div class="stat-card"><div class="val verde">—</div><div class="lbl">Active</div></div>
+        <div class="stat-card"><div class="val">—</div><div class="lbl">Comenzi azi (toate)</div></div>
+        <div class="stat-card"><div class="val verde">—</div><div class="lbl">Vânzări azi (toate)</div></div>
+    </div>
+
+    <div class="toolbar">
+        <h3>Restaurante</h3>
+        <button class="btn-add" onclick="deschideModalAdauga()">+ Restaurant nou</button>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+        <input type="text" id="cauta" oninput="aplicaFiltre()" placeholder="🔍 Caută după nume sau email" style="flex:1;min-width:220px;padding:10px 14px;border:1px solid #2a2a3e;border-radius:8px;background:#0f0f1a;color:#fff;font-size:14px;outline:none">
+        <select id="filtruStatus" onchange="aplicaFiltre()" style="padding:10px 14px;border:1px solid #2a2a3e;border-radius:8px;background:#0f0f1a;color:#fff;font-size:14px;outline:none">
+            <option value="toate">Toate</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="expirate">Abonament expirat</option>
+        </select>
+        <span id="filtruCount" style="font-size:13px;color:#666"></span>
+    </div>
+
+    <div class="tabel-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Restaurant</th>
+                    <th>Email</th>
+                    <th>Mese</th>
+                    <th>Comenzi azi</th>
+                    <th>Vânzări azi</th>
+                    <th>Status</th>
+                    <th>Acțiuni</th>
+                </tr>
+            </thead>
+            <tbody id="tabelBody">
+                <tr><td colspan="7" class="gol">Se încarcă...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal adaugă/editează -->
+<div class="overlay" id="overlay">
+    <div class="modal">
+        <h3 id="modalTitlu">Restaurant nou</h3>
+        <input type="hidden" id="mId">
+        <label>Nume restaurant</label>
+        <input type="text" id="mNume" placeholder="Ex: La Mama">
+        <label>Tip (servicii)</label>
+        <select id="mTip">
+            <option value="normal">🍽️ Restaurant normal (comandă la masă)</option>
+            <option value="evenimente">🎉 Săli de evenimente</option>
+            <option value="ambele">✨ Ambele</option>
+            <option value="">— nespecificat —</option>
+        </select>
+        <label>Temă (aspect vizual)</label>
+        <select id="mTema">
+            <option value="italian">🍕 Italian</option>
+            <option value="asian">🍣 Asian</option>
+            <option value="fastfood">🍔 Fast Food</option>
+            <option value="finedining">🥂 Fine Dining</option>
+            <option value="streetfood">🌮 Street Food</option>
+            <option value="cafe">☕ Cafe &amp; Bistro</option>
+            <option value="grecesc">🫒 Grecesc</option>
+            <option value="romanesc">🥩 Românesc</option>
+        </select>
+        <label>Email (folosit la login)</label>
+        <input type="email" id="mEmail">
+        <label>Telefon (opțional)</label>
+        <input type="text" id="mTel">
+        <label>Parolă</label>
+        <input type="password" id="mParola" placeholder="Minim 6 caractere">
+        <p class="modal-note" id="modalNote"></p>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="inchideModal()">Anulează</button>
+            <button class="btn-save" onclick="salveaza()">Salvează</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal abonament -->
+<div class="overlay" id="overlayAbonament">
+    <div class="modal">
+        <h3 id="abTitlu">Abonament</h3>
+        <input type="hidden" id="abId">
+        <label>Status abonament</label>
+        <select id="abStatus">
+            <option value="activ">Activ</option>
+            <option value="trial">Trial (perioadă de probă)</option>
+            <option value="expirat">Expirat</option>
+            <option value="anulat">Anulat</option>
+        </select>
+        <label>Preț lunar (€) — gol = standard 100€</label>
+        <input type="number" id="abPret" min="0" step="1" placeholder="100">
+        <label>Expiră / următoarea plată (opțional)</label>
+        <input type="date" id="abExpira">
+        <p class="modal-note" id="abNote"></p>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="inchideAbonament()">Anulează</button>
+            <button class="btn-save" onclick="salveazaAbonament()">Salvează</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function logout(e) {
+    if (e) e.preventDefault();
+    fetch('/api/master/logout', { method: 'POST' }).finally(function () {
+        location.href = '/master/login.html';
+    });
+}
+
+async function incarcaStats() {
+    const r = await fetch('/api/master/statistici');
+    const d = await r.json();
+    if (!d.ok) return;
+    const s = d.stats;
+    document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card"><div class="val alb">${s.total_restaurante}</div><div class="lbl">Total restaurante</div></div>
+        <div class="stat-card"><div class="val verde">${s.restaurante_active}</div><div class="lbl">Active</div></div>
+        <div class="stat-card"><div class="val">${s.comenzi_azi}</div><div class="lbl">Comenzi azi (toate)</div></div>
+        <div class="stat-card"><div class="val verde">${parseFloat(s.vanzari_azi).toFixed(2)} lei</div><div class="lbl">Vânzări azi (toate)</div></div>
+        <div class="stat-card"><div class="val alb">${s.total_comenzi_all}</div><div class="lbl">Total comenzi (all time)</div></div>
+        <div class="stat-card"><div class="val" style="color:#c9a66b">${parseFloat(s.venit_lunar||0).toFixed(0)} €/lună</div><div class="lbl">Venit lunar (abonamente)</div></div>
+        ${s.abonamente_expirate > 0 ? `<div class="stat-card" style="border-color:#e53e3e"><div class="val" style="color:#e53e3e">${s.abonamente_expirate}</div><div class="lbl">Abonamente expirate</div></div>` : ''}
+        ${s.cereri_pending > 0 ? `<div class="stat-card" style="border-color:#e53e3e"><div class="val" style="color:#e53e3e">${s.cereri_pending}</div><div class="lbl">⏳ Cereri în așteptare</div></div>` : ''}
+    `;
+    // Badge pe link cereri
+    const linkCereri = document.getElementById('linkCereri');
+    if (linkCereri && s.cereri_pending > 0) {
+        linkCereri.innerHTML = `📋 Cereri înregistrare <span style="background:#e53e3e;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:4px">${s.cereri_pending}</span>`;
+    }
+}
+
+let toateRestaurantele = [];
+async function incarcaRestaurante() {
+    const r = await fetch('/api/master/restaurante');
+    const d = await r.json();
+    toateRestaurantele = d.restaurante || [];
+    aplicaFiltre();
+}
+function aplicaFiltre() {
+    const q = (document.getElementById('cauta').value || '').trim().toLowerCase();
+    const st = document.getElementById('filtruStatus').value;
+    const azi = new Date().toISOString().slice(0, 10);
+    const list = toateRestaurantele.filter(r => {
+        if (q && !((r.nume || '').toLowerCase().includes(q) || (r.email || '').toLowerCase().includes(q))) return false;
+        if (st === 'active' && r.activ != 1) return false;
+        if (st === 'inactive' && r.activ == 1) return false;
+        if (st === 'expirate' && !(r.abonament_status === 'expirat' || r.abonament_status === 'anulat' || (r.abonament_expira && r.abonament_expira < azi))) return false;
+        return true;
+    });
+    const cnt = document.getElementById('filtruCount');
+    if (cnt) cnt.textContent = list.length + ' din ' + toateRestaurantele.length;
+    const body = document.getElementById('tabelBody');
+    if (!list.length) { body.innerHTML = '<tr><td colspan="7" class="gol">Niciun restaurant găsit.</td></tr>'; return; }
+    body.innerHTML = list.map(r => `
+        <tr>
+            <td>
+                <div class="td-num">${r.nume}</div>
+                <div class="td-muted">ID #${r.id} · ${r.tema || 'italian'}</div>
+                ${(r.rezervari_publice || r.evenimente_publice) ? `<div style="margin-top:5px">${tipServChip(r)}</div>` : ''}
+            </td>
+            <td data-label="Email">${r.email}</td>
+            <td data-label="Mese">${r.nr_mese}</td>
+            <td data-label="Comenzi azi">${r.comenzi_azi}</td>
+            <td data-label="Vânzări azi">${parseFloat(r.vanzari_azi).toFixed(2)} lei</td>
+            <td data-label="Status">
+                <span class="${r.activ == 1 ? 'badge-activ' : 'badge-inactiv'}">${r.activ == 1 ? 'Activ' : 'Inactiv'}</span>
+                <div style="margin-top:6px">${abonamentBadge(r)}</div>
+            </td>
+            <td>
+                <div class="td-actiuni">
+                    <button class="btn-sm" onclick="gestioneaza(${r.id})" style="background:rgba(108,71,255,0.28);color:#c4b5fd;font-weight:700">⚙️ Gestionează</button>
+                    <button class="btn-sm btn-vezi" onclick="window.open('/master/comenzi.html?id=${r.id}','_blank')">Comenzi</button>
+                    <button class="btn-sm btn-vezi" onclick="window.open('/master/meniu.html?id=${r.id}','_blank')" style="background:rgba(16,185,129,0.15);color:#10b981">Meniu</button>
+                    <button class="btn-sm btn-edit" onclick="deschideModalEditare(${r.id},'${r.nume.replace(/'/g,"\\'")}','${r.email}','${r.telefon||''}','${r.tema||'italian'}',${r.rezervari_publice?1:0},${r.evenimente_publice?1:0})">Editează</button>
+                    <button class="btn-sm ${r.activ == 1 ? 'btn-toggle-on' : 'btn-toggle-off'}" onclick="toggleActiv(${r.id})">${r.activ == 1 ? 'Dezactivează' : 'Activează'}</button>
+                    <button class="btn-sm" onclick="togglePromovat(${r.id})" style="background:${r.promovat == 1 ? 'rgba(201,166,107,0.3)' : 'rgba(255,255,255,0.08)'};color:${r.promovat == 1 ? '#e2c48a' : '#888'}">${r.promovat == 1 ? '★ Promovat' : '☆ Promovează'}</button>
+                    <button class="btn-sm" onclick="deschideAbonament(${r.id},'${r.nume.replace(/'/g,"\\'")}','${r.abonament_status||'activ'}',${r.abonament_pret==null?'null':r.abonament_pret},'${r.abonament_expira||''}')" style="background:rgba(201,166,107,0.15);color:#c9a66b">💳 Abonament</button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function deschideModalAdauga() {
+    document.getElementById('modalTitlu').textContent = 'Restaurant nou';
+    document.getElementById('mId').value = '';
+    document.getElementById('mNume').value = '';
+    document.getElementById('mTip').value = 'normal';
+    document.getElementById('mTema').value = 'italian';
+    document.getElementById('mEmail').value = '';
+    document.getElementById('mTel').value = '';
+    document.getElementById('mParola').value = '';
+    document.getElementById('mParola').placeholder = 'Minim 6 caractere';
+    document.getElementById('modalNote').textContent = '';
+    document.getElementById('overlay').classList.add('open');
+}
+
+function deschideModalEditare(id, nume, email, tel, tema, rezPub, evPub) {
+    document.getElementById('modalTitlu').textContent = 'Editează restaurant';
+    document.getElementById('mId').value = id;
+    document.getElementById('mNume').value = nume;
+    const tip = (rezPub && evPub) ? 'ambele' : (evPub ? 'evenimente' : (rezPub ? 'normal' : ''));
+    document.getElementById('mTip').value = tip;
+    document.getElementById('mTema').value = tema || 'italian';
+    document.getElementById('mEmail').value = email;
+    document.getElementById('mTel').value = tel;
+    document.getElementById('mParola').value = '';
+    document.getElementById('mParola').placeholder = 'Lasă gol pentru a păstra parola actuală';
+    document.getElementById('modalNote').textContent = 'Parola se schimbă doar dacă completezi câmpul de mai sus.';
+    document.getElementById('overlay').classList.add('open');
+}
+
+function inchideModal() {
+    document.getElementById('overlay').classList.remove('open');
+}
+
+function tipServChip(r) {
+    const chips = [];
+    if (r.rezervari_publice) chips.push('<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(108,71,255,0.15);color:#a78bfa">🍽️ Normal</span>');
+    if (r.evenimente_publice) chips.push('<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(201,166,107,0.18);color:#e2c48a">🎉 Evenimente</span>');
+    return chips.join(' ');
+}
+
+// ---- Abonament ----
+function abonamentBadge(r) {
+    const st = r.abonament_status || 'activ';
+    const pret = (r.abonament_pret == null ? 100 : r.abonament_pret);
+    const map = {
+        activ:   ['#10b981', 'Activ'],
+        trial:   ['#c9a66b', 'Trial'],
+        expirat: ['#e53e3e', 'Expirat'],
+        anulat:  ['#888',    'Anulat'],
+    };
+    const [col, txt] = map[st] || map.activ;
+    let exp = '';
+    if (r.abonament_expira) {
+        const d = new Date(r.abonament_expira + 'T00:00:00');
+        const azi = new Date(); azi.setHours(0,0,0,0);
+        const zile = Math.round((d - azi) / 86400000);
+        const warn = zile < 7;
+        exp = ` · <span style="color:${warn ? '#e53e3e' : '#999'}">${r.abonament_expira}${zile < 0 ? ' (depășit)' : zile <= 7 ? ' ('+zile+'z)' : ''}</span>`;
+    }
+    return `<span style="display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:${col}22;color:${col}">${txt}</span>` +
+           `<span style="font-size:11px;color:#888"> ${pret}€${exp}</span>`;
+}
+
+function deschideAbonament(id, nume, status, pret, expira) {
+    document.getElementById('abTitlu').textContent = 'Abonament · ' + nume;
+    document.getElementById('abId').value = id;
+    document.getElementById('abStatus').value = status || 'activ';
+    document.getElementById('abPret').value = (pret == null ? '' : pret);
+    document.getElementById('abExpira').value = expira || '';
+    document.getElementById('abNote').textContent = '';
+    document.getElementById('overlayAbonament').classList.add('open');
+}
+
+function inchideAbonament() {
+    document.getElementById('overlayAbonament').classList.remove('open');
+}
+
+async function salveazaAbonament() {
+    const id     = document.getElementById('abId').value;
+    const status = document.getElementById('abStatus').value;
+    const pretRaw = document.getElementById('abPret').value.trim();
+    const expira = document.getElementById('abExpira').value;
+    const note   = document.getElementById('abNote');
+    note.textContent = 'Se salvează...';
+    const r = await fetch('/api/master/set_abonament', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: parseInt(id)||0, status, pret: pretRaw, expira })
+    });
+    const d = await r.json();
+    if (d.ok) {
+        inchideAbonament();
+        incarcaRestaurante();
+        incarcaStats();
+    } else {
+        note.textContent = 'Eroare la salvare.';
+    }
+}
+
+async function salveaza() {
+    const id     = document.getElementById('mId').value;
+    const nume   = document.getElementById('mNume').value.trim();
+    const tema   = document.getElementById('mTema').value;
+    const tip    = document.getElementById('mTip').value;
+    const email  = document.getElementById('mEmail').value.trim();
+    const tel    = document.getElementById('mTel').value.trim();
+    const parola = document.getElementById('mParola').value;
+
+    if (!nume || !email) { alert('Completează numele și emailul.'); return; }
+
+    const actiune = id ? 'editeaza_restaurant' : 'adauga_restaurant';
+    const body = { actiune, id: parseInt(id)||0, nume, tema, email, telefon: tel, parola };
+    if (tip) body.tip = tip;
+
+    const r = await fetch('/api/master/' + actiune, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (d.ok) {
+        inchideModal();
+        incarcaRestaurante();
+        incarcaStats();
+    } else {
+        alert(d.msg || 'Eroare la salvare');
+    }
+}
+
+async function toggleActiv(id) {
+    await fetch('/api/master/toggle_activ', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actiune: 'toggle_activ', id })
+    });
+    incarcaRestaurante();
+    incarcaStats();
+}
+
+// Open a restaurant's admin panel as its owner (no password needed).
+async function gestioneaza(id) {
+    try {
+        const r = await fetch('/api/master/gestioneaza', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (d.ok) window.open(d.cale || '/admin/index.html', '_blank');
+        else alert(d.msg || 'Nu am putut deschide panoul restaurantului.');
+    } catch (e) { alert('Eroare de conexiune.'); }
+}
+
+async function togglePromovat(id) {
+    await fetch('/api/master/toggle_promovat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id })
+    });
+    incarcaRestaurante();
+}
+
+function afiseazaPortal(on) {
+    document.getElementById('portalStare').innerHTML = on
+        ? '<span style="color:#10b981">● PORNIT</span> — pagina principală afișează portalul pentru clienți.'
+        : '<span style="color:#ef4444">● OPRIT</span> — pagina principală afișează landing-ul pentru restaurante.';
+    const btn = document.getElementById('portalBtn');
+    btn.textContent = on ? 'Oprește portalul' : 'Pornește portalul';
+    btn.style.background = on ? '#ef4444' : '#10b981';
+    btn.dataset.on = on ? '1' : '0';
+}
+async function incarcaPortal() {
+    try {
+        const d = await fetch('/api/master/portal_setari').then(r => r.json());
+        afiseazaPortal(!!d.portal_activ);
+    } catch (e) {}
+}
+async function togglePortal() {
+    const on = document.getElementById('portalBtn').dataset.on === '1';
+    if (!on && !confirm('Pornești portalul public? Pagina principală va deveni portalul pentru clienți. Asigură-te că ai restaurante cu rezervări publice active.')) return;
+    try {
+        const d = await fetch('/api/master/toggle_portal', { method: 'POST' }).then(r => r.json());
+        afiseazaPortal(!!d.portal_activ);
+    } catch (e) {}
+}
+
+fetch('/api/master/me').then(function (r) {
+    if (!r.ok) { location.href = '/master/login.html'; return; }
+    incarcaStats();
+    incarcaRestaurante();
+    incarcaPortal();
+    setInterval(function () { incarcaStats(); incarcaRestaurante(); }, 30000);
+});
+</script>
+</body>
+</html>

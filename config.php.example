@@ -1,0 +1,83 @@
+<?php
+define('PLATFORM_NAME', 'Tablerino');
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'tablerino');
+define('DB_USER', 'tablerino');
+define('DB_PASS', 'CHANGE_ME_DB_PASSWORD');
+define('BASE_URL', 'https://tablerino.ro');
+define('GROQ_KEY', 'CHANGE_ME_GROQ_API_KEY');
+
+function db(): PDO {
+    static $pdo = null;
+    if ($pdo === null) {
+        $pdo = new PDO(
+            'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
+            DB_USER, DB_PASS,
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
+        );
+    }
+    return $pdo;
+}
+
+function jsonResponse(array $data, int $code = 200): void {
+    http_response_code($code);
+    header('Content-Type: application/json');
+    echo json_encode($data);
+    exit;
+}
+
+// === SISTEM TRADUCERI ===
+$GLOBALS['_lang'] = [];
+
+function initLang(string $limba = 'ro'): void {
+    $limba = in_array($limba, ['ro', 'en']) ? $limba : 'ro';
+    $file = __DIR__ . '/lang/' . $limba . '.php';
+    $GLOBALS['_lang'] = file_exists($file) ? require $file : [];
+    $GLOBALS['_limba_curenta'] = $limba;
+}
+
+function t(string $key, string $default = ''): string {
+    return $GLOBALS['_lang'][$key] ?? $default ?: $key;
+}
+
+function authRestaurant(): array {
+    session_start();
+    if (empty($_SESSION['restaurant_id'])) {
+        header('Location: /admin/login.php');
+        exit;
+    }
+    $rid = $_SESSION['restaurant_id'];
+    try {
+        $q = db()->prepare('SELECT tema, limba FROM restaurante WHERE id = ?');
+        $q->execute([$rid]);
+        $r = $q->fetch();
+    } catch (Exception $e) {
+        $q = db()->prepare('SELECT tema FROM restaurante WHERE id = ?');
+        $q->execute([$rid]);
+        $r = $q->fetch();
+        $r['limba'] = 'ro';
+    }
+    if (isset($_GET['lang']) && in_array($_GET['lang'], ['ro', 'en'])) {
+        $_SESSION['limba_' . $rid] = $_GET['lang'];
+        try {
+            db()->prepare('UPDATE restaurante SET limba = ? WHERE id = ?')->execute([$_GET['lang'], $rid]);
+        } catch (Exception $e) {}
+    }
+    $limba = $_SESSION['limba_' . $rid] ?? $r['limba'] ?? 'ro';
+    initLang($limba);
+    return [
+        'id'    => $rid,
+        'nume'  => $_SESSION['restaurant_nume'],
+        'tema'  => $r['tema'] ?? 'italian',
+        'limba' => $limba,
+    ];
+}
+
+function authMaster(): void {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    if (empty($_SESSION['master_auth'])) {
+        header('Location: /master/login.php');
+        exit;
+    }
+    initLang('ro');
+}

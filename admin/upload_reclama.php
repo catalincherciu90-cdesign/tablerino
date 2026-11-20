@@ -1,0 +1,24 @@
+<?php
+require_once __DIR__ . '/../config.php';
+$rest = authRestaurant();
+$rid = $rest['id'];
+header('Content-Type: application/json');
+$reclamaId = (int)($_POST['reclama_id'] ?? 0);
+if (!$reclamaId) jsonResponse(['ok' => false, 'msg' => 'ID lipsă'], 400);
+$q = db()->prepare('SELECT id, imagine FROM reclame WHERE id = ? AND restaurant_id = ?');
+$q->execute([$reclamaId, $rid]);
+$reclama = $q->fetch();
+if (!$reclama) jsonResponse(['ok' => false, 'msg' => 'Reclamă negăsită'], 404);
+if (empty($_FILES['imagine']) || $_FILES['imagine']['error'] !== UPLOAD_ERR_OK) jsonResponse(['ok' => false, 'msg' => 'Fișier invalid'], 400);
+$file = $_FILES['imagine'];
+$ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+if (!in_array($ext, ['jpg','jpeg','png','webp','gif'])) jsonResponse(['ok' => false, 'msg' => 'Format neacceptat'], 400);
+if ($file['size'] > 2 * 1024 * 1024) jsonResponse(['ok' => false, 'msg' => 'Maxim 2MB'], 400);
+if (!is_dir(__DIR__ . '/../uploads/reclame')) mkdir(__DIR__ . '/../uploads/reclame', 0755, true);
+if ($reclama['imagine'] && file_exists(__DIR__ . '/../' . $reclama['imagine'])) unlink(__DIR__ . '/../' . $reclama['imagine']);
+$numeFisier = 'reclama_' . $rid . '_' . $reclamaId . '_' . time() . '.' . $ext;
+$cale = 'uploads/reclame/' . $numeFisier;
+if (!move_uploaded_file($file['tmp_name'], __DIR__ . '/../' . $cale)) jsonResponse(['ok' => false, 'msg' => 'Eroare la salvare'], 500);
+$q = db()->prepare('UPDATE reclame SET imagine = ? WHERE id = ?');
+$q->execute([$cale, $reclamaId]);
+jsonResponse(['ok' => true, 'cale' => $cale]);
