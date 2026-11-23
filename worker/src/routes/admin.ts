@@ -4,6 +4,7 @@ import { all, one, run } from '../db';
 import {
   requireRestaurant,
   requireOwner,
+  requireRoles,
   loginRestaurant,
   logoutRestaurant,
   currentRestaurant,
@@ -38,17 +39,18 @@ admin.post('/login', async (c) => {
     return c.json({ ok: true, role: 'owner' });
   }
 
-  // Otherwise a waiter account (only if its restaurant is active).
-  const osp = await one<{ id: number; nume: string; parola: string; restaurant_id: number }>(
+  // Otherwise a staff account (waiter / kitchen / floor manager).
+  const osp = await one<{ id: number; nume: string; parola: string; restaurant_id: number; rol: string | null }>(
     c.env.DB,
-    `SELECT o.id, o.nume, o.parola, o.restaurant_id
+    `SELECT o.id, o.nume, o.parola, o.restaurant_id, o.rol
      FROM ospatari o JOIN restaurante r ON r.id = o.restaurant_id
      WHERE o.email = ? AND o.activ = 1 AND r.activ = 1`,
     email
   );
   if (osp && (await verifyPassword(parola, osp.parola))) {
-    await loginRestaurant(c, { rid: osp.restaurant_id, nume: osp.nume, role: 'ospatar', uid: osp.id });
-    return c.json({ ok: true, role: 'ospatar' });
+    const rol = (['ospatar', 'bucatarie', 'sef_sala'].includes(osp.rol ?? '') ? osp.rol : 'ospatar') as 'ospatar' | 'bucatarie' | 'sef_sala';
+    await loginRestaurant(c, { rid: osp.restaurant_id, nume: osp.nume, role: rol, uid: osp.id });
+    return c.json({ ok: true, role: rol });
   }
 
   return c.json({ ok: false, msg: 'Email sau parolă incorecte.' }, 401);
@@ -205,7 +207,7 @@ admin.get('/istoric_azi', async (c) => {
   return c.json({ ok: true, comenzi, nr: comenzi.length, total_zi: totalZi });
 });
 
-admin.get('/istoric', requireOwner, async (c) => {
+admin.get('/istoric', requireRoles('sef_sala'), async (c) => {
   const masaId = Number(c.req.query('masa_id') ?? 0);
   const data = c.req.query('data') ?? '';
   const page = Math.max(1, Number(c.req.query('page') ?? 1));
@@ -385,7 +387,7 @@ admin.post('/renunta_comanda', async (c) => {
 
 // Owner manually (re)assigns an order to a specific waiter, bypassing the
 // reservation window. ospatar_id = 0/empty clears the claim.
-admin.post('/atribuie_comanda', requireOwner, async (c) => {
+admin.post('/atribuie_comanda', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.comanda_id ?? 0);
   if (!id) return c.json({ ok: false }, 400);
@@ -619,7 +621,7 @@ function parseCapacitate(v: unknown): number | null {
   return n >= 1 && n <= 50 ? Math.floor(n) : null;
 }
 
-admin.post('/adauga_masa', requireOwner, async (c) => {
+admin.post('/adauga_masa', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const nume = (body.nume ?? '').trim();
   if (!nume) return c.json({ ok: false }, 400);
@@ -637,7 +639,7 @@ admin.post('/adauga_masa', requireOwner, async (c) => {
 });
 
 // Edit a table's name and/or capacity.
-admin.post('/editeaza_masa', requireOwner, async (c) => {
+admin.post('/editeaza_masa', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const mid = Number(body.masa_id ?? 0);
   const nume = (body.nume ?? '').trim();
@@ -651,7 +653,7 @@ admin.post('/editeaza_masa', requireOwner, async (c) => {
   return c.json({ ok: true });
 });
 
-admin.post('/sterge_masa', requireOwner, async (c) => {
+admin.post('/sterge_masa', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const mid = Number(body.masa_id ?? 0);
   await run(c.env.DB, 'DELETE FROM mese WHERE id = ? AND restaurant_id = ?', mid, rid(c));
@@ -660,7 +662,7 @@ admin.post('/sterge_masa', requireOwner, async (c) => {
 
 // Assign (or clear) the waiter responsible for a table. New orders at this table
 // are reserved for that waiter for ~2 min; after that any waiter may claim them.
-admin.post('/set_ospatar_masa', requireOwner, async (c) => {
+admin.post('/set_ospatar_masa', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const mid = Number(body.masa_id ?? 0);
   if (!mid) return c.json({ ok: false }, 400);
@@ -903,10 +905,10 @@ admin.get('/raport', requireOwner, async (c) => {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-admin.get('/ospatari', requireOwner, async (c) => {
+admin.get('/ospatari', requireRoles('sef_sala'), async (c) => {
   const ospatari = await all(
     c.env.DB,
-    `SELECT o.id, o.nume, o.email, o.activ, o.created_at, o.masa_default_id,
+    `SELECT o.id, o.nume, o.email, o.activ, o.created_at, o.masa_default_id, o.rol,
             m.nume AS masa_default_nume
      FROM ospatari o LEFT JOIN mese m ON m.id = o.masa_default_id
      WHERE o.restaurant_id = ? ORDER BY o.id`,
@@ -917,7 +919,7 @@ admin.get('/ospatari', requireOwner, async (c) => {
 
 // Per-waiter stats for today: how many orders each claimed and the average
 // time-to-claim (seconds between an order being placed and claimed).
-admin.get('/statistici_ospatari', requireOwner, async (c) => {
+admin.get('/statistici_ospatari', requireRoles('sef_sala'), async (c) => {
   const statistici = await all(
     c.env.DB,
     `SELECT o.id, o.nume,
@@ -962,7 +964,7 @@ async function masaIncape(
 }
 
 // Set/clear a waiter's default table.
-admin.post('/set_masa_ospatar', requireOwner, async (c) => {
+admin.post('/set_masa_ospatar', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.id ?? 0);
   const masaId = await validMasaId(c, body.masa_default_id);
@@ -970,7 +972,7 @@ admin.post('/set_masa_ospatar', requireOwner, async (c) => {
   return c.json({ ok: true, masa_default_id: masaId });
 });
 
-admin.post('/adauga_ospatar', requireOwner, async (c) => {
+admin.post('/adauga_ospatar', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const nume = (body.nume ?? '').trim();
   const email = (body.email ?? '').trim().toLowerCase();
@@ -979,7 +981,12 @@ admin.post('/adauga_ospatar', requireOwner, async (c) => {
   if (!EMAIL_RE.test(email)) return c.json({ ok: false, msg: 'Email invalid' }, 400);
   if (parola.length < 6) return c.json({ ok: false, msg: 'Parola trebuie să aibă minim 6 caractere' }, 400);
 
-  // Email must not collide with a restaurant or another waiter (login is by email).
+  // Role: owner may create any staff role; a șef de sală may only create ospatar/bucatarie.
+  const sess = c.get('restaurant');
+  let rol = (['ospatar', 'bucatarie', 'sef_sala'].includes(body.rol) ? body.rol : 'ospatar') as string;
+  if (sess?.role !== 'owner' && rol === 'sef_sala') rol = 'ospatar';
+
+  // Email must not collide with a restaurant or another staff account (login is by email).
   const dupR = await one(c.env.DB, 'SELECT id FROM restaurante WHERE email = ?', email);
   const dupO = await one(c.env.DB, 'SELECT id FROM ospatari WHERE email = ?', email);
   if (dupR || dupO) return c.json({ ok: false, msg: 'Există deja un cont cu acest email' }, 400);
@@ -988,24 +995,25 @@ admin.post('/adauga_ospatar', requireOwner, async (c) => {
   const hash = await hashPassword(parola);
   const res = await run(
     c.env.DB,
-    'INSERT INTO ospatari (restaurant_id, nume, email, parola, masa_default_id) VALUES (?, ?, ?, ?, ?)',
+    'INSERT INTO ospatari (restaurant_id, nume, email, parola, masa_default_id, rol) VALUES (?, ?, ?, ?, ?, ?)',
     rid(c),
     nume,
     email,
     hash,
-    masaId
+    masaId,
+    rol
   );
   return c.json({ ok: true, id: res.meta.last_row_id });
 });
 
-admin.post('/toggle_ospatar', requireOwner, async (c) => {
+admin.post('/toggle_ospatar', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.id ?? 0);
   await run(c.env.DB, 'UPDATE ospatari SET activ = 1 - activ WHERE id = ? AND restaurant_id = ?', id, rid(c));
   return c.json({ ok: true });
 });
 
-admin.post('/reset_parola_ospatar', requireOwner, async (c) => {
+admin.post('/reset_parola_ospatar', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.id ?? 0);
   const parola = body.parola ?? '';
@@ -1015,7 +1023,7 @@ admin.post('/reset_parola_ospatar', requireOwner, async (c) => {
   return c.json({ ok: true });
 });
 
-admin.post('/sterge_ospatar', requireOwner, async (c) => {
+admin.post('/sterge_ospatar', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.id ?? 0);
   await run(c.env.DB, 'DELETE FROM ospatari WHERE id = ? AND restaurant_id = ?', id, rid(c));
@@ -1027,7 +1035,7 @@ admin.post('/sterge_ospatar', requireOwner, async (c) => {
 const REZ_STATUSES = ['noua', 'confirmata', 'anulata', 'onorata', 'no_show'];
 
 // Public reservation link for this restaurant (lazily generates the token).
-admin.get('/rezervare_link', requireOwner, async (c) => {
+admin.get('/rezervare_link', requireRoles('sef_sala'), async (c) => {
   const row = await one<{ rezervare_token: string | null }>(
     c.env.DB,
     'SELECT rezervare_token FROM restaurante WHERE id = ?',
@@ -1041,7 +1049,7 @@ admin.get('/rezervare_link', requireOwner, async (c) => {
   return c.json({ ok: true, token, cale: `/rezervare/?token=${token}` });
 });
 
-admin.get('/rezervari', requireOwner, async (c) => {
+admin.get('/rezervari', requireRoles('sef_sala'), async (c) => {
   const data = c.req.query('data') ?? '';
   const status = c.req.query('status') ?? '';
   let where = 'r.restaurant_id = ?';
@@ -1066,7 +1074,7 @@ admin.get('/rezervari', requireOwner, async (c) => {
   return c.json({ ok: true, rezervari });
 });
 
-admin.post('/rezervare_status', requireOwner, async (c) => {
+admin.post('/rezervare_status', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.id ?? 0);
   const status = body.status ?? '';
@@ -1085,7 +1093,7 @@ admin.post('/rezervare_status', requireOwner, async (c) => {
   return c.json({ ok: true });
 });
 
-admin.post('/adauga_rezervare', requireOwner, async (c) => {
+admin.post('/adauga_rezervare', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const nume = (body.nume ?? '').trim();
   const telefon = (body.telefon ?? '').trim();
@@ -1117,7 +1125,7 @@ admin.post('/adauga_rezervare', requireOwner, async (c) => {
   return c.json({ ok: true, id: res.meta.last_row_id });
 });
 
-admin.post('/sterge_rezervare', requireOwner, async (c) => {
+admin.post('/sterge_rezervare', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.id ?? 0);
   await run(c.env.DB, 'DELETE FROM rezervari WHERE id = ? AND restaurant_id = ?', id, rid(c));
@@ -1369,7 +1377,7 @@ admin.post('/sterge_oferta', requireOwner, async (c) => {
 
 // ── Reviews (recenzii) — owner only ──
 
-admin.get('/recenzii', requireOwner, async (c) => {
+admin.get('/recenzii', requireRoles('sef_sala'), async (c) => {
   const recenzii = await all(
     c.env.DB,
     `SELECT r.*, m.nume AS masa_nume FROM recenzii r
@@ -1385,7 +1393,7 @@ admin.get('/recenzii', requireOwner, async (c) => {
   return c.json({ ok: true, recenzii, medie: agg?.medie ?? null, total: agg?.total ?? 0 });
 });
 
-admin.post('/sterge_recenzie', requireOwner, async (c) => {
+admin.post('/sterge_recenzie', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.id ?? 0);
   await run(c.env.DB, 'DELETE FROM recenzii WHERE id = ? AND restaurant_id = ?', id, rid(c));
@@ -1558,7 +1566,7 @@ admin.post('/bucatarie_comanda_gata', async (c) => {
 
 // ── Depozit / ingredient stock (owner only) ──
 
-admin.get('/depozit', requireOwner, async (c) => {
+admin.get('/depozit', requireRoles('bucatarie'), async (c) => {
   const ingrediente = await all(
     c.env.DB,
     'SELECT id, nume, unitate, stoc, prag_minim, activ FROM depozit_ingrediente WHERE restaurant_id = ? ORDER BY nume COLLATE NOCASE',
@@ -1567,7 +1575,7 @@ admin.get('/depozit', requireOwner, async (c) => {
   return c.json({ ok: true, ingrediente });
 });
 
-admin.post('/salveaza_ingredient', requireOwner, async (c) => {
+admin.post('/salveaza_ingredient', requireRoles('bucatarie'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.id ?? 0);
   const nume = (body.nume ?? '').toString().trim().slice(0, 100);
@@ -1591,7 +1599,7 @@ admin.post('/salveaza_ingredient', requireOwner, async (c) => {
   return c.json({ ok: true, id: res.meta.last_row_id });
 });
 
-admin.post('/sterge_ingredient', requireOwner, async (c) => {
+admin.post('/sterge_ingredient', requireRoles('bucatarie'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.id ?? 0);
   await run(c.env.DB, 'DELETE FROM depozit_ingrediente WHERE id = ? AND restaurant_id = ?', id, rid(c));
@@ -1599,7 +1607,7 @@ admin.post('/sterge_ingredient', requireOwner, async (c) => {
 });
 
 // Receive stock or manually adjust it (delta can be + or -).
-admin.post('/ajusteaza_stoc', requireOwner, async (c) => {
+admin.post('/ajusteaza_stoc', requireRoles('bucatarie'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const id = Number(body.id ?? 0);
   const delta = Number(body.delta ?? 0);
@@ -1766,7 +1774,7 @@ admin.post('/sterge_preparat', requireOwner, async (c) => {
 });
 
 // How many portions of each dish can still be made from current stock.
-admin.get('/capacitate_preparate', requireOwner, async (c) => {
+admin.get('/capacitate_preparate', requireRoles('bucatarie'), async (c) => {
   const preparate = await all<{ id: number; nume: string; categorie: string; reteta: string | null; activ: number }>(
     c.env.DB,
     'SELECT id, nume, categorie, reteta, activ FROM evenimente_preparate WHERE restaurant_id = ? ORDER BY categorie COLLATE NOCASE, nume COLLATE NOCASE',

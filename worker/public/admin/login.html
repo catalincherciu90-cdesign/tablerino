@@ -74,7 +74,8 @@ form.addEventListener('submit', async (e) => {
         });
         const d = await r.json().catch(() => ({}));
         if (d.ok) {
-            location.href = '/admin/index.html';
+            var dest = { bucatarie: '/admin/bucatarie.html', ospatar: '/ospatar/' };
+            location.href = dest[d.role] || '/admin/index.html';
         } else {
             eroareBox.textContent = d.msg || 'Email sau parolă incorecte.';
             eroareBox.style.display = 'block';

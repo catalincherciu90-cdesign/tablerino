@@ -44,6 +44,10 @@ td .email { color: #888; font-size: 13px; }
 .badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; }
 .badge.activ { background: #d1fae5; color: #065f46; }
 .badge.inactiv { background: #fee2e2; color: #c62828; }
+.rol-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+.rol-badge.rol-ospatar { background: #e0e7ff; color: #3730a3; }
+.rol-badge.rol-bucatarie { background: #fef3c7; color: #92400e; }
+.rol-badge.rol-sef_sala { background: #ede9ff; color: #5b21b6; }
 .actiuni { display: flex; gap: 8px; flex-wrap: wrap; }
 .btn-sm { padding: 6px 12px; border: none; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; }
 .btn-toggle { background: #ede9ff; color: #6c47ff; }
@@ -116,6 +120,14 @@ td .email { color: #888; font-size: 13px; }
             <div class="field">
                 <label>Parolă (minim 6 caractere)</label>
                 <input type="password" id="parolaOspatar" placeholder="••••••••" autocomplete="new-password">
+            </div>
+            <div class="field">
+                <label>Rol</label>
+                <select id="rolOspatar">
+                    <option value="ospatar">Ospătar</option>
+                    <option value="bucatarie">Bucătărie</option>
+                    <option value="sef_sala" id="optSefSala">Șef de sală</option>
+                </select>
             </div>
             <div class="field">
                 <label>Masă implicită</label>
@@ -285,13 +297,14 @@ async function incarcaOspatari() {
     wrap.innerHTML = `
     <table>
         <thead>
-            <tr><th>Nume</th><th>Email</th><th>Masă implicită</th><th>Status</th><th>Acțiuni</th></tr>
+            <tr><th>Nume</th><th>Email</th><th>Rol</th><th>Masă implicită</th><th>Status</th><th>Acțiuni</th></tr>
         </thead>
         <tbody>
         ${d.ospatari.map(o => `
             <tr>
                 <td><span class="nume">${escapeHtml(o.nume)}</span></td>
                 <td><span class="email">${escapeHtml(o.email)}</span></td>
+                <td><span class="rol-badge rol-${o.rol || 'ospatar'}">${rolLabel(o.rol)}</span></td>
                 <td>
                     <div class="masa-curenta">${o.masa_default_nume ? escapeHtml(o.masa_default_nume) : 'fără masă'}</div>
                     <select class="masa-select" onchange="seteazaMasaOspatar(${o.id}, this.value)">${optiuniMasa(o.masa_default_id)}</select>
@@ -315,12 +328,13 @@ async function adaugaOspatar() {
     const email = document.getElementById('emailOspatar').value.trim();
     const parola = document.getElementById('parolaOspatar').value;
     const masa_default_id = Number(document.getElementById('masaOspatar').value) || null;
+    const rol = document.getElementById('rolOspatar').value;
     if (!nume || !email || !parola) { showToast('Completează toate câmpurile.', 'err'); return; }
     if (parola.length < 6) { showToast('Parola trebuie să aibă minim 6 caractere.', 'err'); return; }
     const r = await fetch('/api/admin/adauga_ospatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nume, email, parola, masa_default_id })
+        body: JSON.stringify({ nume, email, parola, masa_default_id, rol })
     });
     const d = await r.json();
     if (d.ok) {
@@ -328,7 +342,8 @@ async function adaugaOspatar() {
         document.getElementById('emailOspatar').value = '';
         document.getElementById('parolaOspatar').value = '';
         document.getElementById('masaOspatar').value = '';
-        showToast('Ospătar adăugat!');
+        document.getElementById('rolOspatar').value = 'ospatar';
+        showToast('Cont de staff adăugat!');
         incarcaOspatari();
     } else {
         showToast(d.msg || 'Eroare', 'err');
@@ -378,10 +393,17 @@ fetch('/api/admin/me').then(function (r) {
 }).then(function (d) {
     if (!d) return;
     if (d.role === 'ospatar') { location.href = '/admin/index.html'; return; }
+    // Only the owner may create a "șef de sală".
+    if (d.role !== 'owner') { var opt = document.getElementById('optSefSala'); if (opt) opt.remove(); }
     incarcaMese().then(incarcaOspatari);
     incarcaStatistici();
 });
+
+function rolLabel(rol) {
+    return rol === 'bucatarie' ? 'Bucătărie' : (rol === 'sef_sala' ? 'Șef de sală' : 'Ospătar');
+}
 </script>
 <script src="/admin/master-banner.js"></script>
+  <script src="/admin/admin-roles.js"></script>
 </body>
 </html>

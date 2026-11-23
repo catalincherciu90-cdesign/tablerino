@@ -133,6 +133,20 @@ export const requireOwner: MiddlewareHandler<HonoEnv> = async (c, next) => {
   await next();
 };
 
+/**
+ * Allows the OWNER plus the listed staff roles. Run after requireRestaurant.
+ * e.g. requireRoles('sef_sala') → owner or șef de sală.
+ */
+export function requireRoles(...roles: Array<'ospatar' | 'bucatarie' | 'sef_sala'>): MiddlewareHandler<HonoEnv> {
+  return async (c, next) => {
+    const sess = c.get('restaurant');
+    if (!sess || (sess.role !== 'owner' && !roles.includes(sess.role as 'ospatar' | 'bucatarie' | 'sef_sala'))) {
+      return c.json({ ok: false, msg: 'Nu ai acces la această acțiune.' }, 403);
+    }
+    await next();
+  };
+}
+
 /** Requires a valid master session; attaches it to c.var.master. */
 export const requireMaster: MiddlewareHandler<HonoEnv> = async (c, next) => {
   const sess = await currentMaster(c as AppContext);

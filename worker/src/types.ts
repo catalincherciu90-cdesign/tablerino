@@ -25,8 +25,8 @@ export interface Env {
 export interface RestaurantSession {
   rid: number;
   nume: string;
-  role: 'owner' | 'ospatar';
-  /** Waiter's own id (only for role 'ospatar'). */
+  role: 'owner' | 'ospatar' | 'bucatarie' | 'sef_sala';
+  /** Staff member's own id (for any non-owner role). */
   uid?: number;
   /** True when a platform admin (Master) opened this session via "Gestionează". */
   viaMaster?: boolean;

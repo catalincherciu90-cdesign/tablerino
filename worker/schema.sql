@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS ospatari (
     parola          TEXT NOT NULL,
     activ           INTEGER DEFAULT 1,
     masa_default_id INTEGER,                 -- default table the waiter handles
+    rol             TEXT DEFAULT 'ospatar',  -- ospatar | bucatarie | sef_sala
     created_at      TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE,
     FOREIGN KEY (masa_default_id) REFERENCES mese(id) ON DELETE SET NULL

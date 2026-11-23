@@ -62,8 +62,9 @@ form.addEventListener('submit', async (e) => {
         });
         const d = await r.json().catch(() => ({}));
         if (r.ok && d.ok) {
-            // Owners get the full admin panel; waiters get this phone app.
-            location.href = d.role === 'owner' ? '/admin/index.html' : '/ospatar/';
+            // Route by role: waiters get this phone app; others go to the admin panel / kitchen screen.
+            var dest = { ospatar: '/ospatar/', bucatarie: '/admin/bucatarie.html', sef_sala: '/admin/index.html', owner: '/admin/index.html' };
+            location.href = dest[d.role] || '/ospatar/';
             return;
         }
         errBox.textContent = d.msg || 'Email sau parolă incorecte.';
