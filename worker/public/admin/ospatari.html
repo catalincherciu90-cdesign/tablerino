@@ -149,6 +149,24 @@ td .email { color: #888; font-size: 13px; }
         </div>
     </div>
 
+    <div style="background:#e6f7f0;border-radius:12px;padding:18px;margin-bottom:22px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+        <div style="text-align:center;flex:0 0 auto">
+            <canvas id="qrWeb" width="160" height="160" style="border-radius:10px;background:#fff;display:block;padding:8px"></canvas>
+            <div style="font-size:11px;color:#0a7a52;margin-top:6px">Scanează → deschide în browser</div>
+        </div>
+        <div style="flex:1;min-width:240px">
+            <div style="font-size:15px;font-weight:700;color:#0a7a52;margin-bottom:4px">🌐 Aplicația ospătar — versiune web</div>
+            <div style="font-size:13px;color:#2a7a5f;line-height:1.5">
+                Deschide aplicația direct în browser, fără instalare — ideal pentru test sau pe iPhone. Aceleași funcții ca aplicația .apk.
+            </div>
+            <div id="webUrl" style="font-size:13px;color:#0a7a52;font-family:monospace;margin-top:8px;word-break:break-all"></div>
+            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+                <a href="/ospatar/login.html" target="_blank" rel="noopener" style="background:#0a7a52;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;text-decoration:none">🌐 Deschide în browser</a>
+                <button onclick="copiazaWebUrl()" style="background:#0a7a52;color:#fff;border:none;border-radius:10px;padding:10px 15px;font-weight:700;font-size:13px;cursor:pointer">📋 Copiază link</button>
+            </div>
+        </div>
+    </div>
+
     <h3 style="font-size:16px;font-weight:700;margin:8px 0 4px">📊 Statistici azi</h3>
     <p style="font-size:13px;color:#888;margin-bottom:14px">Comenzi preluate și timpul mediu de preluare, per ospătar (resetat zilnic).</p>
     <div class="stats-grid" id="statsGrid">
@@ -223,6 +241,15 @@ if (typeof QRious !== 'undefined') {
 }
 function copiazaApkUrl() {
     navigator.clipboard.writeText(apkUrl).then(() => showToast('Link copiat!')).catch(() => showToast('Nu s-a putut copia', 'err'));
+}
+
+const webUrl = location.origin + '/ospatar/login.html';
+document.getElementById('webUrl').textContent = webUrl;
+if (typeof QRious !== 'undefined') {
+    try { new QRious({ element: document.getElementById('qrWeb'), value: webUrl, size: 160, level: 'M' }); } catch (e) {}
+}
+function copiazaWebUrl() {
+    navigator.clipboard.writeText(webUrl).then(() => showToast('Link copiat!')).catch(() => showToast('Nu s-a putut copia', 'err'));
 }
 
 function fmtDurata(sec) {
