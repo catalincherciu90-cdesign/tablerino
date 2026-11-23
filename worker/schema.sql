@@ -268,6 +268,7 @@ CREATE TABLE IF NOT EXISTS evenimente (
     meniu_pret_persoana REAL,                       -- price per guest
     meniu_total        REAL,                        -- computed total (persoane * pret_persoana)
     meniu_consumat     INTEGER DEFAULT 0,           -- 1 once the menu's ingredients were deducted from stock
+    meniu_client       TEXT,                        -- JSON of the menu the client configured on the public page
     creat_la       TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
 );
@@ -300,6 +301,23 @@ CREATE TABLE IF NOT EXISTS depozit_miscari (
     FOREIGN KEY (ingredient_id) REFERENCES depozit_ingrediente(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_depozit_miscari_restaurant ON depozit_miscari(restaurant_id);
+
+-- Event dish catalog (preparate) with recipe + category. Powers both the
+-- client-facing menu configurator and the "how many portions can I still make"
+-- production-capacity view.
+CREATE TABLE IF NOT EXISTS evenimente_preparate (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id  INTEGER NOT NULL,
+    nume           TEXT NOT NULL,
+    categorie      TEXT DEFAULT 'Fel principal',       -- Aperitiv | Fel 1 | Fel principal | Desert | ...
+    reteta         TEXT,                                -- JSON [{ id, cant }] per portion, ingredients from depozit
+    vizibil_client INTEGER DEFAULT 1,                   -- shown in the public menu configurator
+    activ          INTEGER DEFAULT 1,
+    ordine         INTEGER DEFAULT 0,
+    creat_la       TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_evprep_restaurant ON evenimente_preparate(restaurant_id);
 
 -- Reusable event-menu packages (e.g. "Nuntă Standard", "Botez Premium") per restaurant.
 CREATE TABLE IF NOT EXISTS meniu_evenimente_pachete (

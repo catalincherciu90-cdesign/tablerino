@@ -1491,7 +1491,7 @@ admin.get('/eveniment_meniu', requireOwner, async (c) => {
   const ev = await one(
     c.env.DB,
     `SELECT id, tip, data_eveniment, nr_invitati, nume, telefon, email, sala, status,
-            pachet_id, meniu_json, meniu_persoane, meniu_pret_persoana, meniu_total, meniu_consumat
+            pachet_id, meniu_json, meniu_persoane, meniu_pret_persoana, meniu_total, meniu_consumat, meniu_client
      FROM evenimente WHERE id = ? AND restaurant_id = ?`,
     id, rid(c)
   );
@@ -1705,6 +1705,92 @@ admin.post('/anuleaza_consum_eveniment', requireOwner, async (c) => {
   }
   await run(c.env.DB, 'UPDATE evenimente SET meniu_consumat = 0 WHERE id = ? AND restaurant_id = ?', id, rid(c));
   return c.json({ ok: true });
+});
+
+// ── Event dish catalog (preparate) + production capacity (owner only) ──
+
+function normalizeReteta(raw: unknown): { id: number; cant: number }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((i: unknown) => ({ id: Number((i as any)?.id ?? 0) || 0, cant: Math.max(0, Number((i as any)?.cant ?? 0)) || 0 }))
+    .filter((i: { id: number; cant: number }) => i.id > 0 && i.cant > 0)
+    .slice(0, 30);
+}
+
+admin.get('/preparate', requireOwner, async (c) => {
+  const preparate = await all(
+    c.env.DB,
+    'SELECT id, nume, categorie, reteta, vizibil_client, activ, ordine FROM evenimente_preparate WHERE restaurant_id = ? ORDER BY categorie COLLATE NOCASE, ordine, nume COLLATE NOCASE',
+    rid(c)
+  );
+  return c.json({ ok: true, preparate });
+});
+
+admin.post('/salveaza_preparat', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  const nume = (body.nume ?? '').toString().trim().slice(0, 120);
+  if (!nume) return c.json({ ok: false, msg: 'Numele preparatului e obligatoriu.' }, 400);
+  const categorie = (body.categorie ?? 'Fel principal').toString().trim().slice(0, 60) || 'Fel principal';
+  const reteta = JSON.stringify(normalizeReteta(body.reteta));
+  const vizibil = body.vizibil_client === 0 || body.vizibil_client === false ? 0 : 1;
+  if (id) {
+    await run(
+      c.env.DB,
+      'UPDATE evenimente_preparate SET nume = ?, categorie = ?, reteta = ?, vizibil_client = ? WHERE id = ? AND restaurant_id = ?',
+      nume, categorie, reteta, vizibil, id, rid(c)
+    );
+    return c.json({ ok: true, id });
+  }
+  const res = await run(
+    c.env.DB,
+    'INSERT INTO evenimente_preparate (restaurant_id, nume, categorie, reteta, vizibil_client) VALUES (?, ?, ?, ?, ?)',
+    rid(c), nume, categorie, reteta, vizibil
+  );
+  return c.json({ ok: true, id: res.meta.last_row_id });
+});
+
+admin.post('/toggle_preparat', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  const camp = body.camp === 'vizibil_client' ? 'vizibil_client' : 'activ';
+  await run(c.env.DB, `UPDATE evenimente_preparate SET ${camp} = 1 - ${camp} WHERE id = ? AND restaurant_id = ?`, id, rid(c));
+  return c.json({ ok: true });
+});
+
+admin.post('/sterge_preparat', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  await run(c.env.DB, 'DELETE FROM evenimente_preparate WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return c.json({ ok: true });
+});
+
+// How many portions of each dish can still be made from current stock.
+admin.get('/capacitate_preparate', requireOwner, async (c) => {
+  const preparate = await all<{ id: number; nume: string; categorie: string; reteta: string | null; activ: number }>(
+    c.env.DB,
+    'SELECT id, nume, categorie, reteta, activ FROM evenimente_preparate WHERE restaurant_id = ? ORDER BY categorie COLLATE NOCASE, nume COLLATE NOCASE',
+    rid(c)
+  );
+  const stocRows = await all<{ id: number; nume: string; unitate: string; stoc: number }>(
+    c.env.DB, 'SELECT id, nume, unitate, stoc FROM depozit_ingrediente WHERE restaurant_id = ?', rid(c)
+  );
+  const stoc = new Map<number, { nume: string; unitate: string; stoc: number }>();
+  for (const s of stocRows) stoc.set(s.id, { nume: s.nume, unitate: s.unitate, stoc: Number(s.stoc) });
+  const randuri = preparate.map(p => {
+    let reteta: { id: number; cant: number }[] = [];
+    try { reteta = normalizeReteta(JSON.parse(p.reteta || '[]')); } catch (e) {}
+    if (!reteta.length) return { id: p.id, nume: p.nume, categorie: p.categorie, activ: p.activ, portii: null as number | null, limitant: null as string | null };
+    let portii = Infinity;
+    let limitant: string | null = null;
+    for (const ing of reteta) {
+      const s = stoc.get(ing.id);
+      const posibile = s ? Math.floor(Number(s.stoc) / ing.cant) : 0;
+      if (posibile < portii) { portii = posibile; limitant = s ? s.nume : 'ingredient lipsă din depozit'; }
+    }
+    return { id: p.id, nume: p.nume, categorie: p.categorie, activ: p.activ, portii: isFinite(portii) ? portii : null, limitant };
+  });
+  return c.json({ ok: true, randuri });
 });
 
 export default admin;

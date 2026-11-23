@@ -148,10 +148,19 @@ rezervare.get('/info', async (c) => {
         r.id
       )
     : [];
+  // Client-visible event dishes, for the public menu configurator.
+  const preparate = r.evenimente_publice
+    ? await all<{ id: number; nume: string; categorie: string }>(
+        c.env.DB,
+        'SELECT id, nume, categorie FROM evenimente_preparate WHERE restaurant_id = ? AND activ = 1 AND vizibil_client = 1 ORDER BY categorie COLLATE NOCASE, ordine, nume COLLATE NOCASE',
+        r.id
+      )
+    : [];
   return c.json({
     ok: true,
     max_persoane: capRow?.max_persoane ?? null,
     sali,
+    preparate,
     restaurant: {
       nume: r.nume,
       logo: r.logo,
@@ -192,10 +201,23 @@ rezervare.post('/eveniment', async (c) => {
     return c.json({ ok: false, msg: 'Alege o dată validă din viitor.' }, 400);
   const invitati = nrInvitati >= 1 && nrInvitati <= 5000 ? Math.floor(nrInvitati) : null;
 
+  // Menu the client configured on the public page: [{ nume, categorie }]
+  let meniuClient: string | null = null;
+  if (Array.isArray(body.meniu_client) && body.meniu_client.length) {
+    const alese = body.meniu_client
+      .map((x: unknown) => ({
+        nume: String((x as any)?.nume ?? '').trim().slice(0, 120),
+        categorie: String((x as any)?.categorie ?? '').trim().slice(0, 60),
+      }))
+      .filter((x: { nume: string }) => x.nume)
+      .slice(0, 60);
+    if (alese.length) meniuClient = JSON.stringify(alese);
+  }
+
   const res = await run(
     c.env.DB,
-    `INSERT INTO evenimente (restaurant_id, tip, data_eveniment, nr_invitati, nume, telefon, email, mesaj, sala)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO evenimente (restaurant_id, tip, data_eveniment, nr_invitati, nume, telefon, email, mesaj, sala, meniu_client)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     r.id,
     tip,
     data || null,
@@ -204,7 +226,8 @@ rezervare.post('/eveniment', async (c) => {
     telefon,
     email || null,
     mesaj || null,
-    sala || null
+    sala || null,
+    meniuClient
   );
 
   // Notify the owner (web push) — fire-and-forget so the client isn't blocked.

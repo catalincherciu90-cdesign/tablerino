@@ -89,6 +89,11 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 .sala-nume { font-weight: 700; font-size: 14.5px; color: var(--text); }
 .sala-cap { font-size: 12px; color: var(--primar); font-weight: 600; margin-top: 1px; }
 .sala-desc { font-size: 12px; color: var(--text-sub); margin-top: 3px; }
+.mc-wrap { display: flex; flex-direction: column; gap: 12px; }
+.mc-cat-t { font-size: 12px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+.mc-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.mc-chip { border: 1.5px solid #e2e2ec; background: #fff; color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 13.5px; font-family: inherit; cursor: pointer; transition: border-color .15s, background .15s, color .15s; }
+.mc-chip.ales { border-color: var(--primar); background: var(--primar); color: #fff; }
 </style>
 </head>
 <body>
@@ -224,6 +229,29 @@ function alegeSala(el, nume) {
     salaAleasa = nume;
 }
 
+let preparateRest = [];
+function meniuConfigHtml() {
+    if (!preparateRest.length) return '';
+    const cats = {};
+    preparateRest.forEach(function (p) { (cats[p.categorie] = cats[p.categorie] || []).push(p); });
+    const blocks = Object.keys(cats).map(function (cat) {
+        const chips = cats[cat].map(function (p) {
+            return '<button type="button" class="mc-chip" data-nume="' + escapeHtml(p.nume) + '" data-cat="' + escapeHtml(cat) +
+                '" onclick="this.classList.toggle(\'ales\')">' + escapeHtml(p.nume) + '</button>';
+        }).join('');
+        return '<div class="mc-cat"><div class="mc-cat-t">' + escapeHtml(cat) + '</div><div class="mc-chips">' + chips + '</div></div>';
+    }).join('');
+    return '<div class="field"><label>Alege felurile din meniu <span class="opt">(opțional)</span></label>' +
+        '<div class="mc-wrap">' + blocks + '</div></div>';
+}
+function colecteazaMeniuClient() {
+    const out = [];
+    document.querySelectorAll('#cardEveniment .mc-chip.ales').forEach(function (ch) {
+        out.push({ nume: ch.getAttribute('data-nume'), categorie: ch.getAttribute('data-cat') });
+    });
+    return out;
+}
+
 function cardEvenimentHtml(azi, rest) {
     const optTip = TIPURI_EV.map(t => '<option value="' + t[0] + '">' + t[1] + '</option>').join('');
     let hint = '';
@@ -243,6 +271,7 @@ function cardEvenimentHtml(azi, rest) {
                 '<select id="evTip">' + optTip + '</select>' +
             '</div>' +
             saliGalerieHtml() +
+            meniuConfigHtml() +
             '<div class="row2">' +
                 '<div class="field">' +
                     '<label>Data <span class="opt">(opțional)</span></label>' +
@@ -490,6 +519,7 @@ async function trimiteEveniment() {
     const email = document.getElementById('evEmail').value.trim();
     const mesaj = document.getElementById('evMesaj').value.trim();
     const sala = salaAleasa || '';
+    const meniu_client = colecteazaMeniuClient();
 
     if (!nume) return aratEroare('Te rugăm introdu numele.');
     if (!telefon) return aratEroare('Te rugăm introdu numărul de telefon.');
@@ -502,7 +532,7 @@ async function trimiteEveniment() {
         const r = await fetch('/api/rezervare/eveniment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token, tip, data, nr_invitati, nume, telefon, email, mesaj, sala })
+            body: JSON.stringify({ token, tip, data, nr_invitati, nume, telefon, email, mesaj, sala, meniu_client })
         });
         const d = await r.json().catch(() => ({}));
         if (d && d.ok) { randeazaConfirmareEveniment({ tip, data, nr_invitati, nume, sala }); return; }
@@ -539,6 +569,7 @@ async function init() {
         if (!r.ok || !d || !d.ok || !d.restaurant) { linkInvalid(); return; }
         maxPersoane = (typeof d.max_persoane === 'number' && d.max_persoane > 0) ? d.max_persoane : null;
         saliRest = Array.isArray(d.sali) ? d.sali : [];
+        preparateRest = Array.isArray(d.preparate) ? d.preparate : [];
         aplicaTema(d.restaurant.tema_cfg);
         randeazaForm(d.restaurant);
     } catch (e) {

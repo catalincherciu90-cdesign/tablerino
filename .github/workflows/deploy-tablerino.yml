@@ -104,6 +104,8 @@ jobs:
             --command "ALTER TABLE evenimente ADD COLUMN meniu_total REAL" || true
           npx wrangler d1 execute tablerino --remote --yes \
             --command "ALTER TABLE evenimente ADD COLUMN meniu_consumat INTEGER DEFAULT 0" || true
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE evenimente ADD COLUMN meniu_client TEXT" || true
 
       - name: Deploy Worker
         run: npx wrangler deploy

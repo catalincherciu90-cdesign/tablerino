@@ -32,6 +32,16 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
 .card-top { display: flex; align-items: flex-start; gap: 12px; }
 .card-top h4 { font-size: 16px; font-weight: 700; flex: 1; }
 .card-pret { font-size: 15px; font-weight: 800; color: #6c47ff; white-space: nowrap; }
+.cap-badge { font-size: 12px; font-weight: 700; border-radius: 20px; padding: 3px 10px; white-space: nowrap; }
+.cap-ok { background: #d1fae5; color: #065f46; }
+.cap-low { background: #fff4e5; color: #a15c00; }
+.cap-zero { background: #fee2e2; color: #c62828; }
+.cap-none { background: #eee; color: #888; }
+.viz-badge { font-size: 10.5px; font-weight: 700; color: #4b3fb3; background: #eceaff; border-radius: 20px; padding: 1px 7px; vertical-align: middle; }
+.client-box { background: #f6f3ff; border: 1px solid #e0d9ff; border-radius: 12px; padding: 14px 16px; margin: 16px 0; }
+.client-box h3 { font-size: 14px; margin-bottom: 8px; color: #4b3fb3; }
+.client-cat { font-size: 13.5px; margin-bottom: 5px; }
+.client-cat b { color: #333; }
 .card-desc { font-size: 13px; color: #666; margin: 4px 0 10px; }
 .card-sectiuni { display: flex; flex-direction: column; gap: 6px; }
 .card-sectiune { font-size: 13px; }
@@ -140,6 +150,7 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
 
     <div class="tabs">
         <button class="tab activ" data-tab="pachete" onclick="schimbaTab('pachete')">Pachete de meniu</button>
+        <button class="tab" data-tab="preparate" onclick="schimbaTab('preparate')">Preparate (rețete)</button>
         <button class="tab" data-tab="eveniment" onclick="schimbaTab('eveniment')">Meniu pe eveniment</button>
     </div>
 
@@ -147,6 +158,13 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
     <div class="pane activ" id="panePachete">
         <div style="margin-bottom:18px"><button class="btn-primary" onclick="deschidePachet()">+ Adaugă pachet</button></div>
         <div class="cards" id="listaPachete"><div class="gol">Se încarcă...</div></div>
+    </div>
+
+    <!-- TAB: Preparate (catalog + capacitate) -->
+    <div class="pane" id="panePreparate">
+        <p class="sub" style="margin-bottom:14px">Definește felurile cu rețetă și categorie. Cele marcate „vizibil client" apar în configuratorul de meniu de pe pagina publică. Capacitatea arată câte porții mai poți face din stocul din depozit.</p>
+        <div style="margin-bottom:18px"><button class="btn-primary" onclick="deschidePreparat()">+ Adaugă preparat</button></div>
+        <div class="cards" id="listaPreparate"><div class="gol">Se încarcă...</div></div>
     </div>
 
     <!-- TAB 2: Meniu pe eveniment -->
@@ -170,6 +188,7 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
                 </div>
                 <div class="ev-total">Total estimat: <b id="evTotal">0 lei</b></div>
             </div>
+            <div id="clientBox"></div>
             <h3 style="font-size:15px;margin-bottom:10px">Meniul evenimentului</h3>
             <div id="evSectiuni"></div>
             <button class="btn-add-sectiune" onclick="adaugaSectiune('evSectiuni')">+ Adaugă secțiune</button>
@@ -197,6 +216,29 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
     </div>
 </div>
 
+<!-- Modal preparat -->
+<div class="overlay" id="overlayPreparat">
+    <div class="modal">
+        <h3 id="preparatTitluModal">Preparat nou</h3>
+        <input type="hidden" id="preparatId">
+        <div class="row2">
+            <div class="field"><label>Nume preparat</label><input type="text" id="preparatNume" placeholder="Ex: Sarmale"></div>
+            <div class="field"><label>Categorie</label><input type="text" id="preparatCategorie" list="catList" placeholder="Ex: Fel principal">
+                <datalist id="catList"><option>Aperitiv</option><option>Fel 1</option><option>Fel 2</option><option>Fel principal</option><option>Garnitură</option><option>Desert</option><option>Băuturi</option></datalist>
+            </div>
+        </div>
+        <label style="font-size:13px;display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer"><input type="checkbox" id="preparatVizibil" checked> Vizibil pentru client (apare în configuratorul de pe pagina publică)</label>
+        <label style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px;display:block">Rețetă (ingrediente / porție din depozit)</label>
+        <div id="preparatReteta" class="sb-compo" style="margin:0;border:none;padding:0"><div class="compo-rows"></div>
+            <button type="button" class="btn-add-ing" onclick="document.querySelector('#preparatReteta .compo-rows').appendChild(makeCompoRow())">+ ingredient din depozit</button>
+        </div>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="inchidePreparat()">Anulează</button>
+            <button class="btn-primary" onclick="salveazaPreparat()">Salvează</button>
+        </div>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -206,8 +248,10 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'
 function schimbaTab(t) {
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('activ', b.dataset.tab === t));
     document.getElementById('panePachete').classList.toggle('activ', t === 'pachete');
+    document.getElementById('panePreparate').classList.toggle('activ', t === 'preparate');
     document.getElementById('paneEveniment').classList.toggle('activ', t === 'eveniment');
     if (t === 'eveniment') incarcaEvenimente();
+    if (t === 'preparate') incarcaPreparate();
 }
 
 /* ---------- Section builder (shared) ---------- */
@@ -358,6 +402,81 @@ async function stergePachet(id) {
     incarcaPachete();
 }
 
+/* ---------- Preparate (catalog + capacitate) ---------- */
+let PREPARATE = [], CAPAC = {};
+async function incarcaPreparate() {
+    const [dp, dc] = await Promise.all([
+        (await fetch('/api/admin/preparate')).json(),
+        (await fetch('/api/admin/capacitate_preparate')).json().catch(() => ({ randuri: [] })),
+    ]);
+    PREPARATE = dp.preparate || [];
+    CAPAC = {}; (dc.randuri || []).forEach(r => { CAPAC[r.id] = r; });
+    if (!INGRED.length) await incarcaIngrediente();
+    const box = document.getElementById('listaPreparate');
+    if (!PREPARATE.length) { box.innerHTML = '<div class="gol">Niciun preparat încă. Adaugă primul (ex: Sarmale) cu rețeta lui.</div>'; return; }
+    // group by category
+    const groups = {};
+    PREPARATE.forEach(p => { (groups[p.categorie] = groups[p.categorie] || []).push(p); });
+    box.innerHTML = Object.keys(groups).map(cat =>
+        '<div style="margin-bottom:6px;font-size:12px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.05em">' + esc(cat) + '</div>' +
+        groups[cat].map(p => {
+            let ret = []; try { ret = JSON.parse(p.reteta || '[]'); } catch (e) {}
+            const ingNames = ret.map(x => { const i = INGRED.find(y => y.id === x.id); return (i ? esc(i.nume) : '?') + ' ' + x.cant + (i ? esc(i.unitate) : ''); }).join(', ');
+            const cap = CAPAC[p.id];
+            const capTxt = cap && cap.portii != null
+                ? '<span class="cap-badge ' + (cap.portii <= 0 ? 'cap-zero' : (cap.portii < 10 ? 'cap-low' : 'cap-ok')) + '">🍲 poți face ' + cap.portii + ' porții' + (cap.limitant && cap.portii < 1e9 ? ' (limitat de ' + esc(cap.limitant) + ')' : '') + '</span>'
+                : '<span class="cap-badge cap-none">fără rețetă</span>';
+            return '<div class="card ' + (p.activ == 0 ? 'inactiv' : '') + '">' +
+                '<div class="card-top"><h4>' + esc(p.nume) + (p.vizibil_client == 1 ? ' <span class="viz-badge">👁 client</span>' : '') + '</h4>' + capTxt + '</div>' +
+                (ingNames ? '<div class="card-desc">' + ingNames + '</div>' : '<div class="card-desc" style="color:#c0392b">Adaugă rețeta ca să calculezi capacitatea.</div>') +
+                '<div class="card-actiuni">' +
+                  '<button class="btn-sm btn-edit" onclick="deschidePreparat(' + p.id + ')">✏️ Editează</button>' +
+                  '<button class="btn-sm ' + (p.vizibil_client == 1 ? 'btn-toggle-on' : 'btn-toggle-off') + '" onclick="togglePreparat(' + p.id + ',\'vizibil_client\')">' + (p.vizibil_client == 1 ? '👁 Vizibil client' : 'Ascuns client') + '</button>' +
+                  '<button class="btn-sm btn-del" onclick="stergePreparat(' + p.id + ')">✕ Șterge</button>' +
+                '</div></div>';
+        }).join('')
+    ).join('');
+}
+function deschidePreparat(id) {
+    document.getElementById('preparatId').value = id || '';
+    const p = id ? PREPARATE.find(x => x.id === id) : null;
+    document.getElementById('preparatTitluModal').textContent = p ? 'Editează preparatul' : 'Preparat nou';
+    document.getElementById('preparatNume').value = p ? p.nume : '';
+    document.getElementById('preparatCategorie').value = p ? p.categorie : 'Fel principal';
+    document.getElementById('preparatVizibil').checked = p ? p.vizibil_client == 1 : true;
+    const rows = document.querySelector('#preparatReteta .compo-rows');
+    rows.innerHTML = '';
+    let ret = []; if (p) { try { ret = JSON.parse(p.reteta || '[]'); } catch (e) {} }
+    if (ret.length) ret.forEach(x => rows.appendChild(makeCompoRow(x))); else rows.appendChild(makeCompoRow());
+    document.getElementById('overlayPreparat').classList.add('open');
+}
+function inchidePreparat() { document.getElementById('overlayPreparat').classList.remove('open'); }
+async function salveazaPreparat() {
+    const nume = document.getElementById('preparatNume').value.trim();
+    if (!nume) { showToast('Numele preparatului e obligatoriu.', false); return; }
+    const reteta = [];
+    document.querySelectorAll('#preparatReteta .compo-row').forEach(r => {
+        const idv = Number(r.querySelector('.ing-sel').value) || 0;
+        const cant = Number(r.querySelector('.ing-cant').value) || 0;
+        if (idv > 0 && cant > 0) reteta.push({ id: idv, cant });
+    });
+    const payload = {
+        id: Number(document.getElementById('preparatId').value) || 0,
+        nume, categorie: document.getElementById('preparatCategorie').value.trim() || 'Fel principal',
+        vizibil_client: document.getElementById('preparatVizibil').checked ? 1 : 0,
+        reteta,
+    };
+    const d = await (await fetch('/api/admin/salveaza_preparat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })).json();
+    if (!d.ok) { showToast(d.msg || 'Eroare', false); return; }
+    inchidePreparat(); showToast('Preparat salvat!'); incarcaPreparate();
+}
+async function togglePreparat(id, camp) { await fetch('/api/admin/toggle_preparat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, camp }) }); incarcaPreparate(); }
+async function stergePreparat(id) {
+    if (!confirm('Ștergi preparatul?')) return;
+    await fetch('/api/admin/sterge_preparat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    incarcaPreparate();
+}
+
 /* ---------- Meniu pe eveniment ---------- */
 let EVENIMENTE = [];
 async function incarcaEvenimente() {
@@ -388,6 +507,16 @@ async function incarcaEvMeniu() {
     document.getElementById('evPersoane').value = ev.meniu_persoane || ev.nr_invitati || '';
     document.getElementById('evPret').value = ev.meniu_pret_persoana || '';
     document.getElementById('selPachet').value = ev.pachet_id || '';
+    // Client's own configured menu (from the public page), read-only
+    const cb = document.getElementById('clientBox');
+    let mc = []; try { mc = JSON.parse(ev.meniu_client || '[]'); } catch (e) {}
+    if (mc.length) {
+        const byCat = {};
+        mc.forEach(x => { const c = x.categorie || 'Altele'; (byCat[c] = byCat[c] || []).push(x.nume); });
+        cb.innerHTML = '<div class="client-box"><h3>🧑 Meniul ales de client</h3>' +
+            Object.keys(byCat).map(c => '<div class="client-cat"><b>' + esc(c) + ':</b> ' + esc(byCat[c].join(', ')) + '</div>').join('') +
+            '<div style="font-size:12px;color:#888;margin-top:6px">Clientul a ales aceste feluri pe pagina publică. Poți construi meniul final mai jos.</div></div>';
+    } else { cb.innerHTML = ''; }
     let meniu = []; try { meniu = JSON.parse(ev.meniu_json || '[]'); } catch (e) {}
     renderSectiuni('evSectiuni', meniu);
     recalcTotal();
