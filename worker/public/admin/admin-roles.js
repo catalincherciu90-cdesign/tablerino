@@ -14,7 +14,9 @@
     ospatar:   '/admin/index.html',
   };
   function slugOf(href) {
-    var m = (href || '').match(/\/admin\/([a-z-]+)\.html/);
+    // Matches both "/admin/depozit.html" (sidebar links) and the extensionless
+    // "/admin/depozit" that the host serves as the live URL.
+    var m = (href || '').match(/\/admin\/([a-z-]+)(?:\.html)?(?:[?#].*)?$/);
     return m ? m[1] : null;
   }
   fetch('/api/admin/me').then(function (r) { return r.ok ? r.json() : null; }).then(function (me) {
