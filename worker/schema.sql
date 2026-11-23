@@ -115,6 +115,7 @@ CREATE TABLE IF NOT EXISTS comanda_produse (
     cantitate    INTEGER DEFAULT 1,
     total        REAL NOT NULL,
     status       TEXT DEFAULT 'nou' CHECK (status IN ('nou','livrat')),
+    pregatit     INTEGER DEFAULT 0,       -- kitchen (KDS) prepared flag, independent of waiter delivery
     FOREIGN KEY (comanda_id) REFERENCES comenzi(id) ON DELETE CASCADE,
     FOREIGN KEY (produs_id) REFERENCES meniu_produse(id) ON DELETE CASCADE
 );
@@ -260,10 +261,31 @@ CREATE TABLE IF NOT EXISTS evenimente (
     email          TEXT,
     mesaj          TEXT,                            -- free-text details
     status         TEXT NOT NULL DEFAULT 'nou',     -- nou | contactat | confirmat | anulat
+    sala           TEXT,
+    pachet_id          INTEGER,                     -- optional reference to a saved event-menu package
+    meniu_json         TEXT,                        -- JSON snapshot of the custom menu for this event
+    meniu_persoane     INTEGER,                     -- guest count used for the menu total
+    meniu_pret_persoana REAL,                       -- price per guest
+    meniu_total        REAL,                        -- computed total (persoane * pret_persoana)
     creat_la       TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_evenimente_restaurant ON evenimente(restaurant_id);
+
+-- Reusable event-menu packages (e.g. "Nuntă Standard", "Botez Premium") per restaurant.
+CREATE TABLE IF NOT EXISTS meniu_evenimente_pachete (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER NOT NULL,
+    nume          TEXT NOT NULL,
+    descriere     TEXT,
+    pret_persoana REAL DEFAULT 0,
+    continut      TEXT,                              -- JSON: [{sectiune, feluri:[...]}, ...]
+    activ         INTEGER DEFAULT 1,
+    ordine        INTEGER DEFAULT 0,
+    creat_la      TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_mepachete_restaurant ON meniu_evenimente_pachete(restaurant_id);
 
 -- Event halls / spaces catalog (per restaurant) — shown on the public event form.
 CREATE TABLE IF NOT EXISTS sali (

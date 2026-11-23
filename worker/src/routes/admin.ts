@@ -1392,4 +1392,140 @@ admin.post('/sterge_recenzie', requireOwner, async (c) => {
   return c.json({ ok: true });
 });
 
+// ── Event menu packages (meniu personalizat pe evenimente) — owner only ──
+
+// Normalize the menu content JSON: [{ sectiune, feluri:[...] }, ...]
+function normalizeMenuContent(raw: unknown): { sectiune: string; feluri: string[] }[] {
+  if (!Array.isArray(raw)) return [];
+  const out: { sectiune: string; feluri: string[] }[] = [];
+  for (const s of raw) {
+    if (!s || typeof s !== 'object') continue;
+    const sectiune = String((s as any).sectiune ?? '').trim().slice(0, 80);
+    const feluriRaw = Array.isArray((s as any).feluri) ? (s as any).feluri : [];
+    const feluri = feluriRaw.map((f: unknown) => String(f ?? '').trim().slice(0, 160)).filter(Boolean).slice(0, 40);
+    if (!sectiune && feluri.length === 0) continue;
+    out.push({ sectiune: sectiune || '—', feluri });
+  }
+  return out.slice(0, 30);
+}
+
+admin.get('/pachete_evenimente', requireOwner, async (c) => {
+  const pachete = await all(
+    c.env.DB,
+    'SELECT id, nume, descriere, pret_persoana, continut, activ, ordine FROM meniu_evenimente_pachete WHERE restaurant_id = ? ORDER BY ordine, id',
+    rid(c)
+  );
+  return c.json({ ok: true, pachete });
+});
+
+admin.post('/salveaza_pachet_eveniment', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  const nume = (body.nume ?? '').toString().trim().slice(0, 100);
+  if (!nume) return c.json({ ok: false, msg: 'Numele pachetului e obligatoriu.' }, 400);
+  const descriere = (body.descriere ?? '').toString().trim().slice(0, 400) || null;
+  const pret = Math.max(0, Number(body.pret_persoana ?? 0)) || 0;
+  const continut = JSON.stringify(normalizeMenuContent(body.continut));
+  if (id) {
+    await run(
+      c.env.DB,
+      'UPDATE meniu_evenimente_pachete SET nume = ?, descriere = ?, pret_persoana = ?, continut = ? WHERE id = ? AND restaurant_id = ?',
+      nume, descriere, pret, continut, id, rid(c)
+    );
+    return c.json({ ok: true, id });
+  }
+  const res = await run(
+    c.env.DB,
+    'INSERT INTO meniu_evenimente_pachete (restaurant_id, nume, descriere, pret_persoana, continut) VALUES (?, ?, ?, ?, ?)',
+    rid(c), nume, descriere, pret, continut
+  );
+  return c.json({ ok: true, id: res.meta.last_row_id });
+});
+
+admin.post('/toggle_pachet_eveniment', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  await run(c.env.DB, 'UPDATE meniu_evenimente_pachete SET activ = 1 - activ WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return c.json({ ok: true });
+});
+
+admin.post('/sterge_pachet_eveniment', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  await run(c.env.DB, 'DELETE FROM meniu_evenimente_pachete WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return c.json({ ok: true });
+});
+
+// ── Per-event custom menu ──
+
+admin.get('/eveniment_meniu', requireOwner, async (c) => {
+  const id = Number(c.req.query('id') ?? 0);
+  const ev = await one(
+    c.env.DB,
+    `SELECT id, tip, data_eveniment, nr_invitati, nume, telefon, email, sala, status,
+            pachet_id, meniu_json, meniu_persoane, meniu_pret_persoana, meniu_total
+     FROM evenimente WHERE id = ? AND restaurant_id = ?`,
+    id, rid(c)
+  );
+  if (!ev) return c.json({ ok: false, msg: 'Eveniment inexistent' }, 404);
+  return c.json({ ok: true, eveniment: ev });
+});
+
+admin.post('/salveaza_eveniment_meniu', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  if (!id) return c.json({ ok: false }, 400);
+  const pachetId = Number(body.pachet_id ?? 0) || null;
+  const persoane = Math.max(0, Number(body.meniu_persoane ?? 0)) || null;
+  const pretPers = Math.max(0, Number(body.meniu_pret_persoana ?? 0)) || null;
+  const meniu = normalizeMenuContent(body.meniu_json);
+  const total = (persoane && pretPers) ? Math.round(persoane * pretPers * 100) / 100 : null;
+  const res = await run(
+    c.env.DB,
+    `UPDATE evenimente SET pachet_id = ?, meniu_json = ?, meniu_persoane = ?, meniu_pret_persoana = ?, meniu_total = ?
+     WHERE id = ? AND restaurant_id = ?`,
+    pachetId, JSON.stringify(meniu), persoane, pretPers, total, id, rid(c)
+  );
+  if (!res.meta.changes) return c.json({ ok: false, msg: 'Eveniment inexistent' }, 404);
+  return c.json({ ok: true, meniu_total: total });
+});
+
+// ── Kitchen screen (KDS / organizare bucătărie) — any logged-in staff ──
+// Reuses GET /comenzi for the live list (produse include the `pregatit` flag).
+
+admin.post('/bucatarie_produs_gata', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const prodId = Number(body.comanda_produs_id ?? 0);
+  const val = body.pregatit === 0 || body.pregatit === false ? 0 : 1;
+  // Scope the update to this restaurant's orders only.
+  await run(
+    c.env.DB,
+    `UPDATE comanda_produse SET pregatit = ?
+     WHERE id = ? AND comanda_id IN (SELECT id FROM comenzi WHERE restaurant_id = ?)`,
+    val, prodId, rid(c)
+  );
+  // When the kitchen starts on an order, move it out of 'noua'.
+  if (val === 1) {
+    const row = await one<{ comanda_id: number }>(c.env.DB, 'SELECT comanda_id FROM comanda_produse WHERE id = ?', prodId);
+    if (row) await run(c.env.DB, "UPDATE comenzi SET status = 'in_pregatire' WHERE id = ? AND restaurant_id = ? AND status = 'noua'", row.comanda_id, rid(c));
+  }
+  return c.json({ ok: true });
+});
+
+admin.post('/bucatarie_comanda_gata', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const comandaId = Number(body.comanda_id ?? 0);
+  const val = body.pregatit === 0 || body.pregatit === false ? 0 : 1;
+  await run(
+    c.env.DB,
+    `UPDATE comanda_produse SET pregatit = ?
+     WHERE comanda_id = ? AND comanda_id IN (SELECT id FROM comenzi WHERE restaurant_id = ?)`,
+    val, comandaId, rid(c)
+  );
+  if (val === 1) {
+    await run(c.env.DB, "UPDATE comenzi SET status = 'in_pregatire' WHERE id = ? AND restaurant_id = ? AND status = 'noua'", comandaId, rid(c));
+  }
+  return c.json({ ok: true });
+});
+
 export default admin;

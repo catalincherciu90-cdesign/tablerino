@@ -90,6 +90,18 @@ jobs:
             --command "ALTER TABLE restaurante ADD COLUMN evenimente_capacitate INTEGER" || true
           npx wrangler d1 execute tablerino --remote --yes \
             --command "ALTER TABLE evenimente ADD COLUMN sala TEXT" || true
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE comanda_produse ADD COLUMN pregatit INTEGER DEFAULT 0" || true
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE evenimente ADD COLUMN pachet_id INTEGER" || true
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE evenimente ADD COLUMN meniu_json TEXT" || true
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE evenimente ADD COLUMN meniu_persoane INTEGER" || true
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE evenimente ADD COLUMN meniu_pret_persoana REAL" || true
+          npx wrangler d1 execute tablerino --remote --yes \
+            --command "ALTER TABLE evenimente ADD COLUMN meniu_total REAL" || true
 
       - name: Deploy Worker
         run: npx wrangler deploy

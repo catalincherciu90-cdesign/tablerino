@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16.png">
+<link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablerino - Meniu evenimente</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #1a1a2e; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+.sidebar .logo { margin-bottom: 20px; padding: 4px; display: flex; align-items: center; justify-content: center; }
+.sidebar .logo img { height: 64px; width: auto; object-fit: contain; background: #fff; border-radius: 10px; padding: 6px; }
+.sidebar a { color: #aaa; text-decoration: none; padding: 10px 12px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; transition: background .15s, color .15s; }
+.sidebar a:hover, .sidebar a.activ { background: #6c47ff; color: #fff; }
+.sidebar .logout { margin-top: auto; }
+.main { margin-left: 220px; padding: 32px; max-width: 920px; }
+.main h2 { font-size: 20px; margin-bottom: 6px; }
+.main p.sub { color: #888; font-size: 14px; margin-bottom: 22px; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid #e3e3ee; }
+.tab { padding: 10px 18px; border: none; background: none; font-size: 14px; font-weight: 600; color: #888; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab.activ { color: #6c47ff; border-bottom-color: #6c47ff; }
+.pane { display: none; }
+.pane.activ { display: block; }
+
+.cards { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+.card { background: #fff; border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); }
+.card.inactiv { opacity: .55; }
+.card-top { display: flex; align-items: flex-start; gap: 12px; }
+.card-top h4 { font-size: 16px; font-weight: 700; flex: 1; }
+.card-pret { font-size: 15px; font-weight: 800; color: #6c47ff; white-space: nowrap; }
+.card-desc { font-size: 13px; color: #666; margin: 4px 0 10px; }
+.card-sectiuni { display: flex; flex-direction: column; gap: 6px; }
+.card-sectiune { font-size: 13px; }
+.card-sectiune b { color: #333; }
+.card-sectiune span { color: #666; }
+.card-actiuni { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.btn-sm { padding: 6px 12px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-edit { background: #ede9ff; color: #6c47ff; }
+.btn-del { background: #ffebee; color: #c62828; }
+.btn-toggle-on { background: #d1fae5; color: #065f46; }
+.btn-toggle-off { background: #fee2e2; color: #c62828; }
+.gol { color: #999; font-size: 14px; padding: 20px; text-align: center; background: #fff; border-radius: 12px; }
+
+.btn-primary { background: #6c47ff; color: #fff; border: none; padding: 11px 20px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; }
+.btn-primary:hover { background: #5838d8; }
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; }
+.field input, .field textarea, .field select { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: inherit; }
+.field small { color: #999; font-size: 12px; display: block; margin-top: 4px; }
+.row2 { display: flex; gap: 14px; flex-wrap: wrap; }
+.row2 .field { flex: 1; min-width: 160px; }
+
+/* Section builder */
+.sb-sectiune { border: 1px solid #e3e3ee; border-radius: 10px; padding: 12px; margin-bottom: 12px; background: #fafaff; }
+.sb-sectiune-head { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.sb-sectiune-head input { flex: 1; font-weight: 700; }
+.sb-fel { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.sb-fel input { flex: 1; }
+.btn-x { background: #ffebee; color: #c62828; border: none; width: 32px; height: 36px; border-radius: 7px; font-size: 15px; cursor: pointer; flex-shrink: 0; }
+.btn-add-fel { background: #f0edff; color: #6c47ff; border: 1px dashed #c3b6ff; padding: 7px 12px; border-radius: 7px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.btn-add-sectiune { background: #f0edff; color: #6c47ff; border: 1px dashed #c3b6ff; padding: 9px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; width: 100%; }
+
+/* Overlay modal */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 100; align-items: flex-start; justify-content: center; padding: 30px 16px; overflow-y: auto; }
+.overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 16px; padding: 24px; width: 100%; max-width: 560px; }
+.modal h3 { font-size: 18px; margin-bottom: 16px; }
+.modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+.btn-cancel { background: #eee; color: #555; border: none; padding: 10px 18px; border-radius: 9px; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+.ev-total-box { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
+.ev-total { font-size: 15px; }
+.ev-total b { font-size: 22px; color: #6c47ff; }
+.ev-contact { font-size: 13px; color: #666; margin-bottom: 14px; }
+
+.toast { display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #10b981; color: #fff; padding: 12px 22px; border-radius: 10px; font-size: 14px; font-weight: 600; z-index: 500; box-shadow: 0 6px 20px rgba(0,0,0,.2); }
+
+@media (max-width: 820px) {
+    .sidebar { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: 100%; height: 60px; flex-direction: row; padding: 0 4px; justify-content: flex-start; align-items: center; border-top: 1px solid #2a2a3e; z-index: 100; overflow-x: auto; overflow-y: hidden; gap: 0; }
+    .sidebar .logo { display: none; }
+    .sidebar .logout { margin-top: 0; }
+    .sidebar a { flex-direction: column; gap: 2px; font-size: 10px; padding: 6px 10px; border-radius: 6px; justify-content: center; text-align: center; flex: 0 0 auto; white-space: nowrap; }
+    .main { margin-left: 0; padding: 18px 14px 80px; }
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="logo"><img src="/uploads/logo-tablerino.png" alt="Tablerino" style="height:190px;width:auto;object-fit:contain;display:block;"></div>
+    <a href="/admin/index.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg> Comenzi</a>
+    <a href="/admin/bucatarie.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 3a4 4 0 0 1 4 4c1.7 0 3 1.3 3 3s-1.3 3-3 3H8c-1.7 0-3-1.3-3-3s1.3-3 3-3a4 4 0 0 1 4-4z"/><path d="M7 16h10v3a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z"/></svg> Bucătărie</a>
+    <a href="/admin/meniu.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 7v14"/><path d="M4 5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2 2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v12a1 1 0 0 1-1 1h-6a2 2 0 0 0-2 2 2 2 0 0 0-2-2H5a1 1 0 0 1-1-1z"/></svg> Meniu</a>
+    <a href="/admin/meniu-evenimente.html" class="activ"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M5.8 11.3 2 22l10.7-3.8"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.2.7a2 2 0 0 0-1.3 1.3L18 6l1 1 2-1 1-1z"/><path d="M11 13c1.9 1.9 2.8 4.2 2 5-.8.8-3.1-.1-5-2-1.9-1.9-2.8-4.2-2-5 .8-.8 3.1.1 5 2z"/></svg> Meniu evenimente</a>
+    <a href="/admin/mese.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M3 10h18"/><path d="M5 10V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M6 10v9"/><path d="M18 10v9"/></svg> Mese</a>
+    <a href="/admin/istoric.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg> Istoric</a>
+    <a href="/admin/rezervari.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg> Rezervări</a>
+    <a href="/admin/recenzii.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 2.5l2.9 6 6.6.6-5 4.3 1.5 6.5L12 16.9 6 19.9l1.5-6.5-5-4.3 6.6-.6z"/></svg> Recenzii</a>
+    <a href="/admin/raport.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><line x1="4" y1="20" x2="4" y2="12"/><line x1="10" y1="20" x2="10" y2="5"/><line x1="16" y1="20" x2="16" y2="9"/><line x1="3" y1="20" x2="21" y2="20"/></svg> Rapoarte</a>
+    <a href="/admin/setari.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><circle cx="13.5" cy="6.5" r=".9" fill="currentColor" stroke="none"/><circle cx="17.5" cy="10.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8.5" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="6.5" cy="12.5" r=".9" fill="currentColor" stroke="none"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.7 1.7-1.7H18c2.2 0 4-1.8 4-4C22 6 17.5 2 12 2z"/></svg> Design</a>
+    <a href="/admin/abonament.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Abonament</a>
+    <a href="/admin/reclame.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="m3 11 18-5v12L3 14z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg> Reclame</a>
+    <a href="/admin/audit.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> Audit</a>
+    <a href="/admin/ospatari.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></svg> Ospătari</a>
+    <div style="margin-top:auto;padding:8px 4px;display:flex;gap:6px;justify-content:center">
+        <a href="?lang=ro" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;background:#6c47ff;color:#fff">🇷🇴 RO</a>
+        <a href="?lang=en" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#aaa">🇬🇧 EN</a>
+    </div>
+    <a href="#" class="logout" onclick="logout(event)">🚪 Ieșire</a>
+</div>
+
+<div class="main">
+    <h2>🎉 Meniu evenimente</h2>
+    <p class="sub">Creează pachete de meniu reutilizabile și personalizează meniul pentru fiecare eveniment în parte.</p>
+
+    <div class="tabs">
+        <button class="tab activ" data-tab="pachete" onclick="schimbaTab('pachete')">Pachete de meniu</button>
+        <button class="tab" data-tab="eveniment" onclick="schimbaTab('eveniment')">Meniu pe eveniment</button>
+    </div>
+
+    <!-- TAB 1: Pachete -->
+    <div class="pane activ" id="panePachete">
+        <div style="margin-bottom:18px"><button class="btn-primary" onclick="deschidePachet()">+ Adaugă pachet</button></div>
+        <div class="cards" id="listaPachete"><div class="gol">Se încarcă...</div></div>
+    </div>
+
+    <!-- TAB 2: Meniu pe eveniment -->
+    <div class="pane" id="paneEveniment">
+        <div class="field" style="max-width:420px">
+            <label>Alege o cerere de eveniment</label>
+            <select id="selEveniment" onchange="incarcaEvMeniu()"><option value="">— selectează —</option></select>
+            <small>Lista vine din cererile primite pe pagina de evenimente.</small>
+        </div>
+        <div id="evBuilder" style="display:none">
+            <div class="ev-total-box">
+                <div class="ev-contact" id="evContact"></div>
+                <div class="field" style="max-width:420px">
+                    <label>Pornește de la un pachet (opțional)</label>
+                    <select id="selPachet"><option value="">— meniu gol —</option></select>
+                    <button class="btn-sm btn-edit" style="margin-top:8px" onclick="aplicaPachet()">Aplică pachetul</button>
+                </div>
+                <div class="row2">
+                    <div class="field"><label>Nr. persoane</label><input type="number" id="evPersoane" min="0" oninput="recalcTotal()"></div>
+                    <div class="field"><label>Preț / persoană (lei)</label><input type="number" id="evPret" min="0" step="0.5" oninput="recalcTotal()"></div>
+                </div>
+                <div class="ev-total">Total estimat: <b id="evTotal">0 lei</b></div>
+            </div>
+            <h3 style="font-size:15px;margin-bottom:10px">Meniul evenimentului</h3>
+            <div id="evSectiuni"></div>
+            <button class="btn-add-sectiune" onclick="adaugaSectiune('evSectiuni')">+ Adaugă secțiune</button>
+            <div style="margin-top:18px"><button class="btn-primary" onclick="salveazaEvMeniu()">💾 Salvează meniul evenimentului</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pachet -->
+<div class="overlay" id="overlayPachet">
+    <div class="modal">
+        <h3 id="pachetTitluModal">Pachet nou</h3>
+        <input type="hidden" id="pachetId">
+        <div class="field"><label>Nume pachet</label><input type="text" id="pachetNume" placeholder="Ex: Pachet Nuntă Standard"></div>
+        <div class="field"><label>Descriere (opțional)</label><textarea id="pachetDesc" rows="2" placeholder="Scurtă descriere a pachetului"></textarea></div>
+        <div class="field" style="max-width:220px"><label>Preț / persoană (lei)</label><input type="number" id="pachetPret" min="0" step="0.5" value="0"></div>
+        <label style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px;display:block">Conținut meniu</label>
+        <div id="pachetSectiuni"></div>
+        <button class="btn-add-sectiune" onclick="adaugaSectiune('pachetSectiuni')">+ Adaugă secțiune</button>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="inchidePachet()">Anulează</button>
+            <button class="btn-primary" onclick="salveazaPachet()">Salvează</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function logout(e) { if (e) e.preventDefault(); fetch('/api/admin/logout', { method: 'POST' }).finally(function () { location.href = '/admin/login.html'; }); }
+function showToast(msg, ok = true) { const t = document.getElementById('toast'); t.textContent = msg; t.style.background = ok ? '#10b981' : '#e53e3e'; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 2600); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function schimbaTab(t) {
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('activ', b.dataset.tab === t));
+    document.getElementById('panePachete').classList.toggle('activ', t === 'pachete');
+    document.getElementById('paneEveniment').classList.toggle('activ', t === 'eveniment');
+    if (t === 'eveniment') incarcaEvenimente();
+}
+
+/* ---------- Section builder (shared) ---------- */
+function makeSectiune(data) {
+    data = data || { sectiune: '', feluri: [''] };
+    const wrap = document.createElement('div');
+    wrap.className = 'sb-sectiune';
+    const feluri = (data.feluri && data.feluri.length) ? data.feluri : [''];
+    wrap.innerHTML =
+        '<div class="sb-sectiune-head">' +
+          '<input type="text" class="sb-nume" placeholder="Nume secțiune (ex: Aperitive)" value="' + esc(data.sectiune) + '">' +
+          '<button class="btn-x" title="Șterge secțiunea" onclick="this.closest(\'.sb-sectiune\').remove()">✕</button>' +
+        '</div>' +
+        '<div class="sb-feluri"></div>' +
+        '<button class="btn-add-fel" onclick="adaugaFel(this)">+ Adaugă fel</button>';
+    const feluriBox = wrap.querySelector('.sb-feluri');
+    feluri.forEach(f => feluriBox.appendChild(makeFel(f)));
+    return wrap;
+}
+function makeFel(val) {
+    const row = document.createElement('div');
+    row.className = 'sb-fel';
+    row.innerHTML = '<input type="text" placeholder="Ex: Ciorbă de văcuță" value="' + esc(val || '') + '">' +
+        '<button class="btn-x" onclick="this.closest(\'.sb-fel\').remove()">✕</button>';
+    return row;
+}
+function adaugaFel(btn) { btn.previousElementSibling.appendChild(makeFel('')); }
+function adaugaSectiune(containerId, data) { document.getElementById(containerId).appendChild(makeSectiune(data)); }
+function renderSectiuni(containerId, arr) {
+    const box = document.getElementById(containerId);
+    box.innerHTML = '';
+    if (!arr || !arr.length) { box.appendChild(makeSectiune()); return; }
+    arr.forEach(s => box.appendChild(makeSectiune(s)));
+}
+function collectSectiuni(containerId) {
+    const out = [];
+    document.getElementById(containerId).querySelectorAll('.sb-sectiune').forEach(sec => {
+        const sectiune = sec.querySelector('.sb-nume').value.trim();
+        const feluri = [];
+        sec.querySelectorAll('.sb-fel input').forEach(i => { const v = i.value.trim(); if (v) feluri.push(v); });
+        if (sectiune || feluri.length) out.push({ sectiune: sectiune || '—', feluri });
+    });
+    return out;
+}
+
+/* ---------- Pachete ---------- */
+let PACHETE = [];
+async function incarcaPachete() {
+    const d = await (await fetch('/api/admin/pachete_evenimente')).json();
+    PACHETE = d.pachete || [];
+    const box = document.getElementById('listaPachete');
+    if (!PACHETE.length) { box.innerHTML = '<div class="gol">Niciun pachet încă. Adaugă primul pachet de meniu.</div>'; return; }
+    box.innerHTML = PACHETE.map(p => {
+        let cont = []; try { cont = JSON.parse(p.continut || '[]'); } catch (e) {}
+        const sect = cont.map(s => '<div class="card-sectiune"><b>' + esc(s.sectiune) + ':</b> <span>' + esc((s.feluri||[]).join(', ')) + '</span></div>').join('');
+        return '<div class="card ' + (p.activ == 0 ? 'inactiv' : '') + '">' +
+            '<div class="card-top"><h4>' + esc(p.nume) + '</h4><span class="card-pret">' + (Number(p.pret_persoana)||0) + ' lei/pers</span></div>' +
+            (p.descriere ? '<div class="card-desc">' + esc(p.descriere) + '</div>' : '') +
+            '<div class="card-sectiuni">' + sect + '</div>' +
+            '<div class="card-actiuni">' +
+              '<button class="btn-sm btn-edit" onclick="deschidePachet(' + p.id + ')">✏️ Editează</button>' +
+              '<button class="btn-sm ' + (p.activ == 1 ? 'btn-toggle-on' : 'btn-toggle-off') + '" onclick="togglePachet(' + p.id + ')">' + (p.activ == 1 ? 'Activ' : 'Inactiv') + '</button>' +
+              '<button class="btn-sm btn-del" onclick="stergePachet(' + p.id + ')">✕ Șterge</button>' +
+            '</div></div>';
+    }).join('');
+}
+function deschidePachet(id) {
+    document.getElementById('pachetId').value = id || '';
+    const p = id ? PACHETE.find(x => x.id === id) : null;
+    document.getElementById('pachetTitluModal').textContent = p ? 'Editează pachetul' : 'Pachet nou';
+    document.getElementById('pachetNume').value = p ? p.nume : '';
+    document.getElementById('pachetDesc').value = p ? (p.descriere || '') : '';
+    document.getElementById('pachetPret').value = p ? (Number(p.pret_persoana)||0) : 0;
+    let cont = []; if (p) { try { cont = JSON.parse(p.continut || '[]'); } catch (e) {} }
+    renderSectiuni('pachetSectiuni', cont);
+    document.getElementById('overlayPachet').classList.add('open');
+}
+function inchidePachet() { document.getElementById('overlayPachet').classList.remove('open'); }
+async function salveazaPachet() {
+    const nume = document.getElementById('pachetNume').value.trim();
+    if (!nume) { showToast('Numele pachetului e obligatoriu.', false); return; }
+    const payload = {
+        id: Number(document.getElementById('pachetId').value) || 0,
+        nume,
+        descriere: document.getElementById('pachetDesc').value.trim(),
+        pret_persoana: Number(document.getElementById('pachetPret').value) || 0,
+        continut: collectSectiuni('pachetSectiuni'),
+    };
+    const d = await (await fetch('/api/admin/salveaza_pachet_eveniment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })).json();
+    if (!d.ok) { showToast(d.msg || 'Eroare', false); return; }
+    inchidePachet(); showToast('Pachet salvat!'); incarcaPachete();
+}
+async function togglePachet(id) { await fetch('/api/admin/toggle_pachet_eveniment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); incarcaPachete(); }
+async function stergePachet(id) {
+    if (!confirm('Ștergi pachetul?')) return;
+    await fetch('/api/admin/sterge_pachet_eveniment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    incarcaPachete();
+}
+
+/* ---------- Meniu pe eveniment ---------- */
+let EVENIMENTE = [];
+async function incarcaEvenimente() {
+    const d = await (await fetch('/api/admin/evenimente')).json();
+    EVENIMENTE = d.evenimente || [];
+    const sel = document.getElementById('selEveniment');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— selectează —</option>' + EVENIMENTE.map(e =>
+        '<option value="' + e.id + '">' + esc((e.tip || 'eveniment') + ' · ' + (e.nume || '') + (e.data_eveniment ? ' · ' + e.data_eveniment : '')) + '</option>'
+    ).join('');
+    sel.value = cur;
+    // Populate package picker too
+    if (!PACHETE.length) await incarcaPachete();
+    document.getElementById('selPachet').innerHTML = '<option value="">— meniu gol —</option>' +
+        PACHETE.filter(p => p.activ == 1).map(p => '<option value="' + p.id + '">' + esc(p.nume + ' (' + (Number(p.pret_persoana)||0) + ' lei/pers)') + '</option>').join('');
+}
+async function incarcaEvMeniu() {
+    const id = Number(document.getElementById('selEveniment').value) || 0;
+    const builder = document.getElementById('evBuilder');
+    if (!id) { builder.style.display = 'none'; return; }
+    const d = await (await fetch('/api/admin/eveniment_meniu?id=' + id)).json();
+    if (!d.ok) { showToast(d.msg || 'Eroare', false); return; }
+    const ev = d.eveniment;
+    builder.style.display = 'block';
+    document.getElementById('evContact').innerHTML =
+        '<b>' + esc(ev.nume || '') + '</b>' + (ev.telefon ? ' · ' + esc(ev.telefon) : '') + (ev.email ? ' · ' + esc(ev.email) : '') +
+        (ev.sala ? ' · sala: ' + esc(ev.sala) : '') + (ev.nr_invitati ? ' · ~' + ev.nr_invitati + ' invitați' : '');
+    document.getElementById('evPersoane').value = ev.meniu_persoane || ev.nr_invitati || '';
+    document.getElementById('evPret').value = ev.meniu_pret_persoana || '';
+    document.getElementById('selPachet').value = ev.pachet_id || '';
+    let meniu = []; try { meniu = JSON.parse(ev.meniu_json || '[]'); } catch (e) {}
+    renderSectiuni('evSectiuni', meniu);
+    recalcTotal();
+}
+function aplicaPachet() {
+    const pid = Number(document.getElementById('selPachet').value) || 0;
+    const p = PACHETE.find(x => x.id === pid);
+    if (!p) { showToast('Alege un pachet.', false); return; }
+    let cont = []; try { cont = JSON.parse(p.continut || '[]'); } catch (e) {}
+    renderSectiuni('evSectiuni', cont);
+    if (!document.getElementById('evPret').value) document.getElementById('evPret').value = Number(p.pret_persoana) || 0;
+    recalcTotal();
+    showToast('Pachet aplicat — poți personaliza meniul.');
+}
+function recalcTotal() {
+    const pers = Number(document.getElementById('evPersoane').value) || 0;
+    const pret = Number(document.getElementById('evPret').value) || 0;
+    document.getElementById('evTotal').textContent = (Math.round(pers * pret * 100) / 100) + ' lei';
+}
+async function salveazaEvMeniu() {
+    const id = Number(document.getElementById('selEveniment').value) || 0;
+    if (!id) return;
+    const payload = {
+        id,
+        pachet_id: Number(document.getElementById('selPachet').value) || 0,
+        meniu_persoane: Number(document.getElementById('evPersoane').value) || 0,
+        meniu_pret_persoana: Number(document.getElementById('evPret').value) || 0,
+        meniu_json: collectSectiuni('evSectiuni'),
+    };
+    const d = await (await fetch('/api/admin/salveaza_eveniment_meniu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })).json();
+    if (!d.ok) { showToast(d.msg || 'Eroare', false); return; }
+    showToast('Meniul evenimentului a fost salvat!');
+}
+
+/* ---------- Boot ---------- */
+fetch('/api/admin/me').then(function (r) {
+    if (!r.ok) { location.href = '/admin/login.html'; return; }
+    return r.json();
+}).then(function (me) {
+    if (!me) return;
+    if (me.role === 'ospatar') { location.href = '/admin/index.html'; return; }
+    incarcaPachete();
+});
+</script>
+<script src="/admin/master-banner.js"></script>
+</body>
+</html>
