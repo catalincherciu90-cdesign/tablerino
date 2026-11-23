@@ -1394,19 +1394,47 @@ admin.post('/sterge_recenzie', requireOwner, async (c) => {
 
 // ── Event menu packages (meniu personalizat pe evenimente) — owner only ──
 
-// Normalize the menu content JSON: [{ sectiune, feluri:[...] }, ...]
-function normalizeMenuContent(raw: unknown): { sectiune: string; feluri: string[] }[] {
+// Normalize the menu content JSON.
+// A "fel" (dish) is { nume, ingrediente: [{ id, cant }] }; plain strings are
+// accepted for backward compatibility and converted to a dish with no recipe.
+type Fel = { nume: string; ingrediente: { id: number; cant: number }[] };
+function normalizeFel(f: unknown): Fel | null {
+  if (typeof f === 'string') {
+    const nume = f.trim().slice(0, 160);
+    return nume ? { nume, ingrediente: [] } : null;
+  }
+  if (f && typeof f === 'object') {
+    const nume = String((f as any).nume ?? '').trim().slice(0, 160);
+    const ingrRaw = Array.isArray((f as any).ingrediente) ? (f as any).ingrediente : [];
+    const ingrediente = ingrRaw
+      .map((i: unknown) => ({ id: Number((i as any)?.id ?? 0) || 0, cant: Math.max(0, Number((i as any)?.cant ?? 0)) || 0 }))
+      .filter((i: { id: number; cant: number }) => i.id > 0)
+      .slice(0, 30);
+    if (!nume && ingrediente.length === 0) return null;
+    return { nume: nume || '—', ingrediente };
+  }
+  return null;
+}
+function normalizeMenuContent(raw: unknown): { sectiune: string; feluri: Fel[] }[] {
   if (!Array.isArray(raw)) return [];
-  const out: { sectiune: string; feluri: string[] }[] = [];
+  const out: { sectiune: string; feluri: Fel[] }[] = [];
   for (const s of raw) {
     if (!s || typeof s !== 'object') continue;
     const sectiune = String((s as any).sectiune ?? '').trim().slice(0, 80);
     const feluriRaw = Array.isArray((s as any).feluri) ? (s as any).feluri : [];
-    const feluri = feluriRaw.map((f: unknown) => String(f ?? '').trim().slice(0, 160)).filter(Boolean).slice(0, 40);
+    const feluri = feluriRaw.map(normalizeFel).filter((x: Fel | null): x is Fel => x !== null).slice(0, 40);
     if (!sectiune && feluri.length === 0) continue;
     out.push({ sectiune: sectiune || '—', feluri });
   }
   return out.slice(0, 30);
+}
+// Sum ingredient needs from a normalized menu, scaled by guest count.
+function necesarDinMeniu(meniu: { sectiune: string; feluri: Fel[] }[], persoane: number): Map<number, number> {
+  const need = new Map<number, number>();
+  for (const sec of meniu) for (const fel of sec.feluri) for (const ing of fel.ingrediente) {
+    need.set(ing.id, (need.get(ing.id) ?? 0) + ing.cant * persoane);
+  }
+  return need;
 }
 
 admin.get('/pachete_evenimente', requireOwner, async (c) => {
@@ -1463,7 +1491,7 @@ admin.get('/eveniment_meniu', requireOwner, async (c) => {
   const ev = await one(
     c.env.DB,
     `SELECT id, tip, data_eveniment, nr_invitati, nume, telefon, email, sala, status,
-            pachet_id, meniu_json, meniu_persoane, meniu_pret_persoana, meniu_total
+            pachet_id, meniu_json, meniu_persoane, meniu_pret_persoana, meniu_total, meniu_consumat
      FROM evenimente WHERE id = ? AND restaurant_id = ?`,
     id, rid(c)
   );
@@ -1525,6 +1553,157 @@ admin.post('/bucatarie_comanda_gata', async (c) => {
   if (val === 1) {
     await run(c.env.DB, "UPDATE comenzi SET status = 'in_pregatire' WHERE id = ? AND restaurant_id = ? AND status = 'noua'", comandaId, rid(c));
   }
+  return c.json({ ok: true });
+});
+
+// ── Depozit / ingredient stock (owner only) ──
+
+admin.get('/depozit', requireOwner, async (c) => {
+  const ingrediente = await all(
+    c.env.DB,
+    'SELECT id, nume, unitate, stoc, prag_minim, activ FROM depozit_ingrediente WHERE restaurant_id = ? ORDER BY nume COLLATE NOCASE',
+    rid(c)
+  );
+  return c.json({ ok: true, ingrediente });
+});
+
+admin.post('/salveaza_ingredient', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  const nume = (body.nume ?? '').toString().trim().slice(0, 100);
+  if (!nume) return c.json({ ok: false, msg: 'Numele ingredientului e obligatoriu.' }, 400);
+  const unitate = (body.unitate ?? 'buc').toString().trim().slice(0, 12) || 'buc';
+  const stoc = Math.max(0, Number(body.stoc ?? 0)) || 0;
+  const prag = Math.max(0, Number(body.prag_minim ?? 0)) || 0;
+  if (id) {
+    await run(
+      c.env.DB,
+      'UPDATE depozit_ingrediente SET nume = ?, unitate = ?, stoc = ?, prag_minim = ? WHERE id = ? AND restaurant_id = ?',
+      nume, unitate, stoc, prag, id, rid(c)
+    );
+    return c.json({ ok: true, id });
+  }
+  const res = await run(
+    c.env.DB,
+    'INSERT INTO depozit_ingrediente (restaurant_id, nume, unitate, stoc, prag_minim) VALUES (?, ?, ?, ?, ?)',
+    rid(c), nume, unitate, stoc, prag
+  );
+  return c.json({ ok: true, id: res.meta.last_row_id });
+});
+
+admin.post('/sterge_ingredient', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  await run(c.env.DB, 'DELETE FROM depozit_ingrediente WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return c.json({ ok: true });
+});
+
+// Receive stock or manually adjust it (delta can be + or -).
+admin.post('/ajusteaza_stoc', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  const delta = Number(body.delta ?? 0);
+  if (!id || !delta) return c.json({ ok: false, msg: 'Cantitate invalidă.' }, 400);
+  const ing = await one<{ stoc: number }>(c.env.DB, 'SELECT stoc FROM depozit_ingrediente WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  if (!ing) return c.json({ ok: false, msg: 'Ingredient inexistent' }, 404);
+  const nou = Math.max(0, Number(ing.stoc) + delta);
+  await run(c.env.DB, 'UPDATE depozit_ingrediente SET stoc = ? WHERE id = ? AND restaurant_id = ?', nou, id, rid(c));
+  await run(
+    c.env.DB,
+    'INSERT INTO depozit_miscari (restaurant_id, ingredient_id, delta, motiv, ref) VALUES (?, ?, ?, ?, ?)',
+    rid(c), id, delta, delta > 0 ? 'receptie' : 'ajustare', (body.ref ?? '').toString().slice(0, 80) || null
+  );
+  return c.json({ ok: true, stoc: nou });
+});
+
+// Compute ingredient needs for an event's saved menu, compared against stock.
+admin.get('/eveniment_necesar', requireOwner, async (c) => {
+  const id = Number(c.req.query('id') ?? 0);
+  const ev = await one<{ meniu_json: string | null; meniu_persoane: number | null; meniu_consumat: number }>(
+    c.env.DB,
+    'SELECT meniu_json, meniu_persoane, meniu_consumat FROM evenimente WHERE id = ? AND restaurant_id = ?',
+    id, rid(c)
+  );
+  if (!ev) return c.json({ ok: false, msg: 'Eveniment inexistent' }, 404);
+  const persoane = Number(ev.meniu_persoane) || 0;
+  let meniu: { sectiune: string; feluri: Fel[] }[] = [];
+  try { meniu = normalizeMenuContent(JSON.parse(ev.meniu_json || '[]')); } catch (e) {}
+  const need = necesarDinMeniu(meniu, persoane);
+  const ids = [...need.keys()];
+  const randuri: { id: number; nume: string; unitate: string; necesar: number; stoc: number; lipsa: number }[] = [];
+  if (ids.length) {
+    const placeholders = ids.map(() => '?').join(',');
+    const ingr = await all<{ id: number; nume: string; unitate: string; stoc: number }>(
+      c.env.DB,
+      `SELECT id, nume, unitate, stoc FROM depozit_ingrediente WHERE restaurant_id = ? AND id IN (${placeholders})`,
+      rid(c), ...ids
+    );
+    for (const i of ingr) {
+      const necesar = Math.round((need.get(i.id) ?? 0) * 1000) / 1000;
+      const lipsa = Math.max(0, Math.round((necesar - Number(i.stoc)) * 1000) / 1000);
+      randuri.push({ id: i.id, nume: i.nume, unitate: i.unitate, necesar, stoc: Number(i.stoc), lipsa });
+    }
+    randuri.sort((a, b) => a.nume.localeCompare(b.nume));
+  }
+  return c.json({ ok: true, persoane, consumat: ev.meniu_consumat === 1, randuri });
+});
+
+// Deduct an event's ingredient needs from stock (auto-deduction at event level).
+admin.post('/consuma_eveniment', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  const ev = await one<{ meniu_json: string | null; meniu_persoane: number | null; meniu_consumat: number }>(
+    c.env.DB,
+    'SELECT meniu_json, meniu_persoane, meniu_consumat FROM evenimente WHERE id = ? AND restaurant_id = ?',
+    id, rid(c)
+  );
+  if (!ev) return c.json({ ok: false, msg: 'Eveniment inexistent' }, 404);
+  if (ev.meniu_consumat === 1) return c.json({ ok: false, msg: 'Stocul a fost deja scăzut pentru acest eveniment.' }, 400);
+  const persoane = Number(ev.meniu_persoane) || 0;
+  let meniu: { sectiune: string; feluri: Fel[] }[] = [];
+  try { meniu = normalizeMenuContent(JSON.parse(ev.meniu_json || '[]')); } catch (e) {}
+  const need = necesarDinMeniu(meniu, persoane);
+  if (!need.size) return c.json({ ok: false, msg: 'Meniul nu are ingrediente de scăzut.' }, 400);
+  for (const [ingId, qty] of need) {
+    const ing = await one<{ stoc: number }>(c.env.DB, 'SELECT stoc FROM depozit_ingrediente WHERE id = ? AND restaurant_id = ?', ingId, rid(c));
+    if (!ing) continue;
+    const nou = Math.max(0, Number(ing.stoc) - qty);
+    await run(c.env.DB, 'UPDATE depozit_ingrediente SET stoc = ? WHERE id = ? AND restaurant_id = ?', nou, ingId, rid(c));
+    await run(
+      c.env.DB,
+      'INSERT INTO depozit_miscari (restaurant_id, ingredient_id, delta, motiv, ref) VALUES (?, ?, ?, ?, ?)',
+      rid(c), ingId, -qty, 'consum_eveniment', 'eveniment #' + id
+    );
+  }
+  await run(c.env.DB, 'UPDATE evenimente SET meniu_consumat = 1 WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  return c.json({ ok: true });
+});
+
+// Revert a previous event consumption (adds the quantities back to stock).
+admin.post('/anuleaza_consum_eveniment', requireOwner, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const id = Number(body.id ?? 0);
+  const ev = await one<{ meniu_json: string | null; meniu_persoane: number | null; meniu_consumat: number }>(
+    c.env.DB,
+    'SELECT meniu_json, meniu_persoane, meniu_consumat FROM evenimente WHERE id = ? AND restaurant_id = ?',
+    id, rid(c)
+  );
+  if (!ev || ev.meniu_consumat !== 1) return c.json({ ok: false, msg: 'Nimic de anulat.' }, 400);
+  const persoane = Number(ev.meniu_persoane) || 0;
+  let meniu: { sectiune: string; feluri: Fel[] }[] = [];
+  try { meniu = normalizeMenuContent(JSON.parse(ev.meniu_json || '[]')); } catch (e) {}
+  const need = necesarDinMeniu(meniu, persoane);
+  for (const [ingId, qty] of need) {
+    const ing = await one<{ stoc: number }>(c.env.DB, 'SELECT stoc FROM depozit_ingrediente WHERE id = ? AND restaurant_id = ?', ingId, rid(c));
+    if (!ing) continue;
+    await run(c.env.DB, 'UPDATE depozit_ingrediente SET stoc = ? WHERE id = ? AND restaurant_id = ?', Number(ing.stoc) + qty, ingId, rid(c));
+    await run(
+      c.env.DB,
+      'INSERT INTO depozit_miscari (restaurant_id, ingredient_id, delta, motiv, ref) VALUES (?, ?, ?, ?, ?)',
+      rid(c), ingId, qty, 'anulare_consum', 'eveniment #' + id
+    );
+  }
+  await run(c.env.DB, 'UPDATE evenimente SET meniu_consumat = 0 WHERE id = ? AND restaurant_id = ?', id, rid(c));
   return c.json({ ok: true });
 });
 

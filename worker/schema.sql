@@ -267,10 +267,39 @@ CREATE TABLE IF NOT EXISTS evenimente (
     meniu_persoane     INTEGER,                     -- guest count used for the menu total
     meniu_pret_persoana REAL,                       -- price per guest
     meniu_total        REAL,                        -- computed total (persoane * pret_persoana)
+    meniu_consumat     INTEGER DEFAULT 0,           -- 1 once the menu's ingredients were deducted from stock
     creat_la       TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_evenimente_restaurant ON evenimente(restaurant_id);
+
+-- Ingredient warehouse / stock (depozit) per restaurant.
+CREATE TABLE IF NOT EXISTS depozit_ingrediente (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER NOT NULL,
+    nume          TEXT NOT NULL,
+    unitate       TEXT DEFAULT 'buc',                -- kg | g | litri | ml | buc
+    stoc          REAL DEFAULT 0,
+    prag_minim    REAL DEFAULT 0,
+    activ         INTEGER DEFAULT 1,
+    creat_la      TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_depozit_restaurant ON depozit_ingrediente(restaurant_id);
+
+-- Stock movements log (reception, event consumption, manual adjustment).
+CREATE TABLE IF NOT EXISTS depozit_miscari (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER NOT NULL,
+    ingredient_id INTEGER NOT NULL,
+    delta         REAL NOT NULL,                     -- + reception, - consumption
+    motiv         TEXT,                              -- receptie | consum_eveniment | ajustare | anulare_consum
+    ref           TEXT,                              -- e.g. "eveniment #12"
+    creat_la      TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurante(id) ON DELETE CASCADE,
+    FOREIGN KEY (ingredient_id) REFERENCES depozit_ingrediente(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_depozit_miscari_restaurant ON depozit_miscari(restaurant_id);
 
 -- Reusable event-menu packages (e.g. "Nuntă Standard", "Botez Premium") per restaurant.
 CREATE TABLE IF NOT EXISTS meniu_evenimente_pachete (
