@@ -139,6 +139,12 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 .produs-card { background: #fff; border-radius: 16px; overflow: hidden; cursor: pointer; transition: transform .15s, box-shadow .15s; user-select: none; box-shadow: 0 2px 12px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.06); }
 .produs-card:active { transform: scale(0.96); box-shadow: 0 1px 6px rgba(0,0,0,0.1); }
 .produs-card.indisponibil { opacity: .35; pointer-events: none; }
+.alergeni-chip { display: inline-block; background: #fff4e5; color: #a15c00; border: 1px solid #ffd9a8; font-size: 11px; font-weight: 600; border-radius: 20px; padding: 2px 9px; margin: 2px 0 6px; }
+.produs-info-btn { display: inline-block; background: rgba(0,0,0,0.05); color: #555; border: none; font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 3px 11px; margin-bottom: 6px; cursor: pointer; }
+.produs-info { display: none; background: rgba(0,0,0,0.03); border-radius: 10px; padding: 9px 11px; font-size: 12.5px; color: #444; margin-bottom: 6px; line-height: 1.5; }
+.produs-info.open { display: block; }
+.produs-nutr { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.produs-nutr span { background: #fff; border: 1px solid #e5e5ee; border-radius: 20px; padding: 1px 8px; font-size: 11px; font-weight: 600; color: #333; }
 .produs-poza { height: var(--produs-poza-h); background: linear-gradient(135deg, #ede9ff, #dbeafe); display: flex; align-items: center; justify-content: center; font-size: clamp(28px,6vw,42px); overflow: hidden; }
 .produs-poza img { width: 100%; height: 100%; object-fit: cover; }
 .produs-body { padding: clamp(8px,2vw,12px); }
@@ -669,18 +675,35 @@ async function incarcaMeniu() {
     } catch(e) { console.error('incarcaMeniu:', e); }
 }
 
+function escProd(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toggleInfo(id) { const el = document.getElementById('info' + id); if (el) el.classList.toggle('open'); }
 function renderProduse(categorii) {
     document.getElementById('produseContent').innerHTML = categorii.map(cat => `
         <div class="cat-titlu">${cat.nume}</div>
         <div class="produse-grid">
             ${cat.produse.map(p => {
                 const poza = p.poza ? `<img src="/${p.poza}" alt="${p.nume.replace(/"/g,'')}">` : `<span>🍽️</span>`;
+                const alergeniChip = p.alergeni ? `<span class="alergeni-chip">⚠ ${_t.contains || 'Conține'}: ${escProd(p.alergeni)}</span>` : '';
+                const nutr = [];
+                if (p.calorii) nutr.push(`${p.calorii} kcal`);
+                if (p.proteine) nutr.push(`${p.proteine}g ${_t.protein || 'proteine'}`);
+                if (p.carbohidrati) nutr.push(`${p.carbohidrati}g ${_t.carbs || 'carbohidrați'}`);
+                if (p.grasimi) nutr.push(`${p.grasimi}g ${_t.fat || 'grăsimi'}`);
+                const hasInfo = p.ingrediente || nutr.length;
+                const infoBox = hasInfo ? `<div class="produs-info" id="info${p.id}">
+                    ${p.ingrediente ? `<div><b>${_t.ingredients || 'Ingrediente'}:</b> ${escProd(p.ingrediente)}</div>` : ''}
+                    ${nutr.length ? `<div class="produs-nutr">${nutr.map(n => `<span>${n}</span>`).join('')}</div>` : ''}
+                </div>` : '';
+                const infoBtn = hasInfo ? `<button class="produs-info-btn" onclick="event.stopPropagation();toggleInfo(${p.id})">ℹ️ ${_t.content || 'Conținut'}</button>` : '';
                 return `
                 <div class="produs-card ${p.disponibil ? '' : 'indisponibil'}" onclick="adaugaInCos(${p.id})">
                     <div class="produs-poza">${poza}</div>
                     <div class="produs-body">
                         <h4>${p.nume}</h4>
                         <p>${p.descriere || ''}</p>
+                        ${alergeniChip}
+                        ${infoBtn}
+                        ${infoBox}
                         <div class="produs-footer">
                             <span class="produs-pret">${parseFloat(p.pret).toFixed(2)} lei</span>
                             ${p.disponibil ? `<button class="btn-adauga">${_t.addBtn}</button>` : `<span class="tag-indisponibil">${_t.unavailable || 'Indisponibil'}</span>`}
