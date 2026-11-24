@@ -227,10 +227,11 @@ a { color: inherit; text-decoration: none; }
     font-family: var(--serif);
     font-size: clamp(42px, 6.9vw, 82px);
     font-weight: 700;
-    line-height: 1.03;
+    line-height: 1.07;
     letter-spacing: 0.005em;
     color: var(--cream);
     margin-bottom: 24px;
+    overflow-wrap: break-word;
 }
 .hero-title em { font-style: italic; color: var(--gold); }
 .hero .lead {
@@ -469,6 +470,13 @@ footer { background: var(--sidebar); border-top: 1px solid var(--line-soft); pad
     .hero-actions .btn, .cta-btns .btn { width: 100%; }
     .hl { padding: 24px; }
     .price-card { padding: 36px 24px; }
+}
+/* Wide-but-short screens (tablet landscape, small laptops): let the hero flow
+   naturally instead of forcing a full-height centered block, and push the stats
+   card below it so nothing overlaps. */
+@media (max-height: 820px) and (min-width: 700px) {
+    .hero { min-height: auto; align-items: flex-start; padding-top: 86px; padding-bottom: 80px; }
+    .stats { margin-top: 26px; }
 }
 </style>
 </head>
