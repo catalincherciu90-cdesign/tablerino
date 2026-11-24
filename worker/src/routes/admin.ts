@@ -1287,7 +1287,7 @@ admin.post('/sterge_sala', requireOwner, async (c) => {
 });
 
 // ── Owner web-push (new event request notifications) ──
-admin.post('/owner_push_subscribe', requireOwner, async (c) => {
+admin.post('/owner_push_subscribe', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const s = body.subscription ?? body;
   const endpoint = s?.endpoint;
@@ -1305,7 +1305,7 @@ admin.post('/owner_push_subscribe', requireOwner, async (c) => {
   return c.json({ ok: true });
 });
 
-admin.post('/owner_push_unsubscribe', requireOwner, async (c) => {
+admin.post('/owner_push_unsubscribe', requireRoles('sef_sala'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const endpoint = body.endpoint;
   if (endpoint) await run(c.env.DB, 'DELETE FROM owner_push_subscriptions WHERE endpoint = ?', endpoint);
@@ -1564,7 +1564,35 @@ admin.post('/bucatarie_comanda_gata', async (c) => {
   return c.json({ ok: true });
 });
 
-// ── Depozit / ingredient stock (owner only) ──
+// ── Depozit / ingredient stock ──
+
+/** True when a stock change crossed from above the minimum threshold to at/below it. */
+function crossedBelow(before: number, after: number, prag: number): boolean {
+  return prag > 0 && before > prag && after <= prag;
+}
+
+/** Fire-and-forget web push to the owner + șef de sală when stock drops below the threshold. */
+function notificaStocMic(c: import('../types').AppContext, items: { nume: string; unitate: string; after: number; prag: number }[]): void {
+  if (!items.length) return;
+  const restaurantId = rid(c);
+  c.executionCtx.waitUntil((async () => {
+    try {
+      const { getVapidConfig, pushToOwner } = await import('../webpush');
+      const cfg = await getVapidConfig(c.env.DB);
+      if (!cfg) return;
+      for (const it of items) {
+        await pushToOwner(c.env.DB, cfg, restaurantId, {
+          type: 'stoc_mic',
+          title: '⚠️ Stoc mic în depozit',
+          body: `${it.nume}: a scăzut la ${it.after} ${it.unitate} (prag ${it.prag} ${it.unitate})`,
+          url: '/admin/depozit.html',
+          tag: `stoc-${it.nume}`,
+        });
+      }
+    } catch (e) { /* best-effort */ }
+  })());
+}
+
 
 admin.get('/depozit', requireRoles('bucatarie'), async (c) => {
   const ingrediente = await all(
@@ -1612,15 +1640,21 @@ admin.post('/ajusteaza_stoc', requireRoles('bucatarie'), async (c) => {
   const id = Number(body.id ?? 0);
   const delta = Number(body.delta ?? 0);
   if (!id || !delta) return c.json({ ok: false, msg: 'Cantitate invalidă.' }, 400);
-  const ing = await one<{ stoc: number }>(c.env.DB, 'SELECT stoc FROM depozit_ingrediente WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  const ing = await one<{ nume: string; unitate: string; stoc: number; prag_minim: number }>(
+    c.env.DB, 'SELECT nume, unitate, stoc, prag_minim FROM depozit_ingrediente WHERE id = ? AND restaurant_id = ?', id, rid(c)
+  );
   if (!ing) return c.json({ ok: false, msg: 'Ingredient inexistent' }, 404);
-  const nou = Math.max(0, Number(ing.stoc) + delta);
+  const before = Number(ing.stoc);
+  const nou = Math.max(0, before + delta);
   await run(c.env.DB, 'UPDATE depozit_ingrediente SET stoc = ? WHERE id = ? AND restaurant_id = ?', nou, id, rid(c));
   await run(
     c.env.DB,
     'INSERT INTO depozit_miscari (restaurant_id, ingredient_id, delta, motiv, ref) VALUES (?, ?, ?, ?, ?)',
     rid(c), id, delta, delta > 0 ? 'receptie' : 'ajustare', (body.ref ?? '').toString().slice(0, 80) || null
   );
+  if (crossedBelow(before, nou, Number(ing.prag_minim))) {
+    notificaStocMic(c, [{ nume: ing.nume, unitate: ing.unitate, after: nou, prag: Number(ing.prag_minim) }]);
+  }
   return c.json({ ok: true, stoc: nou });
 });
 
@@ -1672,18 +1706,24 @@ admin.post('/consuma_eveniment', requireOwner, async (c) => {
   try { meniu = normalizeMenuContent(JSON.parse(ev.meniu_json || '[]')); } catch (e) {}
   const need = necesarDinMeniu(meniu, persoane);
   if (!need.size) return c.json({ ok: false, msg: 'Meniul nu are ingrediente de scăzut.' }, 400);
+  const subPrag: { nume: string; unitate: string; after: number; prag: number }[] = [];
   for (const [ingId, qty] of need) {
-    const ing = await one<{ stoc: number }>(c.env.DB, 'SELECT stoc FROM depozit_ingrediente WHERE id = ? AND restaurant_id = ?', ingId, rid(c));
+    const ing = await one<{ nume: string; unitate: string; stoc: number; prag_minim: number }>(
+      c.env.DB, 'SELECT nume, unitate, stoc, prag_minim FROM depozit_ingrediente WHERE id = ? AND restaurant_id = ?', ingId, rid(c)
+    );
     if (!ing) continue;
-    const nou = Math.max(0, Number(ing.stoc) - qty);
+    const before = Number(ing.stoc);
+    const nou = Math.max(0, before - qty);
     await run(c.env.DB, 'UPDATE depozit_ingrediente SET stoc = ? WHERE id = ? AND restaurant_id = ?', nou, ingId, rid(c));
     await run(
       c.env.DB,
       'INSERT INTO depozit_miscari (restaurant_id, ingredient_id, delta, motiv, ref) VALUES (?, ?, ?, ?, ?)',
       rid(c), ingId, -qty, 'consum_eveniment', 'eveniment #' + id
     );
+    if (crossedBelow(before, nou, Number(ing.prag_minim))) subPrag.push({ nume: ing.nume, unitate: ing.unitate, after: nou, prag: Number(ing.prag_minim) });
   }
   await run(c.env.DB, 'UPDATE evenimente SET meniu_consumat = 1 WHERE id = ? AND restaurant_id = ?', id, rid(c));
+  notificaStocMic(c, subPrag);
   return c.json({ ok: true });
 });
 

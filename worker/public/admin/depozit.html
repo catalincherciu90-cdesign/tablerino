@@ -112,6 +112,8 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
 
     <div class="alert-low" id="alertLow"></div>
 
+    <button id="btnNotifOwner" class="btn-primary" style="margin-bottom:18px;background:#6c47ff" onclick="toggleNotificariOwner()">🔔 Activează notificările de stoc</button>
+
     <div class="form-card">
         <h3>+ Adaugă ingredient</h3>
         <div class="row">
@@ -244,6 +246,51 @@ async function stergeIng(id) {
     incarca();
 }
 
+/* ---------- Notificări de stoc (web push, owner + șef de sală) ---------- */
+function urlB64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const arr = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+}
+function actualizeazaButonNotif(on) {
+    const btn = document.getElementById('btnNotifOwner');
+    if (!btn) return;
+    btn.textContent = on ? '🔕 Dezactivează notificările de stoc' : '🔔 Activează notificările de stoc';
+    btn.style.background = on ? '#888' : '#6c47ff';
+}
+function notifActiv() { try { return localStorage.getItem('tablerino_owner_push') === '1'; } catch (e) { return false; } }
+function toggleNotificariOwner() { notifActiv() ? dezactiveazaNotificariOwner() : activeazaNotificariOwner(false); }
+async function activeazaNotificariOwner(silent) {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { if (!silent) showToast('Notificările nu sunt suportate pe acest dispozitiv.', false); return; }
+    try {
+        if (silent) { if (Notification.permission !== 'granted') return; }
+        else { const perm = await Notification.requestPermission(); if (perm !== 'granted') { showToast('Permisiune refuzată pentru notificări.', false); return; } }
+        const reg = await navigator.serviceWorker.register('/admin/sw.js');
+        await navigator.serviceWorker.ready;
+        const kr = await fetch('/api/admin/push_public_key').then(r => r.json()).catch(() => null);
+        if (!kr || !kr.key) { if (!silent) showToast('Notificările nu sunt configurate.', false); return; }
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(kr.key) });
+        await fetch('/api/admin/owner_push_subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
+        try { localStorage.setItem('tablerino_owner_push', '1'); } catch (e) {}
+        actualizeazaButonNotif(true);
+        if (!silent) showToast('Notificări activate! Primești alertă când un ingredient scade sub prag.');
+    } catch (e) { if (!silent) showToast('Nu am putut activa notificările.', false); }
+}
+async function dezactiveazaNotificariOwner() {
+    try {
+        const reg = await navigator.serviceWorker.getRegistration('/admin/sw.js') || await navigator.serviceWorker.getRegistration();
+        const sub = reg && await reg.pushManager.getSubscription();
+        if (sub) { await fetch('/api/admin/owner_push_unsubscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) }); await sub.unsubscribe(); }
+    } catch (e) {}
+    try { localStorage.removeItem('tablerino_owner_push'); } catch (e) {}
+    actualizeazaButonNotif(false);
+    showToast('Notificări dezactivate.');
+}
+
 fetch('/api/admin/me').then(function (r) {
     if (!r.ok) { location.href = '/admin/login.html'; return; }
     return r.json();
@@ -251,6 +298,10 @@ fetch('/api/admin/me').then(function (r) {
     if (!me) return;
     if (me.role === 'ospatar') { location.href = '/admin/index.html'; return; }
     incarca();
+    // Stock alerts go to the owner + șef de sală only.
+    if (me.role === 'bucatarie') { var bn = document.getElementById('btnNotifOwner'); if (bn) bn.style.display = 'none'; return; }
+    actualizeazaButonNotif(notifActiv());
+    if (notifActiv()) activeazaNotificariOwner(true);
 });
 </script>
 <script src="/admin/master-banner.js"></script>
