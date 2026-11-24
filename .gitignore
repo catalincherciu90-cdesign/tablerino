@@ -1,0 +1,10 @@
+# Third-party tool bundled in deployment, installed separately on the server
+phpmyadmin/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+
+# Real config with live secrets — provide on the server, never commit
+config.php

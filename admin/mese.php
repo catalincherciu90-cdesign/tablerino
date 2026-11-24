@@ -1,0 +1,165 @@
+<?php
+require_once __DIR__ . '/../config.php';
+$rest = authRestaurant();
+$limba = $rest['limba'];
+?>
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16.png">
+<link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablerino - <?= t('nav_tables') ?></title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #1a1a2e; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; }
+.sidebar .logo { margin-bottom: 20px; padding: 4px; display: flex; align-items: center; justify-content: center; }
+.sidebar .logo img { height: 64px; width: auto; object-fit: contain; background: #fff; border-radius: 10px; padding: 6px; }
+.sidebar a { color: #aaa; text-decoration: none; padding: 10px 12px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; transition: background .15s, color .15s; }
+.sidebar a:hover, .sidebar a.activ { background: #6c47ff; color: #fff; }
+.sidebar .logout { margin-top: auto; }
+.main { margin-left: 220px; padding: 32px; }
+.main h2 { font-size: 20px; margin-bottom: 8px; }
+.main p.sub { color: #888; font-size: 14px; margin-bottom: 24px; }
+
+.adauga-form { display: flex; gap: 10px; margin-bottom: 32px; }
+.adauga-form input { padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; width: 220px; }
+.adauga-form input:focus { border-color: #6c47ff; }
+.btn-add { padding: 10px 18px; background: #6c47ff; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+.mese-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.masa-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); }
+.masa-card h3 { font-size: 17px; margin-bottom: 6px; }
+.masa-token { font-size: 11px; color: #aaa; font-family: monospace; margin-bottom: 16px; word-break: break-all; }
+.masa-url { font-size: 12px; color: #6c47ff; margin-bottom: 16px; word-break: break-all; }
+.masa-actiuni { display: flex; gap: 8px; }
+.btn-copie { flex: 1; padding: 8px; background: #ede9ff; color: #6c47ff; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-sterge { padding: 8px 14px; background: #ffebee; color: #c62828; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.gol { color: #aaa; font-size: 14px; padding: 40px; text-align: center; }
+.toast { position: fixed; bottom: 24px; right: 24px; background: #333; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 13px; display: none; }
+
+
+/* ── RESPONSIVE SIDEBAR ── */
+@media (max-width: 768px) {
+    .header-mobil { display: flex !important; }
+    .sidebar { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: 100%; height: 62px; flex-direction: row; padding: 0; justify-content: space-around; align-items: center; border-top: 1px solid #2a2a3e; z-index: 100; }
+    .sidebar .logo { display: none; }
+    .sidebar .logout { margin-top: 0; }
+    .sidebar a { flex-direction: column; gap: 2px; font-size: 10px; padding: 6px 8px; border-radius: 6px; flex: 1; justify-content: center; text-align: center; font-weight: 600; }
+    .main { margin-left: 0 !important; padding: 14px 12px 80px !important; }
+    .main h2 { font-size: 18px !important; }
+    .layout { grid-template-columns: 1fr !important; }
+    .teme-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .mese-grid { grid-template-columns: 1fr !important; }
+    .adauga-form { flex-direction: column; }
+    table { font-size: 12px; }
+    th, td { padding: 8px 10px; }
+    .filtre-bar { flex-wrap: wrap; }
+    .sumar { gap: 8px; }
+    .sumar-card { padding: 12px 14px; min-width: 0; flex: 1; }
+    .sectiune { padding: 18px; }
+    .produs-item { flex-wrap: wrap; }
+}
+
+</style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="logo"><img src="/uploads/logo-tablerino.png" alt="Tablerino" style="height:190px;width:auto;object-fit:contain;display:block;"></div>
+    <a href="/admin/index.php">📋 <?= t('nav_orders') ?></a>
+    <a href="/admin/meniu.php">🍕 <?= t('nav_menu') ?></a>
+    <a href="/admin/mese.php" class="activ">🪑 <?= t('nav_tables') ?></a>
+    <a href="/admin/istoric.php">📂 <?= t('nav_history') ?></a>
+    <a href="/admin/raport.php">📊 <?= t('nav_reports') ?></a>
+    <a href="/admin/setari.php">🎨 <?= t('nav_design') ?></a>
+    <a href="/admin/reclame.php">📢 <?= t('nav_ads') ?></a>
+        <div style="margin-top:auto;padding:8px 4px;display:flex;gap:6px;justify-content:center">
+        <a href="?lang=ro" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;<?= $limba==='ro' ? 'background:#6c47ff;color:#fff' : 'color:#aaa' ?>">🇷🇴 RO</a>
+        <a href="?lang=en" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;<?= $limba==='en' ? 'background:#6c47ff;color:#fff' : 'color:#aaa' ?>">🇬🇧 EN</a>
+    </div>
+    <a href="/admin/logout.php" class="logout">🚪 <?= t('logout') ?></a>
+</div>
+
+<!-- Header mobil -->
+<div class="header-mobil" style="display:none;background:#1a1a2e;color:#fff;padding:12px 16px;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50;">
+    <span>🍽️ <strong>Tablerino</strong></span>
+    <div style="display:flex;gap:8px;align-items:center">
+        <a href="?lang=ro" style="color:<?= $limba==='ro' ? '#fff' : '#aaa' ?>;font-size:13px;font-weight:700;text-decoration:none;padding:4px 8px;border-radius:6px;<?= $limba==='ro' ? 'background:#6c47ff' : '' ?>">🇷🇴 RO</a>
+        <a href="?lang=en" style="color:<?= $limba==='en' ? '#fff' : '#aaa' ?>;font-size:13px;font-weight:700;text-decoration:none;padding:4px 8px;border-radius:6px;<?= $limba==='en' ? 'background:#6c47ff' : '' ?>">🇬🇧 EN</a>
+    </div>
+</div>
+
+<div class="main">
+    <h2><?= t('nav_tables') ?></h2>
+    <p class="sub"><?= t('tables_desc') ?></p>
+
+    <div class="adauga-form">
+        <input type="text" id="numeMasa" placeholder="<?= t('table_name_ph') ?>">
+        <button class="btn-add" onclick="adaugaMasa()">+ <?= t('add_table') ?></button>
+    </div>
+
+    <div class="mese-grid" id="meseGrid">
+        <div class="gol"><?= t('loading') ?></div>
+    </div>
+</div>
+<div class="toast" id="toast"><?= t('link_copied') ?></div>
+
+<script>
+const baseUrl = '<?= BASE_URL ?>';
+const _mt = {
+    noTables:    '<?= t('no_tables') ?>',
+    token:       '<?= t('token') ?>',
+    copyLink:    '<?= t('copy_link') ?>',
+    deleteConf:  '<?= t('delete_table_conf') ?>',
+    delete:      '<?= t('delete') ?>',
+};
+
+async function incarcaMese() {
+    const r = await fetch('/admin/api.php?actiune=mese');
+    const d = await r.json();
+    const grid = document.getElementById('meseGrid');
+    if (!d.mese.length) { grid.innerHTML = `<div class="gol">${_mt.noTables}</div>`; return; }
+    grid.innerHTML = d.mese.map(m => {
+        const url = `${baseUrl}/masa/?token=${m.token}`;
+        return `
+        <div class="masa-card">
+            <h3>🪑 ${m.nume}</h3>
+            <div class="masa-token">${_mt.token}: ${m.token}</div>
+            <div class="masa-url">${url}</div>
+            <div class="masa-actiuni">
+                <button class="btn-copie" onclick="copiazaLink('${url}')">📋 ${_mt.copyLink}</button>
+                <button class="btn-sterge" onclick="stergeMasa(${m.id})">${_mt.delete}</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function adaugaMasa() {
+    const nume = document.getElementById('numeMasa').value.trim();
+    if (!nume) return;
+    await fetch('/admin/api.php', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ actiune: 'adauga_masa', nume }) });
+    document.getElementById('numeMasa').value = '';
+    incarcaMese();
+}
+
+async function stergeMasa(id) {
+    if (!confirm(_mt.deleteConf)) return;
+    await fetch('/admin/api.php', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ actiune: 'sterge_masa', masa_id: id }) });
+    incarcaMese();
+}
+
+function copiazaLink(url) {
+    navigator.clipboard.writeText(url).then(() => {
+        const t = document.getElementById('toast');
+        t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 2000);
+    });
+}
+
+incarcaMese();
+</script>
+</body>
+</html>

@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<title>Tablerino - Comenzi</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
+
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #1a1a2e; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; z-index: 50; }
+.sidebar .logo { margin-bottom: 20px; display: flex; align-items: center; justify-content: center; }
+.sidebar .logo img { height: 190px; width: auto; object-fit: contain; display: block; }
+.sidebar a { color: #aaa; text-decoration: none; padding: 10px 12px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; transition: background .15s, color .15s; }
+.sidebar a:hover, .sidebar a.activ { background: #6c47ff; color: #fff; }
+.sidebar .logout { margin-top: auto; }
+
+.header-mobil { display: none; background: #1a1a2e; color: #fff; padding: 12px 16px; position: sticky; top: 0; z-index: 50; justify-content: space-between; align-items: center; }
+.btn-fullscreen { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 7px 14px; border-radius: 8px; font-size: 12px; cursor: pointer; }
+
+.main { margin-left: 220px; padding: 28px; }
+.main h2 { font-size: 20px; margin-bottom: 8px; font-weight: 800; }
+
+.live-indicator { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #888; margin-bottom: 16px; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; animation: pulse 2s infinite; flex-shrink: 0; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.sumar-zi { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.sumar-card { background: #fff; border-radius: 10px; padding: 16px 20px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); min-width: 130px; }
+.sumar-card .val { font-size: 26px; font-weight: 800; color: #6c47ff; line-height: 1; margin-bottom: 4px; }
+.sumar-card .val.verde { color: #10b981; }
+.sumar-card .val.albastru { color: #3b82f6; }
+.sumar-card .lbl { font-size: 12px; color: #888; }
+
+.filtre { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.filtru-btn { padding: 8px 18px; border-radius: 20px; border: 2px solid #ddd; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.filtru-btn.activ { border-color: #6c47ff; background: #6c47ff; color: #fff; }
+
+.comenzi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.comanda-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); border-left: 4px solid #ddd; }
+.comanda-card.noua { border-left-color: #f59e0b; }
+.comanda-card.in_pregatire { border-left-color: #3b82f6; }
+.comanda-card.plata_aleasa { border-left-color: #8b5cf6; background: #faf5ff; }
+
+.card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.card-masa { font-weight: 700; font-size: 16px; }
+.card-nr { font-size: 11px; font-weight: 700; background: #f3f4f6; color: #666; padding: 2px 8px; border-radius: 20px; margin-left: 6px; }
+.card-ora { font-size: 12px; color: #888; margin-top: 2px; }
+.card-preluat { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; margin-top: 6px; display: inline-block; }
+.card-preluat.da { background: #ede9fe; color: #5b21b6; }
+.card-preluat.nu { background: #f3f4f6; color: #999; }
+.card-preluat.rezervat { background: #fff4e5; color: #b45309; }
+.card-preluat.mea { background: #e0f2fe; color: #075985; }
+.card-preluat.alerta { background: #fee2e2; color: #b91c1c; animation: pulseAlerta 1s ease-in-out infinite; }
+@keyframes pulseAlerta { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+.card-preluat .cd { font-variant-numeric: tabular-nums; }
+.reassign-sel { width: 100%; padding: 7px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: #faf5ff; color: #6c47ff; font-weight: 600; cursor: pointer; outline: none; }
+.btn-preia { background: #6c47ff; color: #fff; flex: 1; }
+.btn-renunta { background: #fff; color: #6c47ff; border: 2px solid #6c47ff; flex: 1; }
+.card-status { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
+.status-noua { background: #fef3c7; color: #92400e; }
+.status-in_pregatire { background: #dbeafe; color: #1e40af; }
+.status-plata_aleasa { background: #ede9fe; color: #5b21b6; }
+
+.card-produse { font-size: 13px; color: #444; margin-bottom: 14px; }
+.card-produse li { list-style: none; padding: 6px 0; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.card-produse li:last-child { border-bottom: none; }
+.tag-nou { font-size: 10px; font-weight: 700; background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 8px; margin-left: 4px; }
+.tag-livrat { font-size: 10px; font-weight: 700; background: #d1fae5; color: #065f46; padding: 1px 6px; border-radius: 8px; margin-left: 4px; }
+li.livrat { opacity: 0.5; }
+.btn-livreaza-produs { padding: 3px 8px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+
+.card-total { font-weight: 700; font-size: 14px; text-align: right; margin-bottom: 14px; color: #333; }
+.card-actiuni { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { padding: 8px 14px; border-radius: 8px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+.btn:hover { opacity: .85; }
+.btn-pregatire { background: #3b82f6; color: #fff; flex: 1; }
+.btn-servita { background: #10b981; color: #fff; flex: 1; }
+.btn-elibereaza { background: #8b5cf6; color: #fff; flex: 1; }
+
+.banner-plata { border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; font-weight: 700; text-align: center; }
+.banner-plata.cash { background: #d1fae5; color: #065f46; }
+.banner-plata.card { background: #dbeafe; color: #1e40af; }
+
+.toate-servite-msg { font-size: 12px; color: #10b981; font-weight: 700; text-align: center; padding: 8px 0; }
+
+.gol { text-align: center; color: #aaa; padding: 60px 0; font-size: 15px; }
+.notif { position: fixed; top: 20px; right: 20px; background: #6c47ff; color: #fff; padding: 14px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; display: none; z-index: 999; box-shadow: 0 4px 20px rgba(108,71,255,.4); }
+
+@media (max-width: 768px) {
+    .header-mobil { display: flex !important; }
+    .sidebar { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: 100%; height: 62px; flex-direction: row; padding: 0; justify-content: space-around; align-items: center; border-top: 1px solid #2a2a3e; }
+    .sidebar .logo { display: none; }
+    .sidebar .logout { margin-top: 0; }
+    .sidebar a { flex-direction: column; gap: 2px; font-size: 10px; padding: 6px 8px; border-radius: 6px; flex: 1; justify-content: center; text-align: center; }
+    .main { margin-left: 0; padding: 14px 12px 80px; }
+    .sumar-zi { gap: 8px; }
+    .sumar-card { padding: 12px 14px; min-width: 0; flex: 1; }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="logo"><img src="/uploads/logo-tablerino.png" alt="Tablerino"></div>
+    <a href="/admin/index.html" class="activ"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg> Comenzi</a>
+    <a href="/admin/bucatarie.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 3a4 4 0 0 1 4 4c1.7 0 3 1.3 3 3s-1.3 3-3 3H8c-1.7 0-3-1.3-3-3s1.3-3 3-3a4 4 0 0 1 4-4z"/><path d="M7 16h10v3a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z"/></svg> Bucătărie</a>
+    <a href="/admin/meniu.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 7v14"/><path d="M4 5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2 2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v12a1 1 0 0 1-1 1h-6a2 2 0 0 0-2 2 2 2 0 0 0-2-2H5a1 1 0 0 1-1-1z"/></svg> Meniu</a>
+    <a href="/admin/meniu-evenimente.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M5.8 11.3 2 22l10.7-3.8"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.2.7a2 2 0 0 0-1.3 1.3L18 6l1 1 2-1 1-1z"/><path d="M11 13c1.9 1.9 2.8 4.2 2 5-.8.8-3.1-.1-5-2-1.9-1.9-2.8-4.2-2-5 .8-.8 3.1.1 5 2z"/></svg> Meniu evenimente</a>
+    <a href="/admin/depozit.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M3 9 12 4l9 5v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 9h18"/><path d="M9 22V12h6v10"/></svg> Depozit</a>
+    <a href="/admin/mese.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M3 10h18"/><path d="M5 10V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M6 10v9"/><path d="M18 10v9"/></svg> Mese</a>
+    <a href="/admin/istoric.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg> Istoric</a>
+    <a href="/admin/rezervari.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg> Rezervări</a>
+    <a href="/admin/recenzii.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 2.5l2.9 6 6.6.6-5 4.3 1.5 6.5L12 16.9 6 19.9l1.5-6.5-5-4.3 6.6-.6z"/></svg> Recenzii</a>
+    <a href="/admin/raport.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><line x1="4" y1="20" x2="4" y2="12"/><line x1="10" y1="20" x2="10" y2="5"/><line x1="16" y1="20" x2="16" y2="9"/><line x1="3" y1="20" x2="21" y2="20"/></svg> Rapoarte</a>
+    <a href="/admin/setari.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><circle cx="13.5" cy="6.5" r=".9" fill="currentColor" stroke="none"/><circle cx="17.5" cy="10.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8.5" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="6.5" cy="12.5" r=".9" fill="currentColor" stroke="none"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.7 1.7-1.7H18c2.2 0 4-1.8 4-4C22 6 17.5 2 12 2z"/></svg> Design</a>
+    <a href="/admin/abonament.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Abonament</a>
+    <a href="/admin/reclame.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="m3 11 18-5v12L3 14z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg> Reclame</a>
+    <a href="/admin/audit.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> Audit</a>
+    <a href="/admin/ospatari.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></svg> Ospătari</a>
+    <div style="margin-top:auto;padding:8px 4px;display:flex;gap:6px;justify-content:center">
+        <a href="?lang=ro" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;background:#6c47ff;color:#fff">🇷🇴 RO</a>
+        <a href="?lang=en" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#aaa">🇬🇧 EN</a>
+    </div>
+    <a href="#" class="logout" onclick="logout(event)">🚪 Ieșire</a>
+</div>
+
+<div class="header-mobil">
+    <span>🍽️ <strong>Tablerino</strong></span>
+    <div style="display:flex;gap:8px;align-items:center">
+        <a href="?lang=ro" style="color:#fff;font-size:12px;font-weight:700;text-decoration:none">🇷🇴</a>
+        <a href="?lang=en" style="color:#aaa;font-size:12px;font-weight:700;text-decoration:none">🇬🇧</a>
+        <button class="btn-fullscreen" onclick="toggleFullscreen()" id="btnFS">⛶ Full Screen</button>
+    </div>
+</div>
+
+<div class="main">
+    <h2 id="pageTitle">Comenzi</h2>
+    <div class="live-indicator">
+        <span class="live-dot"></span>
+        <span id="liveText">Ultima actualizare...</span>
+    </div>
+
+    <div class="sumar-zi owner-only" id="sumarZi"></div>
+
+    <div class="filtre filtre-masa" id="filtreMasa" style="display:none">
+        <button class="filtru-btn activ" id="btnAleMele" onclick="setFiltruMasa('ale_mele')">Ale mele</button>
+        <button class="filtru-btn" id="btnNepreluate" onclick="setFiltruMasa('nepreluate')">Nepreluate</button>
+        <button class="filtru-btn" id="btnToateMesele" onclick="setFiltruMasa('toate')">Toate mesele</button>
+    </div>
+
+    <div class="filtre">
+        <button class="filtru-btn activ" data-status="toate">Toate</button>
+        <button class="filtru-btn" data-status="noua">Noi</button>
+        <button class="filtru-btn" data-status="in_pregatire">În pregătire</button>
+        <button class="filtru-btn" data-status="plata_aleasa">Metodă de plată</button>
+    </div>
+
+    <div class="comenzi-grid" id="comenziGrid">
+        <div class="gol">Se încarcă...</div>
+    </div>
+</div>
+
+<div class="notif" id="notif">🔔 Noi!</div>
+
+<script>
+function logout(e) {
+    if (e) e.preventDefault();
+    fetch('/api/admin/logout', { method: 'POST' }).finally(function () {
+        location.href = '/admin/login.html';
+    });
+}
+
+let restaurantId = null;
+let esteOspatar = false;
+let ospatarId = null;        // logged-in waiter's id (null for owners)
+let masaDefaultId = null;
+let masaDefaultNume = null;
+let filtruMasa = 'ale_mele'; // 'ale_mele' | 'nepreluate' | 'toate' (waiter order filter)
+let comenziToate = [];       // full orders array from the last fetch (filtered at render time)
+let comenziFetchedAt = Date.now(); // client time of last fetch (for live order-age / countdown)
+let escalareSec = 120;       // reserved window (seconds), configurable per restaurant; set from /me
+const ALERTA_SEC = 30;       // warn the responsible waiter this many seconds before escalation
+let ospatariList = [];       // waiters (owner only) for the manual reassign dropdown
+let comenziAlertate = new Set(); // order ids already alerted (avoid repeat beeps)
+
+function escHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function fmtMMSS(sec) {
+    sec = Math.max(0, Math.ceil(sec));
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return m > 0 ? `${m}:${String(s).padStart(2, '0')}` : `${s}s`;
+}
+// Real order age = server-measured age at fetch + time elapsed on the client since.
+function orderAgeSec(c) {
+    return (Number(c.varsta_sec) || 0) + (Date.now() - comenziFetchedAt) / 1000;
+}
+// Seconds remaining while an order is reserved for the table's waiter (0 = anyone may claim).
+function reservedRemaining(c) {
+    if (c.preluat_de != null) return 0;
+    if (c.masa_ospatar_id == null || c.masa_ospatar_id === ospatarId) return 0;
+    return Math.max(0, escalareSec - orderAgeSec(c));
+}
+// For the responsible waiter: seconds until their own unclaimed order escalates (0 = already open to all).
+function myEscalateRemaining(c) {
+    if (c.preluat_de != null) return 0;
+    if (c.masa_ospatar_id == null || c.masa_ospatar_id !== ospatarId) return 0;
+    return Math.max(0, escalareSec - orderAgeSec(c));
+}
+// Short beep via Web Audio (no asset needed). Safe no-op if audio is unavailable.
+function beep() {
+    try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        const ac = beep._ac || (beep._ac = new Ctx());
+        if (ac.state === 'suspended') ac.resume();
+        const t = ac.currentTime;
+        [0, 0.18].forEach(off => {
+            const o = ac.createOscillator(), g = ac.createGain();
+            o.type = 'sine'; o.frequency.value = 880;
+            g.gain.setValueAtTime(0.0001, t + off);
+            g.gain.exponentialRampToValueAtTime(0.25, t + off + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + off + 0.15);
+            o.connect(g); g.connect(ac.destination);
+            o.start(t + off); o.stop(t + off + 0.16);
+        });
+    } catch (e) {}
+}
+const _t = {
+    noOrders:     'Nicio comandă momentan.',
+    loading:      'Se încarcă...',
+    tagNew:       'NOU',
+    tagServed:    '✓ livrat',
+    deliver:      'Livrează',
+    btnPreparing: 'În pregătire',
+    btnServeAll:  'Servește toate ✓',
+    btnRelease:   '✓ Eliberează masa',
+    allServed:    '✅ Toate servite — așteaptă nota',
+    payCash:      'Clientul plătește cu CASH',
+    payCard:      'Clientul plătește cu CARD',
+    statusNew:    'NOUĂ',
+    statusPrep:   'ÎN PREGĂTIRE',
+    statusPay:    'PLATĂ',
+    lastUpdate:   'Ultima actualizare',
+    ordersToday:  'Comenzi azi',
+    salesToday:   'Vânzări azi',
+    cash:         'Cash',
+    card:         'Card',
+    total:        'Total',
+    lei:          'lei',
+    releaseConf:  'Eliberezi masa? Comanda curentă va fi arhivată.',
+    claimed:      'Preluată',
+    unclaimed:    'Nepreluată',
+    btnClaim:     'Preia',
+    btnDrop:      'Renunță',
+    btnReserved:  '🔒 Rezervată',
+    reservedFor:  'Rezervată pentru',
+    responsible:  'Responsabil',
+    aboutToEscape:'⏰ îți scapă în',
+    alertToast:   'îți scapă comanda la',
+    assignTo:     'Atribuie →',
+    yourTable:    'Masa ta',
+    connError:    'Eroare conexiune, reîncearcă...',
+    fullscreen:   'Full Screen',
+    exitFS:       'Ieși Full Screen',
+};
+
+let filtruActiv = 'toate';
+let comenziCunoscute = new Set();
+
+function statusLabel(s, metoda) {
+    if (s === 'plata_aleasa') {
+        const icon = metoda === 'cash' ? '💵' : '💳';
+        const label = metoda === 'cash' ? _t.cash : _t.card;
+        return `${icon} ${label}`;
+    }
+    const m = { noua: _t.statusNew, in_pregatire: _t.statusPrep };
+    return m[s] || s;
+}
+
+function formatOra(dt) {
+    return new Date(dt).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderComenzi(comenzi) {
+    const grid = document.getElementById('comenziGrid');
+    // Waiter order filter ("Ale mele" / "Nepreluate" / "Toate mesele"), then status filter.
+    let baza = comenzi;
+    if (esteOspatar) {
+        if (filtruMasa === 'ale_mele') {
+            // Their default table + any orders they personally claimed. With no
+            // default table, this is just the orders they claimed.
+            baza = baza.filter(c =>
+                (masaDefaultId && c.masa_id === masaDefaultId) ||
+                c.masa_ospatar_id === ospatarId ||
+                c.preluat_de === ospatarId);
+        } else if (filtruMasa === 'nepreluate') {
+            baza = baza.filter(c => c.preluat_de == null);
+        }
+        // 'toate' -> no filter
+    }
+    const filtrate = filtruActiv === 'toate' ? baza : baza.filter(c => c.status === filtruActiv);
+
+    if (!filtrate.length) {
+        grid.innerHTML = `<div class="gol">${_t.noOrders}</div>`;
+        return;
+    }
+
+    grid.innerHTML = filtrate.map(c => {
+        const produse = c.produse.map(p => {
+            const eNou = p.status === 'nou' || !p.status;
+            return `<li class="${eNou ? '' : 'livrat'}">
+                <span>${p.cantitate}x ${p.nume_produs}
+                    ${eNou ? `<span class="tag-nou">${_t.tagNew}</span>` : `<span class="tag-livrat">${_t.tagServed}</span>`}
+                </span>
+                <span style="display:flex;align-items:center;gap:6px">
+                    <span>${parseFloat(p.total).toFixed(2)} ${_t.lei}</span>
+                    ${eNou ? `<button class="btn-livreaza-produs" onclick="livreazaProdus(${p.id},event)">${_t.deliver}</button>` : ''}
+                </span>
+            </li>`;
+        }).join('');
+
+        const total = c.produse.reduce((s, p) => s + parseFloat(p.total), 0);
+        const areNoi = c.produse.some(p => p.status === 'nou' || !p.status);
+        const toateLivrate = c.produse.length > 0 && c.produse.every(p => p.status === 'livrat');
+
+        // Banner plata
+        const bannerPlata = c.status === 'plata_aleasa' ? `
+            <div class="banner-plata ${c.metoda_plata}">
+                ${c.metoda_plata === 'cash' ? `💵 ${_t.payCash}` : `💳 ${_t.payCard}`}
+            </div>` : '';
+
+        // Butoane actiuni - FLUX CORECT:
+        // noua + are produse noi -> In pregatire / Serveste toate
+        // in_pregatire + are produse noi -> Serveste toate
+        // toateLivrate (orice status) + nu e plata_aleasa -> asteapta nota clientului
+        // plata_aleasa -> Elibereaza masa
+        let actiuni = '';
+        if (c.status === 'plata_aleasa') {
+            actiuni = `<button class="btn btn-elibereaza" onclick="elibereazaMasa(${c.masa_id})">${_t.btnRelease}</button>`;
+        } else if (toateLivrate) {
+            actiuni = `<div class="toate-servite-msg">${_t.allServed}</div>`;
+        } else if (c.status === 'noua' && areNoi) {
+            actiuni = `
+                <button class="btn btn-pregatire" onclick="schimbaStatus(${c.id},'in_pregatire')">${_t.btnPreparing}</button>
+                <button class="btn btn-servita" onclick="livreazaToare(${c.id})">${_t.btnServeAll}</button>`;
+        } else if (c.status === 'in_pregatire' && areNoi) {
+            actiuni = `<button class="btn btn-servita" onclick="livreazaToare(${c.id})">${_t.btnServeAll}</button>`;
+        }
+
+        // Claim status badge (shown for owners and waiters alike).
+        const preluat = c.preluat_de != null;
+        const rezRem = reservedRemaining(c);
+        const myRem = myEscalateRemaining(c);
+        let badgePreluat;
+        if (preluat) {
+            badgePreluat = `<div class="card-preluat da">👤 ${_t.claimed}: ${escHtml(c.preluat_de_nume)}</div>`;
+        } else if (rezRem > 0) {
+            // Reserved for the table's responsible waiter — live countdown until it opens up.
+            badgePreluat = `<div class="card-preluat rezervat" data-exp="${Date.now() + rezRem * 1000}">🔒 ${_t.reservedFor} ${escHtml(c.masa_ospatar_nume)} · <span class="cd">${fmtMMSS(rezRem)}</span></div>`;
+        } else if (myRem > 0) {
+            // It's my own table and still unclaimed — countdown until it escalates to others.
+            const urgent = myRem <= ALERTA_SEC;
+            badgePreluat = `<div class="card-preluat ${urgent ? 'alerta' : 'mea'}" data-myexp="${Date.now() + myRem * 1000}" data-cid="${c.id}" data-masa="${escHtml(c.masa_nume)}">${urgent ? _t.aboutToEscape : '👤 ' + _t.yourTable + ' ·'} <span class="cd">${fmtMMSS(myRem)}</span></div>`;
+        } else if (c.masa_ospatar_nume) {
+            badgePreluat = `<div class="card-preluat nu">${_t.unclaimed} · 👤 ${escHtml(c.masa_ospatar_nume)}</div>`;
+        } else {
+            badgePreluat = `<div class="card-preluat nu">${_t.unclaimed}</div>`;
+        }
+
+        // Waiter claim/release action: claim if unclaimed & not reserved for someone else,
+        // release if it's theirs. A reserved order shows a disabled lock for other waiters.
+        let actiuneClaim = '';
+        if (esteOspatar) {
+            if (!preluat) {
+                actiuneClaim = rezRem > 0
+                    ? `<button class="btn btn-preia" disabled style="opacity:.45;cursor:not-allowed">${_t.btnReserved}</button>`
+                    : `<button class="btn btn-preia" onclick="preiaComanda(${c.id})">${_t.btnClaim}</button>`;
+            } else if (c.preluat_de === ospatarId) {
+                actiuneClaim = `<button class="btn btn-renunta" onclick="renuntaComanda(${c.id})">${_t.btnDrop}</button>`;
+            }
+        }
+
+        // Owner: manual (re)assign of an order to any waiter.
+        let reassignUI = '';
+        if (!esteOspatar && ospatariList.length) {
+            const opts = [`<option value="">${_t.assignTo}</option>`]
+                .concat(ospatariList.map(o => `<option value="${o.id}" ${o.id === c.preluat_de ? 'selected' : ''}>${escHtml(o.nume)}</option>`))
+                .join('');
+            reassignUI = `<select class="reassign-sel" onchange="atribuieComanda(${c.id}, this)">${opts}</select>`;
+        }
+
+        return `
+        <div class="comanda-card ${c.status}">
+            <div class="card-header">
+                <div>
+                    <div class="card-masa">${c.masa_nume} <span class="card-nr">#${c.nr_ordine_zi || '—'}</span></div>
+                    <div class="card-ora">${formatOra(c.created_at)}</div>
+                    ${badgePreluat}
+                </div>
+                <span class="card-status status-${c.status}">${statusLabel(c.status, c.metoda_plata)}</span>
+            </div>
+            ${bannerPlata}
+            <ul class="card-produse">${produse}</ul>
+            <div class="card-total">${_t.total}: ${total.toFixed(2)} ${_t.lei}</div>
+            ${reassignUI ? `<div class="card-actiuni" style="margin-bottom:8px">${reassignUI}</div>` : ''}
+            ${actiuneClaim ? `<div class="card-actiuni" style="margin-bottom:8px">${actiuneClaim}</div>` : ''}
+            <div class="card-actiuni">${actiuni}</div>
+        </div>`;
+    }).join('');
+}
+
+async function incarcaSumarZi() {
+    if (esteOspatar) return;
+    try {
+        const r = await fetch('/api/admin/sumar_zi');
+        const d = await r.json();
+        if (!d.ok) return;
+        document.getElementById('sumarZi').innerHTML = `
+            <div class="sumar-card"><div class="val">${d.total_comenzi || 0}</div><div class="lbl">${_t.ordersToday}</div></div>
+            <div class="sumar-card"><div class="val verde">${parseFloat(d.total_vanzari || 0).toFixed(2)} ${_t.lei}</div><div class="lbl">${_t.salesToday}</div></div>
+            <div class="sumar-card"><div class="val albastru">${d.comenzi_cash || 0}</div><div class="lbl">💵 ${_t.cash}</div></div>
+            <div class="sumar-card"><div class="val albastru">${d.comenzi_card || 0}</div><div class="lbl">💳 ${_t.card}</div></div>
+        `;
+    } catch(e) {}
+}
+
+async function incarcaComenzi() {
+    try {
+        const r = await fetch('/api/admin/comenzi');
+        const data = await r.json();
+        if (!data.ok) return;
+
+        const nouaGasita = data.comenzi.some(c => c.status === 'noua' && !comenziCunoscute.has(c.id));
+        if (nouaGasita && comenziCunoscute.size > 0) {
+            const notif = document.getElementById('notif');
+            notif.textContent = '🔔 Noi!';
+            notif.style.display = 'block';
+            setTimeout(() => notif.style.display = 'none', 3000);
+        }
+        data.comenzi.forEach(c => comenziCunoscute.add(c.id));
+        comenziToate = data.comenzi;
+        comenziFetchedAt = Date.now();
+        renderComenzi(comenziToate);
+        incarcaSumarZi();
+
+        const acum = new Date().toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('liveText').textContent = `${_t.lastUpdate}: ${acum}`;
+    } catch(e) {
+        document.getElementById('liveText').textContent = _t.connError;
+    }
+}
+
+async function schimbaStatus(id, status) {
+    await fetch('/api/admin/schimba_status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actiune: 'schimba_status', comanda_id: id, status })
+    });
+    incarcaComenzi();
+}
+
+async function livreazaProdus(prodId, event) {
+    event.stopPropagation();
+    await fetch('/api/admin/livreaza_produs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actiune: 'livreaza_produs', comanda_produs_id: prodId })
+    });
+    incarcaComenzi();
+}
+
+async function livreazaToare(comandaId) {
+    // Marcheaza toate produsele ca livrate - comanda NU devine servita
+    // Ramane vizibila pana clientul solicita nota si se elibereaza masa
+    await fetch('/api/admin/livreaza_toate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actiune: 'livreaza_toate', comanda_id: comandaId })
+    });
+    incarcaComenzi();
+}
+
+async function elibereazaMasa(masaId) {
+    if (!confirm(_t.releaseConf)) return;
+    await fetch('/api/admin/elibereaza_masa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actiune: 'elibereaza_masa', masa_id: masaId })
+    });
+    incarcaComenzi();
+}
+
+// Small toast reusing the notif element (e.g. for "order already taken").
+function toast(msg) {
+    const notif = document.getElementById('notif');
+    notif.textContent = msg;
+    notif.style.display = 'block';
+    setTimeout(() => notif.style.display = 'none', 3000);
+}
+
+// Waiter claims an unclaimed order. On 409 (someone else got it) show the message.
+async function preiaComanda(comandaId) {
+    try {
+        const r = await fetch('/api/admin/preia_comanda', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ comanda_id: comandaId })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok && d.msg) toast(d.msg);
+    } catch (e) {}
+    incarcaComenzi();
+}
+
+// Owner manually (re)assigns an order to a chosen waiter (empty = unassign).
+async function atribuieComanda(comandaId, sel) {
+    const ospatarId = Number(sel.value) || null;
+    try {
+        const r = await fetch('/api/admin/atribuie_comanda', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ comanda_id: comandaId, ospatar_id: ospatarId })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok && d.msg) toast(d.msg);
+    } catch (e) {}
+    incarcaComenzi();
+}
+
+// Waiter releases their own claim (owner could release any, but has no button).
+async function renuntaComanda(comandaId) {
+    await fetch('/api/admin/renunta_comanda', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comanda_id: comandaId })
+    });
+    incarcaComenzi();
+}
+
+// Waiter order filter ("Ale mele" / "Nepreluate" / "Toate mesele"). Re-render
+// from the cached orders array so we don't need to re-fetch.
+function setFiltruMasa(mod) {
+    filtruMasa = mod;
+    document.getElementById('btnAleMele').classList.toggle('activ', mod === 'ale_mele');
+    document.getElementById('btnNepreluate').classList.toggle('activ', mod === 'nepreluate');
+    document.getElementById('btnToateMesele').classList.toggle('activ', mod === 'toate');
+    renderComenzi(comenziToate);
+}
+
+document.querySelectorAll('.filtre:not(.filtre-masa) .filtru-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.filtre:not(.filtre-masa) .filtru-btn').forEach(b => b.classList.remove('activ'));
+        btn.classList.add('activ');
+        filtruActiv = btn.dataset.status;
+        renderComenzi(comenziToate);
+    });
+});
+
+// Live countdown for reserved orders: tick the visible timer each second and, when
+// a reservation window closes, re-render so the order becomes claimable by anyone.
+function tickReservari() {
+    let expired = false;
+    // Orders reserved for another waiter: update the countdown, re-render when it opens up.
+    document.querySelectorAll('.card-preluat.rezervat[data-exp]').forEach(el => {
+        const rem = (Number(el.dataset.exp) - Date.now()) / 1000;
+        if (rem <= 0) { expired = true; return; }
+        const cd = el.querySelector('.cd');
+        if (cd) cd.textContent = fmtMMSS(rem);
+    });
+    // My own unclaimed orders: update countdown, flash+beep in the last ALERTA_SEC seconds.
+    document.querySelectorAll('.card-preluat[data-myexp]').forEach(el => {
+        const rem = (Number(el.dataset.myexp) - Date.now()) / 1000;
+        const cid = el.dataset.cid;
+        if (rem <= 0) { expired = true; return; }
+        const cd = el.querySelector('.cd');
+        if (cd) cd.textContent = fmtMMSS(rem);
+        if (rem <= ALERTA_SEC) {
+            if (!el.classList.contains('alerta')) expired = true; // re-render to switch to urgent style
+            if (cid && !comenziAlertate.has(cid)) {
+                comenziAlertate.add(cid);
+                beep();
+                toast(`⏰ ${_t.alertToast} ${el.dataset.masa || ''}!`);
+            }
+        }
+    });
+    if (expired && comenziToate.length) renderComenzi(comenziToate);
+}
+setInterval(tickReservari, 1000);
+
+function toggleFullscreen() {
+    const btn = document.getElementById('btnFS');
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+            btn.textContent = '✕ ' + _t.exitFS;
+        }).catch(() => window.scrollTo(0, 1));
+    } else {
+        document.exitFullscreen().then(() => {
+            btn.textContent = '⛶ ' + _t.fullscreen;
+        });
+    }
+}
+document.addEventListener('fullscreenchange', () => {
+    const btn = document.getElementById('btnFS');
+    if (btn) btn.textContent = document.fullscreenElement ? '✕ ' + _t.exitFS : '⛶ ' + _t.fullscreen;
+});
+
+fetch('/api/admin/me').then(function (r) {
+    if (!r.ok) { location.href = '/admin/login.html'; return; }
+    return r.json();
+}).then(function (d) {
+    if (!d) return;
+    restaurantId = d.id;
+    esteOspatar = d.role === 'ospatar';
+    ospatarId = d.ospatar_id || null;
+    masaDefaultId = d.masa_default_id || null;
+    masaDefaultNume = d.masa_default_nume || null;
+    escalareSec = Number(d.escalare_sec) || 120;
+    if (esteOspatar) {
+        document.querySelectorAll('.owner-only').forEach(el => el.style.display = 'none');
+    } else {
+        // Owner: load waiters for the manual reassign dropdown on each order.
+        fetch('/api/admin/ospatari').then(r => r.json()).then(o => {
+            ospatariList = (o && o.ospatari) ? o.ospatari.filter(w => w.activ) : [];
+            if (comenziToate.length) renderComenzi(comenziToate);
+        }).catch(() => {});
+    }
+    // Any waiter gets the "Ale mele / Nepreluate / Toate mesele" toggle,
+    // defaulting to their own orders. If they have a default table, name it.
+    if (esteOspatar) {
+        filtruMasa = 'ale_mele';
+        if (masaDefaultNume) {
+            document.getElementById('btnAleMele').textContent = 'Ale mele (' + masaDefaultNume + ')';
+        }
+        document.getElementById('filtreMasa').style.display = 'flex';
+    }
+    if (d.nume) document.getElementById('pageTitle').textContent = 'Comenzi — ' + d.nume;
+    incarcaComenzi();
+    setInterval(incarcaComenzi, 5000);
+});
+</script>
+<script src="/admin/master-banner.js"></script>
+  <script src="/admin/admin-roles.js"></script>
+</body>
+</html>

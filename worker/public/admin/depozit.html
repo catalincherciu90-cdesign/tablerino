@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16.png">
+<link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablerino - Depozit</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #1a1a2e; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+.sidebar .logo { margin-bottom: 20px; padding: 4px; display: flex; align-items: center; justify-content: center; }
+.sidebar .logo img { height: 64px; width: auto; object-fit: contain; background: #fff; border-radius: 10px; padding: 6px; }
+.sidebar a { color: #aaa; text-decoration: none; padding: 10px 12px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; transition: background .15s, color .15s; }
+.sidebar a:hover, .sidebar a.activ { background: #6c47ff; color: #fff; }
+.sidebar .logout { margin-top: auto; }
+.main { margin-left: 220px; padding: 32px; max-width: 920px; }
+.main h2 { font-size: 20px; margin-bottom: 6px; }
+.main p.sub { color: #888; font-size: 14px; margin-bottom: 20px; }
+
+.alert-low { background: #fff4e5; border: 1px solid #ffd9a8; color: #a15c00; border-radius: 10px; padding: 11px 14px; font-size: 13.5px; margin-bottom: 18px; display: none; }
+.alert-low.show { display: block; }
+
+.form-card { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); margin-bottom: 22px; }
+.form-card h3 { font-size: 15px; margin-bottom: 14px; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.field { flex: 1; min-width: 130px; }
+.field label { display: block; font-size: 12.5px; font-weight: 600; color: #555; margin-bottom: 5px; }
+.field input, .field select { width: 100%; padding: 9px 11px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: inherit; }
+.btn-primary { background: #6c47ff; color: #fff; border: none; padding: 10px 18px; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.btn-primary:hover { background: #5838d8; }
+
+.tbl { background: #fff; border-radius: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); overflow: hidden; }
+.tbl-row { display: grid; grid-template-columns: 2fr 1.2fr 2.4fr 1fr auto; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f0f0f5; }
+.tbl-row.head { background: #fafaff; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #999; font-weight: 700; }
+.tbl-row:last-child { border-bottom: none; }
+.ing-nume { font-weight: 700; font-size: 14.5px; }
+.ing-stoc { font-weight: 800; font-size: 15px; }
+.ing-stoc.low { color: #e53e3e; }
+.ing-stoc.ok { color: #16a34a; }
+.badge-low { display: inline-block; background: #fee2e2; color: #c62828; font-size: 10.5px; font-weight: 700; border-radius: 20px; padding: 1px 8px; margin-left: 6px; vertical-align: middle; }
+.stoc-ctrl { display: flex; gap: 5px; align-items: center; }
+.stoc-ctrl input { width: 64px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 7px; font-size: 13px; }
+.btn-xs { border: none; border-radius: 7px; padding: 6px 9px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.btn-plus { background: #d1fae5; color: #065f46; }
+.btn-minus { background: #fee2e2; color: #c62828; }
+.row-act { display: flex; gap: 6px; }
+.btn-edit { background: #ede9ff; color: #6c47ff; }
+.btn-del { background: #ffebee; color: #c62828; }
+.gol { color: #999; font-size: 14px; padding: 24px; text-align: center; }
+
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+.overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 16px; padding: 24px; width: 100%; max-width: 440px; }
+.modal h3 { font-size: 17px; margin-bottom: 16px; }
+.modal .field { margin-bottom: 14px; }
+.modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+.btn-cancel { background: #eee; color: #555; border: none; padding: 10px 18px; border-radius: 9px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.toast { display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #10b981; color: #fff; padding: 12px 22px; border-radius: 10px; font-size: 14px; font-weight: 600; z-index: 500; box-shadow: 0 6px 20px rgba(0,0,0,.2); }
+.cap-box { background: #fff; border-radius: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); padding: 18px; margin-top: 22px; }
+.cap-box h3 { font-size: 15px; margin-bottom: 4px; }
+.cap-box .cap-sub { font-size: 12.5px; color: #888; margin-bottom: 14px; }
+.cap-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f2f2f7; }
+.cap-item:last-child { border-bottom: none; }
+.cap-nume { font-weight: 700; font-size: 14.5px; }
+.cap-nume small { font-weight: 500; color: #999; font-size: 12px; margin-left: 6px; }
+.cap-portii { font-size: 15px; font-weight: 800; white-space: nowrap; }
+.cap-portii small { font-weight: 500; color: #999; font-size: 12px; display: block; text-align: right; }
+.cap-g-ok { color: #16a34a; } .cap-g-low { color: #d97706; } .cap-g-zero { color: #e53e3e; }
+
+@media (max-width: 860px) {
+    .sidebar { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: 100%; height: 60px; flex-direction: row; padding: 0 4px; justify-content: flex-start; align-items: center; border-top: 1px solid #2a2a3e; z-index: 100; overflow-x: auto; overflow-y: hidden; gap: 0; }
+    .sidebar .logo { display: none; }
+    .sidebar .logout { margin-top: 0; }
+    .sidebar a { flex-direction: column; gap: 2px; font-size: 10px; padding: 6px 10px; border-radius: 6px; justify-content: center; text-align: center; flex: 0 0 auto; white-space: nowrap; }
+    .main { margin-left: 0; padding: 18px 14px 80px; }
+    .tbl-row { grid-template-columns: 1.6fr 1.6fr auto; row-gap: 8px; }
+    .tbl-row .col-prag, .tbl-row.head .col-prag { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="logo"><img src="/uploads/logo-tablerino.png" alt="Tablerino" style="height:190px;width:auto;object-fit:contain;display:block;"></div>
+    <a href="/admin/index.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg> Comenzi</a>
+    <a href="/admin/bucatarie.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 3a4 4 0 0 1 4 4c1.7 0 3 1.3 3 3s-1.3 3-3 3H8c-1.7 0-3-1.3-3-3s1.3-3 3-3a4 4 0 0 1 4-4z"/><path d="M7 16h10v3a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z"/></svg> Bucătărie</a>
+    <a href="/admin/meniu.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 7v14"/><path d="M4 5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2 2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v12a1 1 0 0 1-1 1h-6a2 2 0 0 0-2 2 2 2 0 0 0-2-2H5a1 1 0 0 1-1-1z"/></svg> Meniu</a>
+    <a href="/admin/meniu-evenimente.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M5.8 11.3 2 22l10.7-3.8"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.2.7a2 2 0 0 0-1.3 1.3L18 6l1 1 2-1 1-1z"/><path d="M11 13c1.9 1.9 2.8 4.2 2 5-.8.8-3.1-.1-5-2-1.9-1.9-2.8-4.2-2-5 .8-.8 3.1.1 5 2z"/></svg> Meniu evenimente</a>
+    <a href="/admin/depozit.html" class="activ"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M3 9 12 4l9 5v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 9h18"/><path d="M9 22V12h6v10"/></svg> Depozit</a>
+    <a href="/admin/mese.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M3 10h18"/><path d="M5 10V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M6 10v9"/><path d="M18 10v9"/></svg> Mese</a>
+    <a href="/admin/istoric.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg> Istoric</a>
+    <a href="/admin/rezervari.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg> Rezervări</a>
+    <a href="/admin/recenzii.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 2.5l2.9 6 6.6.6-5 4.3 1.5 6.5L12 16.9 6 19.9l1.5-6.5-5-4.3 6.6-.6z"/></svg> Recenzii</a>
+    <a href="/admin/raport.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><line x1="4" y1="20" x2="4" y2="12"/><line x1="10" y1="20" x2="10" y2="5"/><line x1="16" y1="20" x2="16" y2="9"/><line x1="3" y1="20" x2="21" y2="20"/></svg> Rapoarte</a>
+    <a href="/admin/setari.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><circle cx="13.5" cy="6.5" r=".9" fill="currentColor" stroke="none"/><circle cx="17.5" cy="10.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8.5" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="6.5" cy="12.5" r=".9" fill="currentColor" stroke="none"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.7 1.7-1.7H18c2.2 0 4-1.8 4-4C22 6 17.5 2 12 2z"/></svg> Design</a>
+    <a href="/admin/abonament.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Abonament</a>
+    <a href="/admin/reclame.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="m3 11 18-5v12L3 14z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg> Reclame</a>
+    <a href="/admin/audit.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> Audit</a>
+    <a href="/admin/ospatari.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></svg> Ospătari</a>
+    <div style="margin-top:auto;padding:8px 4px;display:flex;gap:6px;justify-content:center">
+        <a href="?lang=ro" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;background:#6c47ff;color:#fff">🇷🇴 RO</a>
+        <a href="?lang=en" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#aaa">🇬🇧 EN</a>
+    </div>
+    <a href="#" class="logout" onclick="logout(event)">🚪 Ieșire</a>
+</div>
+
+<div class="main">
+    <h2>📦 Depozit</h2>
+    <p class="sub">Gestiunea ingredientelor și a stocului. Folosit la calculul necesarului pentru evenimente.</p>
+
+    <div class="alert-low" id="alertLow"></div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px" id="notifBar">
+        <button id="btnNotifOwner" class="btn-primary" style="background:#6c47ff" onclick="toggleNotificariOwner()">🔔 Activează notificările de stoc</button>
+        <button id="btnRezumatAcum" class="btn-primary" style="background:#0a7a52" onclick="trimiteRezumatAcum()">📋 Trimite rezumat acum</button>
+    </div>
+    <p class="sub" style="margin-top:-10px;margin-bottom:16px;font-size:12px">Rezumatul cu ingredientele sub prag se trimite automat zilnic (~09:00) către admin și șeful de sală.</p>
+
+    <div class="form-card">
+        <h3>+ Adaugă ingredient</h3>
+        <div class="row">
+            <div class="field"><label>Ingredient</label><input type="text" id="nNume" placeholder="Ex: Carne tocată"></div>
+            <div class="field" style="max-width:120px"><label>Unitate</label>
+                <select id="nUnitate"><option>kg</option><option>g</option><option>litri</option><option>ml</option><option selected>buc</option></select>
+            </div>
+            <div class="field" style="max-width:120px"><label>Stoc curent</label><input type="number" id="nStoc" value="0" min="0" step="0.01"></div>
+            <div class="field" style="max-width:130px"><label>Prag minim</label><input type="number" id="nPrag" value="0" min="0" step="0.01"></div>
+            <button class="btn-primary" onclick="salveazaIngredient()">Adaugă</button>
+        </div>
+    </div>
+
+    <div class="tbl" id="tbl">
+        <div class="tbl-row head">
+            <div>Ingredient</div><div>Stoc</div><div>Mișcare stoc</div><div class="col-prag">Prag min.</div><div></div>
+        </div>
+        <div class="gol" id="gol">Se încarcă...</div>
+    </div>
+
+    <div id="capBox"></div>
+</div>
+
+<!-- Modal editare -->
+<div class="overlay" id="overlay">
+    <div class="modal">
+        <h3>✏️ Editează ingredient</h3>
+        <input type="hidden" id="eId">
+        <div class="field"><label>Ingredient</label><input type="text" id="eNume"></div>
+        <div class="field"><label>Unitate</label><select id="eUnitate"><option>kg</option><option>g</option><option>litri</option><option>ml</option><option>buc</option></select></div>
+        <div class="field"><label>Prag minim (alertă sub acest nivel)</label><input type="number" id="ePrag" min="0" step="0.01"></div>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="inchideEdit()">Anulează</button>
+            <button class="btn-primary" onclick="salveazaEdit()">Salvează</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function logout(e) { if (e) e.preventDefault(); fetch('/api/admin/logout', { method: 'POST' }).finally(function () { location.href = '/admin/login.html'; }); }
+function showToast(msg, ok = true) { const t = document.getElementById('toast'); t.textContent = msg; t.style.background = ok ? '#10b981' : '#e53e3e'; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 2600); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmt(n) { n = Number(n) || 0; return (Math.round(n * 1000) / 1000).toString(); }
+
+let ING = [];
+async function incarca() {
+    const d = await (await fetch('/api/admin/depozit')).json();
+    ING = d.ingrediente || [];
+    const tbl = document.getElementById('tbl');
+    tbl.querySelectorAll('.tbl-row:not(.head), .gol').forEach(el => el.remove());
+    if (!ING.length) {
+        const g = document.createElement('div'); g.className = 'gol'; g.textContent = 'Niciun ingredient încă. Adaugă primul mai sus.';
+        tbl.appendChild(g);
+    } else {
+        ING.forEach(i => tbl.appendChild(randIng(i)));
+    }
+    const low = ING.filter(i => Number(i.prag_minim) > 0 && Number(i.stoc) <= Number(i.prag_minim));
+    const al = document.getElementById('alertLow');
+    if (low.length) { al.classList.add('show'); al.innerHTML = '⚠️ <b>' + low.length + '</b> ingrediente sub pragul minim: ' + low.map(i => esc(i.nume)).join(', '); }
+    else al.classList.remove('show');
+    incarcaCapacitate();
+}
+async function incarcaCapacitate() {
+    const box = document.getElementById('capBox');
+    let d; try { d = await (await fetch('/api/admin/capacitate_preparate')).json(); } catch (e) { box.innerHTML = ''; return; }
+    const r = (d.randuri || []).filter(x => x.portii != null);
+    if (!r.length) { box.innerHTML = '<div class="cap-box"><h3>🍲 Câte porții mai pot face</h3><div class="cap-sub">Adaugă preparate cu rețetă în <b>Meniu evenimente → Preparate</b> ca să vezi aici câte porții poți face din stocul curent.</div></div>'; return; }
+    box.innerHTML = '<div class="cap-box"><h3>🍲 Câte porții mai pot face</h3><div class="cap-sub">Calculat automat din rețetele preparatelor și stocul curent.</div>' +
+        r.map(x => {
+            const g = x.portii <= 0 ? 'cap-g-zero' : (x.portii < 10 ? 'cap-g-low' : 'cap-g-ok');
+            return '<div class="cap-item"><div class="cap-nume">' + esc(x.nume) + '<small>' + esc(x.categorie || '') + '</small></div>' +
+                '<div class="cap-portii ' + g + '">' + x.portii + ' porții' + (x.limitant ? '<small>limitat de ' + esc(x.limitant) + '</small>' : '') + '</div></div>';
+        }).join('') + '</div>';
+}
+function randIng(i) {
+    const low = Number(i.prag_minim) > 0 && Number(i.stoc) <= Number(i.prag_minim);
+    const row = document.createElement('div'); row.className = 'tbl-row';
+    row.innerHTML =
+        '<div class="ing-nume">' + esc(i.nume) + (low ? '<span class="badge-low">stoc mic</span>' : '') + '</div>' +
+        '<div class="ing-stoc ' + (low ? 'low' : 'ok') + '">' + fmt(i.stoc) + ' <span style="font-weight:500;color:#999;font-size:12px">' + esc(i.unitate) + '</span></div>' +
+        '<div class="stoc-ctrl"><input type="number" step="0.01" min="0" value="1" id="mv' + i.id + '">' +
+            '<button class="btn-xs btn-plus" onclick="misca(' + i.id + ',1)">+ Adaugă</button>' +
+            '<button class="btn-xs btn-minus" onclick="misca(' + i.id + ',-1)">− Scade</button></div>' +
+        '<div class="col-prag">' + fmt(i.prag_minim) + ' ' + esc(i.unitate) + '</div>' +
+        '<div class="row-act">' +
+            '<button class="btn-xs btn-edit" onclick="deschideEdit(' + i.id + ')">✏️</button>' +
+            '<button class="btn-xs btn-del" onclick="stergeIng(' + i.id + ')">✕</button></div>';
+    return row;
+}
+async function salveazaIngredient() {
+    const nume = document.getElementById('nNume').value.trim();
+    if (!nume) { showToast('Scrie numele ingredientului.', false); return; }
+    const payload = { nume, unitate: document.getElementById('nUnitate').value, stoc: Number(document.getElementById('nStoc').value) || 0, prag_minim: Number(document.getElementById('nPrag').value) || 0 };
+    const d = await (await fetch('/api/admin/salveaza_ingredient', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })).json();
+    if (!d.ok) { showToast(d.msg || 'Eroare', false); return; }
+    document.getElementById('nNume').value = ''; document.getElementById('nStoc').value = '0'; document.getElementById('nPrag').value = '0';
+    showToast('Ingredient adăugat!'); incarca();
+}
+async function misca(id, sgn) {
+    const inp = document.getElementById('mv' + id);
+    const val = (Number(inp.value) || 0) * sgn;
+    if (!val) { showToast('Pune o cantitate.', false); return; }
+    const d = await (await fetch('/api/admin/ajusteaza_stoc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, delta: val }) })).json();
+    if (!d.ok) { showToast(d.msg || 'Eroare', false); return; }
+    showToast(sgn > 0 ? 'Stoc adăugat' : 'Stoc scăzut'); incarca();
+}
+function deschideEdit(id) {
+    const i = ING.find(x => x.id === id); if (!i) return;
+    document.getElementById('eId').value = id;
+    document.getElementById('eNume').value = i.nume;
+    document.getElementById('eUnitate').value = i.unitate;
+    document.getElementById('ePrag').value = Number(i.prag_minim) || 0;
+    document.getElementById('overlay').classList.add('open');
+}
+function inchideEdit() { document.getElementById('overlay').classList.remove('open'); }
+async function salveazaEdit() {
+    const id = Number(document.getElementById('eId').value);
+    const i = ING.find(x => x.id === id);
+    const payload = { id, nume: document.getElementById('eNume').value.trim(), unitate: document.getElementById('eUnitate').value, stoc: Number(i ? i.stoc : 0), prag_minim: Number(document.getElementById('ePrag').value) || 0 };
+    if (!payload.nume) { showToast('Numele e obligatoriu.', false); return; }
+    const d = await (await fetch('/api/admin/salveaza_ingredient', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })).json();
+    if (!d.ok) { showToast(d.msg || 'Eroare', false); return; }
+    inchideEdit(); showToast('Salvat!'); incarca();
+}
+async function stergeIng(id) {
+    if (!confirm('Ștergi ingredientul din depozit?')) return;
+    await fetch('/api/admin/sterge_ingredient', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    incarca();
+}
+
+async function trimiteRezumatAcum() {
+    const d = await (await fetch('/api/admin/stoc_digest_now', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).json();
+    if (!d.ok) { showToast(d.msg || 'Eroare', false); return; }
+    if (d.nr > 0) showToast('Rezumat trimis: ' + d.nr + ' ingrediente sub prag.');
+    else showToast('Niciun ingredient sub prag acum. 🎉');
+}
+
+/* ---------- Notificări de stoc (web push, owner + șef de sală) ---------- */
+function urlB64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const arr = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+}
+function actualizeazaButonNotif(on) {
+    const btn = document.getElementById('btnNotifOwner');
+    if (!btn) return;
+    btn.textContent = on ? '🔕 Dezactivează notificările de stoc' : '🔔 Activează notificările de stoc';
+    btn.style.background = on ? '#888' : '#6c47ff';
+}
+function notifActiv() { try { return localStorage.getItem('tablerino_owner_push') === '1'; } catch (e) { return false; } }
+function toggleNotificariOwner() { notifActiv() ? dezactiveazaNotificariOwner() : activeazaNotificariOwner(false); }
+async function activeazaNotificariOwner(silent) {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { if (!silent) showToast('Notificările nu sunt suportate pe acest dispozitiv.', false); return; }
+    try {
+        if (silent) { if (Notification.permission !== 'granted') return; }
+        else { const perm = await Notification.requestPermission(); if (perm !== 'granted') { showToast('Permisiune refuzată pentru notificări.', false); return; } }
+        const reg = await navigator.serviceWorker.register('/admin/sw.js');
+        await navigator.serviceWorker.ready;
+        const kr = await fetch('/api/admin/push_public_key').then(r => r.json()).catch(() => null);
+        if (!kr || !kr.key) { if (!silent) showToast('Notificările nu sunt configurate.', false); return; }
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(kr.key) });
+        await fetch('/api/admin/owner_push_subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
+        try { localStorage.setItem('tablerino_owner_push', '1'); } catch (e) {}
+        actualizeazaButonNotif(true);
+        if (!silent) showToast('Notificări activate! Primești alertă când un ingredient scade sub prag.');
+    } catch (e) { if (!silent) showToast('Nu am putut activa notificările.', false); }
+}
+async function dezactiveazaNotificariOwner() {
+    try {
+        const reg = await navigator.serviceWorker.getRegistration('/admin/sw.js') || await navigator.serviceWorker.getRegistration();
+        const sub = reg && await reg.pushManager.getSubscription();
+        if (sub) { await fetch('/api/admin/owner_push_unsubscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) }); await sub.unsubscribe(); }
+    } catch (e) {}
+    try { localStorage.removeItem('tablerino_owner_push'); } catch (e) {}
+    actualizeazaButonNotif(false);
+    showToast('Notificări dezactivate.');
+}
+
+fetch('/api/admin/me').then(function (r) {
+    if (!r.ok) { location.href = '/admin/login.html'; return; }
+    return r.json();
+}).then(function (me) {
+    if (!me) return;
+    if (me.role === 'ospatar') { location.href = '/admin/index.html'; return; }
+    incarca();
+    // Stock alerts go to the owner + șef de sală only.
+    if (me.role === 'bucatarie') { var nb = document.getElementById('notifBar'); if (nb) nb.style.display = 'none'; return; }
+    actualizeazaButonNotif(notifActiv());
+    if (notifActiv()) activeazaNotificariOwner(true);
+});
+</script>
+<script src="/admin/master-banner.js"></script>
+  <script src="/admin/admin-roles.js"></script>
+</body>
+</html>

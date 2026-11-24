@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablerino — Platforma utilă pentru restaurantul tău</title>
+<meta name="description" content="Tablerino este platforma care îți ajută restaurantul: comandă la masă prin QR, aplicație pentru ospătari, rezervări online, recenzii și rapoarte în timp real — tot ce-ți trebuie ca să-ți conduci restaurantul. Un singur abonament €100/lună, fără comision pe comenzi.">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --side: 256px;
+    --topbar: 62px;
+
+    --espresso: #1b1613;      /* main warm near-black */
+    --panel: #241d18;         /* warm panel */
+    --panel-2: #2d241d;       /* card */
+    --sidebar: #15110e;       /* darkest warm */
+    --cream: #f3eadc;         /* headings */
+    --cream-dim: #d3c6b3;     /* body */
+    --muted: #9c8d7b;         /* secondary */
+    --faint: #6f6355;
+    --gold: #c9a66b;          /* accent */
+    --gold-soft: rgba(201,166,107,0.14);
+    --gold-line: rgba(201,166,107,0.26);
+    --line: #3a2f26;          /* warm borders */
+    --line-soft: #2c231c;
+
+    --radius: 16px;
+    --radius-sm: 12px;
+    --shadow: 0 24px 60px rgba(0,0,0,0.42);
+    --shadow-sm: 0 12px 30px rgba(0,0,0,0.3);
+
+    --serif: 'Playfair Display', 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+body {
+    font-family: var(--sans);
+    background: var(--espresso);
+    color: var(--cream-dim);
+    line-height: 1.65;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+::selection { background: var(--gold); color: var(--espresso); }
+
+/* ─────────────  SIDEBAR (desktop)  ───────────── */
+.sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: var(--side);
+    background: var(--sidebar);
+    border-right: 1px solid var(--line-soft);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    padding: 34px 28px 26px;
+    overflow-y: auto;
+}
+.side-brand {
+    font-family: var(--serif);
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--cream);
+    line-height: 1;
+}
+.side-logo { display: block; background: #fff; border-radius: 16px; padding: 16px 18px; width: 162px; max-width: 100%; box-shadow: 0 10px 26px rgba(0,0,0,0.32); }
+.side-logo img { width: 100%; display: block; }
+.side-tagline {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-top: 10px;
+}
+.side-head { padding-bottom: 26px; margin-bottom: 26px; border-bottom: 1px solid var(--line-soft); }
+
+.side-nav { display: flex; flex-direction: column; gap: 3px; }
+.side-nav a {
+    font-family: var(--serif);
+    font-size: 21px;
+    font-weight: 500;
+    color: var(--cream-dim);
+    padding: 7px 0;
+    transition: color 0.2s, padding-left 0.2s;
+}
+.side-nav a:hover { color: var(--gold); padding-left: 6px; }
+
+.side-spacer { flex: 1 1 auto; min-height: 30px; }
+
+.side-actions { display: flex; flex-direction: column; gap: 16px; margin-bottom: 26px; }
+.side-login {
+    display: inline-block;
+    text-align: center;
+    border: 1px solid var(--gold-line);
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 12px 14px;
+    border-radius: 999px;
+    transition: background 0.2s, color 0.2s;
+}
+.side-login:hover { background: var(--gold); color: var(--espresso); }
+
+.lang-toggle { display: inline-flex; gap: 3px; background: rgba(255,255,255,0.04); border: 1px solid var(--line); border-radius: 999px; padding: 3px; width: max-content; }
+.lang-toggle button {
+    background: none; border: none;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
+    color: var(--muted);
+    padding: 6px 14px; border-radius: 999px;
+    cursor: pointer; transition: all 0.2s;
+}
+.lang-toggle button.activ { background: var(--gold); color: var(--espresso); }
+
+.side-foot { border-top: 1px solid var(--line-soft); padding-top: 20px; }
+.sf-title { font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 9px; }
+.sf-line { font-size: 13px; color: var(--muted); display: block; }
+.sf-mail:hover { color: var(--gold); }
+
+/* ─────────────  MOBILE TOP BAR  ───────────── */
+.topbar {
+    display: none;
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--topbar);
+    background: rgba(21,17,14,0.92);
+    backdrop-filter: saturate(160%) blur(12px);
+    -webkit-backdrop-filter: saturate(160%) blur(12px);
+    border-bottom: 1px solid var(--line-soft);
+    z-index: 100;
+    padding: 0 16px;
+    align-items: center;
+    justify-content: space-between;
+}
+.tb-brand { font-family: var(--serif); font-size: 23px; font-weight: 700; color: var(--cream); }
+.tb-logo { display: flex; align-items: center; }
+.tb-logo img { height: 42px; width: auto; background: #fff; border-radius: 10px; padding: 5px 7px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+.tb-right { display: flex; align-items: center; gap: 10px; }
+.hamburger {
+    background: var(--gold); border: none; color: var(--espresso);
+    width: 42px; height: 42px; border-radius: 11px;
+    font-size: 19px; cursor: pointer; display: grid; place-items: center;
+}
+
+.mobile-menu {
+    display: none;
+    position: fixed; top: var(--topbar); left: 10px; right: 10px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 10px; z-index: 99;
+    flex-direction: column; gap: 2px;
+    box-shadow: var(--shadow);
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+    font-family: var(--serif);
+    color: var(--cream);
+    padding: 13px 16px; font-size: 19px; font-weight: 500;
+    border-radius: 10px; transition: background 0.2s, color 0.2s;
+}
+.mobile-menu a:hover { background: rgba(255,255,255,0.04); color: var(--gold); }
+.mobile-menu a.mm-login {
+    font-family: var(--sans); font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    background: var(--gold); color: var(--espresso); text-align: center; margin-top: 6px; font-weight: 700;
+}
+
+/* ─────────────  PAGE (offset right of sidebar)  ───────────── */
+.page { margin-left: var(--side); }
+
+/* ─────────────  BUTTONS  ───────────── */
+.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+    font-family: var(--sans); font-weight: 600; font-size: 13px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer; border: none;
+    padding: 15px 30px; border-radius: 999px;
+    transition: transform 0.2s, background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.btn-primary, .btn-dark { background: var(--gold); color: var(--espresso); box-shadow: 0 14px 30px rgba(201,166,107,0.22); }
+.btn-primary:hover, .btn-dark:hover { background: #dbbd86; transform: translateY(-2px); box-shadow: 0 18px 38px rgba(201,166,107,0.3); }
+.btn-ghost { background: transparent; color: var(--cream); border: 1px solid rgba(243,234,220,0.32); }
+.btn-ghost:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-2px); }
+
+/* ─────────────  HERO  ───────────── */
+.hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex; align-items: center;
+    padding: 110px clamp(24px, 6vw, 92px);
+    overflow: hidden;
+}
+.hero::before {
+    content: ''; position: absolute; inset: 0; z-index: 0;
+    background: linear-gradient(180deg, rgba(20,15,12,0.62) 0%, rgba(20,15,12,0.78) 55%, rgba(20,15,12,0.92) 100%),
+                url('/uploads/landing-hero-bg.jpg') center/cover no-repeat;
+}
+.hero::after {
+    content: ''; position: absolute; inset: 0; z-index: 0;
+    background: radial-gradient(1100px 700px at 100% 100%, rgba(201,166,107,0.1), transparent 60%);
+    pointer-events: none;
+}
+.hero-inner { position: relative; z-index: 1; max-width: 780px; }
+.hero-pill {
+    display: inline-flex; align-items: center; gap: 9px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--gold-line);
+    color: var(--cream);
+    padding: 8px 17px; border-radius: 999px;
+    font-size: 12px; letter-spacing: 0.08em; font-weight: 500;
+    margin-bottom: 28px;
+}
+.hero-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(201,166,107,0.2); }
+.hero-title {
+    font-family: var(--serif);
+    font-size: clamp(42px, 6.9vw, 82px);
+    font-weight: 700;
+    line-height: 1.07;
+    letter-spacing: 0.005em;
+    color: var(--cream);
+    margin-bottom: 24px;
+    overflow-wrap: break-word;
+}
+.hero-title em { font-style: italic; color: var(--gold); }
+.hero .lead {
+    font-size: clamp(16px, 2vw, 19px);
+    color: var(--cream-dim);
+    max-width: 560px; margin-bottom: 36px;
+}
+.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.hero-price {
+    display: inline-flex; align-items: center; gap: 13px;
+    margin-top: 32px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--line);
+    padding: 9px 9px 9px 9px; border-radius: 999px;
+}
+.hero-price .tag { background: var(--gold); color: var(--espresso); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 8px 15px; border-radius: 999px; }
+.hero-price .amt { font-family: var(--serif); font-size: 26px; font-weight: 700; color: var(--cream); padding-right: 12px; }
+.hero-price .amt span { font-family: var(--sans); font-size: 14px; font-weight: 400; color: var(--muted); }
+
+/* ─────────────  STATS  ───────────── */
+.stats {
+    width: min(1040px, calc(100% - 40px));
+    margin: -74px auto 0;
+    position: relative; z-index: 5;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+.stat { padding: 28px 18px; text-align: center; border-right: 1px solid var(--line-soft); }
+.stat:last-child { border-right: none; }
+.stat .num { font-family: var(--serif); font-size: 30px; font-weight: 700; color: var(--gold); letter-spacing: 0.01em; }
+.stat .lbl { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
+
+/* ─────────────  SECTIONS  ───────────── */
+section.block { padding: clamp(70px, 9vw, 120px) clamp(24px, 6vw, 92px); }
+.wrap { max-width: 1180px; margin: 0 auto; }
+.sec-head { max-width: 720px; margin: 0 auto 60px; text-align: center; }
+.eyebrow {
+    display: inline-block;
+    color: var(--gold);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;
+    margin-bottom: 18px;
+}
+.eyebrow::before, .eyebrow::after { content: '—'; color: var(--gold-line); margin: 0 10px; }
+.sec-title { font-family: var(--serif); font-size: clamp(30px, 4.6vw, 52px); font-weight: 600; line-height: 1.1; color: var(--cream); letter-spacing: 0.005em; }
+.sec-title em { font-style: italic; color: var(--gold); }
+.sec-sub { margin-top: 16px; font-size: 17px; color: var(--cream-dim); }
+
+/* Highlight blocks */
+.highlights { display: flex; flex-direction: column; gap: 22px; margin-bottom: 26px; }
+.hl {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 44px; align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 20px; padding: 46px; overflow: hidden;
+}
+.hl.alt { background: var(--panel-2); }
+.hl-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    color: var(--gold); border: 1px solid var(--gold-line);
+    font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 6px 13px; border-radius: 999px; margin-bottom: 18px;
+}
+.hl-title { font-family: var(--serif); font-size: 30px; font-weight: 600; color: var(--cream); margin-bottom: 12px; }
+.hl-desc { font-size: 16px; color: var(--cream-dim); margin-bottom: 20px; }
+.hl-list { list-style: none; display: flex; flex-direction: column; gap: 11px; }
+.hl-feat { display: flex; gap: 11px; align-items: flex-start; font-size: 14.5px; color: var(--cream); }
+.hl-feat::before { content: '✓'; color: var(--espresso); background: var(--gold); width: 21px; height: 21px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 2px; }
+.hl-art {
+    border-radius: 16px; min-height: 340px;
+    border: 1px solid var(--gold-line);
+    position: relative; overflow: hidden;
+}
+.hl-art .hl-shot { width: 100%; height: 100%; min-height: 340px; object-fit: cover; display: block; }
+
+/* Feature grid */
+.feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(262px, 1fr)); gap: 20px; }
+.feat-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px; padding: 32px 28px;
+    position: relative;
+    transition: transform 0.25s, border-color 0.25s, background 0.25s;
+}
+.feat-card:hover { transform: translateY(-5px); border-color: var(--gold-line); background: var(--panel-2); }
+.feat-ic { width: 52px; height: 52px; border-radius: 13px; background: var(--gold-soft); border: 1px solid var(--gold-line); display: grid; place-items: center; color: var(--gold); margin-bottom: 20px; }
+.feat-ic svg { width: 26px; height: 26px; }
+.badge-new { position: absolute; top: 22px; right: 22px; color: var(--gold); border: 1px solid var(--gold-line); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; padding: 4px 10px; border-radius: 999px; }
+.feat-card h3 { font-family: var(--serif); font-size: 21px; font-weight: 600; color: var(--cream); margin-bottom: 9px; }
+.feat-card p { font-size: 14.5px; color: var(--cream-dim); }
+
+/* ─────────────  GALLERY  ───────────── */
+.gallery { padding: clamp(10px, 3vw, 30px) clamp(24px, 6vw, 92px) 0; }
+.gal-grid { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
+.gal-item { position: relative; overflow: hidden; aspect-ratio: 4/5; border-radius: 14px; border: 1px solid var(--line); }
+.gal-item img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.95) brightness(0.92); transition: transform 0.7s ease; }
+.gal-item:hover img { transform: scale(1.05); }
+.gal-cap { position: absolute; inset: 0; background: linear-gradient(to top, rgba(15,11,8,0.82), transparent 55%); display: flex; align-items: flex-end; padding: 24px; }
+.gal-cap span { font-family: var(--serif); color: var(--cream); font-weight: 600; font-size: 19px; }
+@media (max-width: 820px) { .gal-grid { grid-template-columns: 1fr; } .gal-item { aspect-ratio: 16/10; } }
+
+/* ─────────────  HOW  ───────────── */
+.how { background: var(--sidebar); }
+.steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
+.step { background: var(--panel); border: 1px solid var(--line); border-radius: 15px; padding: 28px 22px; }
+.step .n { font-family: var(--serif); width: 42px; height: 42px; border-radius: 11px; background: var(--gold); color: var(--espresso); font-weight: 700; font-size: 19px; display: grid; place-items: center; margin-bottom: 18px; }
+.step h4 { font-family: var(--serif); color: var(--cream); font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+.step p { color: var(--cream-dim); font-size: 13.5px; }
+@media (max-width: 900px) { .steps { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px) { .steps { grid-template-columns: 1fr; } }
+
+/* ─────────────  PRICING  ───────────── */
+.price-card {
+    max-width: 500px; margin: 0 auto;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 20px; padding: 48px 42px; text-align: center;
+    position: relative; overflow: hidden;
+}
+.price-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--gold); }
+.price-card .plan { color: var(--gold); font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; }
+.price-card .big { font-family: var(--serif); font-size: 64px; font-weight: 700; color: var(--cream); margin: 12px 0 4px; line-height: 1; }
+.price-card .big span { font-family: var(--sans); font-size: 18px; font-weight: 400; color: var(--muted); }
+.price-card .no-comm { display: inline-flex; align-items: center; gap: 8px; background: var(--gold-soft); border: 1px solid var(--gold-line); color: var(--gold); font-weight: 600; font-size: 13px; padding: 8px 16px; border-radius: 999px; margin: 16px 0 26px; }
+.price-list { list-style: none; text-align: left; display: flex; flex-direction: column; gap: 13px; margin-bottom: 30px; }
+.price-list li { display: flex; gap: 11px; align-items: flex-start; font-size: 15px; color: var(--cream); }
+.price-list li::before { content: '✓'; color: var(--espresso); background: var(--gold); width: 21px; height: 21px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 2px; }
+.price-card .btn { width: 100%; }
+
+/* ─────────────  REGISTER  ───────────── */
+#inregistrare { background: var(--sidebar); }
+.reg-wrap { max-width: 1050px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+.reg-left .sec-head { text-align: left; margin: 0; max-width: none; }
+.reg-points { list-style: none; margin-top: 26px; display: flex; flex-direction: column; gap: 13px; }
+.reg-points li { display: flex; gap: 11px; align-items: center; font-size: 15px; color: var(--cream-dim); }
+.reg-points li b { color: var(--cream); }
+.reg-form { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 36px; }
+.field { margin-bottom: 17px; }
+.field label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+.field input {
+    width: 100%; padding: 14px 16px;
+    border: 1px solid var(--line); border-radius: 11px;
+    font-size: 15px; font-family: var(--sans);
+    background: var(--sidebar); color: var(--cream);
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field input::placeholder { color: var(--faint); }
+.field input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,166,107,0.16); }
+#irBtn { width: 100%; margin-top: 8px; }
+#irBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+.reg-note { font-size: 12.5px; color: var(--muted); text-align: center; margin-top: 15px; }
+.reg-success { text-align: center; padding: 34px 10px; }
+.reg-success .ic { font-size: 52px; margin-bottom: 12px; }
+.reg-success h3 { font-family: var(--serif); font-size: 26px; font-weight: 600; color: var(--cream); margin-bottom: 8px; }
+.reg-success p { color: var(--cream-dim); font-size: 15px; }
+@media (max-width: 860px) { .reg-wrap { grid-template-columns: 1fr; gap: 38px; } }
+
+/* ─────────────  CTA  ───────────── */
+.cta { background: var(--panel); text-align: center; position: relative; overflow: hidden; }
+.cta::after { content: ''; position: absolute; bottom: -40%; left: 50%; transform: translateX(-50%); width: 760px; height: 540px; background: radial-gradient(circle, rgba(201,166,107,0.16), transparent 62%); pointer-events: none; }
+.cta .inner { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; }
+.cta h2 { font-family: var(--serif); font-size: clamp(30px, 4.6vw, 50px); font-weight: 600; color: var(--cream); line-height: 1.12; margin-bottom: 18px; }
+.cta h2 em { font-style: italic; color: var(--gold); }
+.cta p { color: var(--cream-dim); font-size: 17px; margin-bottom: 34px; }
+.cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+/* ─────────────  FOOTER  ───────────── */
+footer { background: var(--sidebar); border-top: 1px solid var(--line-soft); padding: 64px clamp(24px, 6vw, 92px) 30px; }
+.foot-top { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 44px; padding-bottom: 38px; border-bottom: 1px solid var(--line-soft); }
+.foot-brand { font-family: var(--serif); font-size: 26px; font-weight: 700; color: var(--cream); margin-bottom: 14px; }
+.foot-tag { color: var(--muted); font-size: 14.5px; max-width: 360px; }
+.foot-social { display: flex; gap: 12px; margin-top: 20px; }
+.foot-social a { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; background: rgba(255,255,255,0.06); border: 1px solid var(--line-soft); color: var(--cream-dim); transition: color 0.2s, background 0.2s, border-color 0.2s, transform 0.2s; }
+.foot-social a:hover { color: var(--gold); background: rgba(255,255,255,0.1); border-color: var(--gold); transform: translateY(-2px); }
+.foot-social svg { width: 18px; height: 18px; fill: currentColor; }
+.foot-col h4 { color: var(--gold); font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 16px; }
+.foot-col a { display: block; color: var(--cream-dim); font-size: 14.5px; margin-bottom: 11px; transition: color 0.2s; }
+.foot-col a:hover { color: var(--gold); }
+.foot-bottom { max-width: 1180px; margin: 24px auto 0; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
+.foot-bottom span { color: var(--faint); font-size: 13px; }
+.foot-bottom a { color: var(--cream-dim); text-decoration: none; transition: color 0.2s; }
+.foot-bottom a:hover { color: var(--gold); }
+@media (max-width: 760px) { .foot-top { grid-template-columns: 1fr 1fr; } .foot-brand-col { grid-column: 1 / -1; } .foot-bottom { flex-direction: column; text-align: center; } }
+
+/* ─────────────  REVEAL  ───────────── */
+.reveal { opacity: 0; transform: translateY(26px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ─────────────  FEATURE MODAL  ───────────── */
+.feat-btn { margin-top: 16px; display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: var(--gold); font-family: var(--sans); font-size: 13px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; padding: 0; transition: gap 0.2s; }
+.feat-btn:hover { gap: 10px; }
+.feat-btn svg { width: 15px; height: 15px; }
+.fmodal-ov { display: none; position: fixed; inset: 0; background: rgba(10,7,5,0.82); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 300; align-items: center; justify-content: center; padding: 20px; }
+.fmodal-ov.open { display: flex; }
+.fmodal { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; max-width: 920px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); position: relative; }
+.fmodal-head { position: sticky; top: 0; background: var(--panel); border-bottom: 1px solid var(--line-soft); padding: 20px 26px; display: flex; align-items: center; gap: 14px; z-index: 2; }
+.fmodal-ic { width: 44px; height: 44px; border-radius: 12px; background: var(--gold-soft); border: 1px solid var(--gold-line); display: grid; place-items: center; font-size: 22px; flex-shrink: 0; }
+.fmodal-head h3 { font-family: var(--serif); font-size: 24px; font-weight: 600; color: var(--cream); flex: 1; }
+.fmodal-x { background: rgba(255,255,255,0.06); border: 1px solid var(--line); color: var(--cream-dim); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; flex-shrink: 0; transition: background 0.2s, color 0.2s; }
+.fmodal-x:hover { background: var(--gold); color: var(--espresso); }
+.fmodal-body { padding: 24px 26px 30px; }
+.fmodal-lead { font-size: 15.5px; color: var(--cream-dim); margin-bottom: 22px; }
+.fmodal-gallery { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
+.fmodal-gallery.phone img { width: 205px; max-width: 46%; border-radius: 18px; border: 5px solid #0d0a08; box-shadow: var(--shadow-sm); }
+.fmodal-gallery.phone img:only-child { width: 300px; max-width: 78%; }
+.fmodal-gallery.web img { width: 100%; border-radius: 12px; border: 1px solid var(--gold-line); box-shadow: var(--shadow-sm); }
+.fmodal-points { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.fmodal-points li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; color: var(--cream); }
+.fmodal-points li::before { content: '✓'; color: var(--espresso); background: var(--gold); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
+@media (max-width: 600px) { .fmodal-gallery.phone img { width: 44%; } .fmodal-head h3 { font-size: 20px; } .fmodal-body { padding: 20px 18px 24px; } .fmodal-head { padding: 16px 18px; } }
+.fmodal-gallery img { cursor: zoom-in; transition: transform 0.18s, box-shadow 0.18s; }
+.fmodal-gallery img:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,0.5); }
+.lightbox { display: none; position: fixed; inset: 0; z-index: 400; background: rgba(6,4,3,0.94); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 24px; cursor: zoom-out; }
+.lightbox.open { display: flex; }
+.lightbox img { max-width: 96vw; max-height: 92vh; border-radius: 12px; box-shadow: 0 30px 80px rgba(0,0,0,0.7); object-fit: contain; }
+.lightbox-x { position: fixed; top: 18px; right: 22px; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #fff; font-size: 20px; cursor: pointer; display: grid; place-items: center; transition: background 0.2s; }
+.lightbox-x:hover { background: var(--gold); color: var(--espresso); }
+
+/* ─────────────  RESPONSIVE  ───────────── */
+@media (max-width: 980px) {
+    .sidebar { display: none; }
+    .topbar { display: flex; }
+    .page { margin-left: 0; padding-top: var(--topbar); }
+    .hero { min-height: calc(100vh - var(--topbar)); }
+    .hl { grid-template-columns: 1fr; gap: 30px; padding: 34px; }
+    .hl.alt .hl-art, .hl .hl-art { order: -1; min-height: 190px; }
+    .stats { grid-template-columns: 1fr 1fr; margin-top: -58px; }
+    .stat:nth-child(2) { border-right: none; }
+    .stat:nth-child(1), .stat:nth-child(2) { border-bottom: 1px solid var(--line-soft); }
+}
+@media (max-width: 480px) {
+    .hero { padding-left: 22px; padding-right: 22px; }
+    .hero-actions .btn, .cta-btns .btn { width: 100%; }
+    .hl { padding: 24px; }
+    .price-card { padding: 36px 24px; }
+}
+/* Wide-but-short screens (tablet landscape, small laptops): let the hero flow
+   naturally instead of forcing a full-height centered block, and push the stats
+   card below it so nothing overlaps. */
+@media (max-height: 820px) and (min-width: 700px) {
+    .hero { min-height: auto; align-items: flex-start; padding-top: 86px; padding-bottom: 80px; }
+    .stats { margin-top: 26px; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR (desktop) -->
+<nav id="navbar" class="sidebar">
+    <div class="side-head">
+        <a href="#top" class="side-logo"><img src="/uploads/logo-tablerino-trim.png" alt="Tablerino"></a>
+        <div class="side-tagline" data-ro="Platforma pentru restaurantul tău" data-en="The platform for your restaurant" style="margin-top:16px">Platforma pentru restaurantul tău</div>
+    </div>
+    <div class="side-nav">
+        <a href="#features" data-ro="Funcționalități" data-en="Features">Funcționalități</a>
+        <a href="#how" data-ro="Cum funcționează" data-en="How it works">Cum funcționează</a>
+        <a href="#pret" data-ro="Preț" data-en="Pricing">Preț</a>
+        <a href="#inregistrare" data-ro="Înregistrare" data-en="Register">Înregistrare</a>
+        <a href="#contact" data-ro="Contact" data-en="Contact">Contact</a>
+        <a href="/rezerva/" id="navRezerva" style="color:var(--gold);display:none" data-ro="◦ Rezervă o masă" data-en="◦ Book a table">◦ Rezervă o masă</a>
+    </div>
+    <div class="side-spacer"></div>
+    <div class="side-actions">
+        <a href="/admin/login.html" class="side-login" data-ro="Autentificare" data-en="Login">Autentificare</a>
+        <div class="lang-toggle">
+            <button onclick="setLang('ro')" id="btnRo" class="activ">RO</button>
+            <button onclick="setLang('en')" id="btnEn">EN</button>
+        </div>
+    </div>
+    <div class="side-foot">
+        <div class="sf-title" data-ro="Program suport" data-en="Support hours">Program suport</div>
+        <span class="sf-line">Lun–Vin · 09:00–18:00</span>
+        <a class="sf-line sf-mail" href="mailto:office@tablerino.ro">office@tablerino.ro</a>
+    </div>
+</nav>
+
+<!-- TOP BAR (mobile) -->
+<header class="topbar">
+    <a href="#top" class="tb-logo"><img src="/uploads/logo-tablerino-trim.png" alt="Tablerino"></a>
+    <div class="tb-right">
+        <div class="lang-toggle">
+            <button onclick="setLang('ro')" id="btnRoM" class="activ">RO</button>
+            <button onclick="setLang('en')" id="btnEnM">EN</button>
+        </div>
+        <button class="hamburger" onclick="toggleMobileMenu()" id="hamburger">☰</button>
+    </div>
+</header>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+    <a href="#features" data-ro="Funcționalități" data-en="Features">Funcționalități</a>
+    <a href="#how" data-ro="Cum funcționează" data-en="How it works">Cum funcționează</a>
+    <a href="#pret" data-ro="Preț" data-en="Pricing">Preț</a>
+    <a href="#inregistrare" data-ro="Înregistrare" data-en="Register">Înregistrare</a>
+    <a href="#contact" data-ro="Contact" data-en="Contact">Contact</a>
+    <a href="/rezerva/" id="mmRezerva" style="color:var(--gold);display:none" data-ro="Rezervă o masă" data-en="Book a table">Rezervă o masă</a>
+    <a href="/admin/login.html" class="mm-login" data-ro="Autentificare" data-en="Login">Autentificare</a>
+</div>
+
+<div class="page">
+
+<!-- HERO -->
+<section class="hero" id="top">
+    <div class="hero-inner">
+        <span class="hero-pill"><span class="dot"></span><span data-ro="Platforma pentru restaurantul tău" data-en="The platform for your restaurant">Platforma pentru restaurantul tău</span></span>
+        <h1 class="hero-title" data-ro="O platformă utilă <em>pentru restaurantul tău</em>" data-en="One useful platform <em>for your restaurant</em>">O platformă utilă <em>pentru restaurantul tău</em></h1>
+        <p class="lead" data-ro="Comandă la masă prin QR, aplicație pentru ospătari, rezervări, recenzii și rapoarte în timp real — tot ce-ți trebuie ca să-ți conduci restaurantul, într-un singur loc." data-en="QR table ordering, a waiter app, reservations, reviews and real-time reports — everything you need to run your restaurant, in one place.">Comandă la masă prin QR, aplicație pentru ospătari, rezervări, recenzii și rapoarte în timp real — tot ce-ți trebuie ca să-ți conduci restaurantul, într-un singur loc.</p>
+        <div class="hero-actions">
+            <a href="#inregistrare" class="btn btn-primary" data-ro="Solicită acces" data-en="Request access">Solicită acces</a>
+            <a href="#how" class="btn btn-ghost" data-ro="Cum funcționează" data-en="How it works">Cum funcționează</a>
+        </div>
+        <div class="hero-price">
+            <span class="tag" data-ro="Abonament lunar" data-en="Monthly subscription">Abonament lunar</span>
+            <span class="amt">€100<span data-ro="/lună" data-en="/month">/lună</span></span>
+        </div>
+    </div>
+</section>
+
+<!-- STATS -->
+<div class="stats reveal">
+    <div class="stat"><div class="num">0%</div><div class="lbl" data-ro="Comision pe comenzi" data-en="Commission on orders">Comision pe comenzi</div></div>
+    <div class="stat"><div class="num">QR</div><div class="lbl" data-ro="Comandă fără aplicație" data-en="Order without an app">Comandă fără aplicație</div></div>
+    <div class="stat"><div class="num">RO/EN</div><div class="lbl" data-ro="Interfață bilingvă" data-en="Bilingual interface">Interfață bilingvă</div></div>
+    <div class="stat"><div class="num">2 min</div><div class="lbl" data-ro="Gata de folosit" data-en="Ready to use">Gata de folosit</div></div>
+</div>
+
+<!-- FEATURES -->
+<section class="block" id="features">
+    <div class="wrap">
+        <div class="sec-head reveal">
+            <span class="eyebrow" data-ro="Tot ce ai nevoie" data-en="Everything you need">Tot ce ai nevoie</span>
+            <h2 class="sec-title" data-ro="Tot ce-i util <em>pentru restaurantul tău</em>" data-en="Everything useful <em>for your restaurant</em>">Tot ce-i util <em>pentru restaurantul tău</em></h2>
+            <p class="sec-sub" data-ro="De la comanda la masă până la rezervări, evenimente, recenzii și statistici per ospătar — fiecare unealtă îți ușurează ziua și lucrează cu celelalte." data-en="From table ordering to reservations, events, reviews and per-waiter stats — every tool makes your day easier and works with the rest.">De la comanda la masă până la rezervări, evenimente, recenzii și statistici per ospătar — fiecare unealtă îți ușurează ziua și lucrează cu celelalte.</p>
+        </div>
+
+        <!-- Highlight blocks -->
+        <div class="highlights">
+            <div class="hl reveal">
+                <div>
+                    <span class="hl-badge">★ <span data-ro="NOU" data-en="NEW">NOU</span></span>
+                    <h3 class="hl-title" data-ro="Aplicație mobilă pentru ospătari" data-en="Mobile app for waiters">Aplicație mobilă pentru ospătari</h3>
+                    <p class="hl-desc" data-ro="O aplicație Android reală, instalabilă (.apk), direct pe telefonul ospătarilor. Preiau comenzile din palmă, nu de la o stație fixă." data-en="A real, installable Android app (.apk) on your waiters' phones. They take orders in hand, not from a fixed station.">O aplicație Android reală, instalabilă (.apk), direct pe telefonul ospătarilor. Preiau comenzile din palmă, nu de la o stație fixă.</p>
+                    <ul class="hl-list">
+                        <li class="hl-feat" data-ro="Preiau comenzile și schimbă statusul din mers" data-en="Take orders and change status on the go">Preiau comenzile și schimbă statusul din mers</li>
+                        <li class="hl-feat" data-ro="Marchează produsele servite, masă cu masă" data-en="Mark products as served, table by table">Marchează produsele servite, masă cu masă</li>
+                        <li class="hl-feat" data-ro="Văd istoricul zilei și comenzile active" data-en="See the day's history and active orders">Văd istoricul zilei și comenzile active</li>
+                    </ul>
+                </div>
+                <div class="hl-art"><img class="hl-shot" src="/uploads/show-app.png" alt="Aplicația de ospătar" loading="lazy"></div>
+            </div>
+
+            <div class="hl alt reveal">
+                <div class="hl-art"><img class="hl-shot" src="/uploads/show-rezervare.png" alt="Pagina de rezervare" loading="lazy"></div>
+                <div>
+                    <span class="hl-badge">★ <span data-ro="NOU" data-en="NEW">NOU</span></span>
+                    <h3 class="hl-title" data-ro="Rezervări & evenimente" data-en="Reservations & events">Rezervări & evenimente</h3>
+                    <p class="hl-desc" data-ro="Un link public unde clienții rezervă o masă cu sloturi orare sau trimit o cerere de eveniment — nuntă, botez, aniversare. Alegi ce servicii oferi, iar totul ajunge organizat la tine." data-en="A public link where guests book a table with time slots or send an event request — wedding, baptism, party. You choose which services you offer and everything lands organized in your dashboard.">Un link public unde clienții rezervă o masă cu sloturi orare sau trimit o cerere de eveniment — nuntă, botez, aniversare. Alegi ce servicii oferi, iar totul ajunge organizat la tine.</p>
+                    <ul class="hl-list">
+                        <li class="hl-feat" data-ro="Rezervare masă cu sloturi orare și capacitate" data-en="Table reservation with time slots and capacity">Rezervare masă cu sloturi orare și capacitate</li>
+                        <li class="hl-feat" data-ro="Evenimente & săli: catalog cu poze, clientul alege sala" data-en="Events & halls: photo catalog, guest picks the hall">Evenimente & săli: catalog cu poze, clientul alege sala</li>
+                        <li class="hl-feat" data-ro="Cererile apar direct în panoul tău, cu notificare" data-en="Requests land straight in your dashboard, with a notification">Cererile apar direct în panoul tău, cu notificare</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="hl reveal">
+                <div>
+                    <span class="hl-badge">★ <span data-ro="NOU" data-en="NEW">NOU</span></span>
+                    <h3 class="hl-title" data-ro="Profil public & recenzii verificate" data-en="Public profile & verified reviews">Profil public & recenzii verificate</h3>
+                    <p class="hl-desc" data-ro="O pagină publică brandată, cu QR propriu, care arată meniul, recenziile și un buton de rezervare. Doar clienții care au comandat pot lăsa o recenzie." data-en="A branded public page with its own QR showing your menu, reviews and a reservation button. Only guests who ordered can leave a review.">O pagină publică brandată, cu QR propriu, care arată meniul, recenziile și un buton de rezervare. Doar clienții care au comandat pot lăsa o recenzie.</p>
+                    <ul class="hl-list">
+                        <li class="hl-feat" data-ro="Pagină brandată cu meniu, rating și rezervare" data-en="Branded page with menu, rating and booking">Pagină brandată cu meniu, rating și rezervare</li>
+                        <li class="hl-feat" data-ro="Recenzii verificate — media apare pe profil" data-en="Verified reviews — average shown on the profile">Recenzii verificate — media apare pe profil</li>
+                        <li class="hl-feat" data-ro="Cod QR propriu pentru promovare" data-en="Its own QR code for promotion">Cod QR propriu pentru promovare</li>
+                    </ul>
+                </div>
+                <div class="hl-art"><img class="hl-shot" src="/uploads/show-profil.png" alt="Profil public restaurant" loading="lazy"></div>
+            </div>
+        </div>
+
+        <!-- Feature grid -->
+        <div class="feat-grid">
+            <div class="feat-card reveal">
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3"/><path d="M14 18v3"/><path d="M18 14v3h3"/><path d="M21 21h.01"/><path d="M18 21h.01"/></svg></div>
+                <h3 data-ro="Comandă la masă prin QR" data-en="QR table ordering">Comandă la masă prin QR</h3>
+                <p data-ro="Clientul scanează codul QR de pe masă cu telefonul sau folosește tableta restaurantului. Meniu cu poze, alergeni și preț." data-en="The guest scans the QR code on the table with their phone or uses the restaurant tablet. Menu with photos, allergens and price.">Clientul scanează codul QR de pe masă cu telefonul sau folosește tableta restaurantului. Meniu cu poze, alergeni și preț.</p>
+            </div>
+            <div class="feat-card reveal">
+                <span class="badge-new" data-ro="NOU" data-en="NEW">NOU</span>
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="m12 12.4 1 2 2.2.3-1.6 1.6.4 2.2-2-1.05-2 1.05.4-2.2L8.8 14.7l2.2-.3z"/></svg></div>
+                <h3 data-ro="Evenimente & săli" data-en="Events & halls">Evenimente & săli</h3>
+                <p data-ro="Primești cereri pentru nunți, botezuri, aniversări și evenimente corporate. Catalog de săli cu poze, iar clientul alege sala direct din formular." data-en="Receive requests for weddings, baptisms, parties and corporate events. A hall catalog with photos, and the guest picks a hall right from the form.">Primești cereri pentru nunți, botezuri, aniversări și evenimente corporate. Catalog de săli cu poze, iar clientul alege sala direct din formular.</p>
+            </div>
+            <div class="feat-card reveal">
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+                <h3 data-ro="Dashboard în timp real" data-en="Real-time dashboard">Dashboard în timp real</h3>
+                <p data-ro="Comenzile apar instant (refresh ~5s), gestionate per produs, cu status live pentru fiecare masă." data-en="Orders appear instantly (~5s refresh), managed per product, with live status for each table.">Comenzile apar instant (refresh ~5s), gestionate per produs, cu status live pentru fiecare masă.</p>
+            </div>
+            <div class="feat-card reveal">
+                <span class="badge-new" data-ro="NOU" data-en="NEW">NOU</span>
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div>
+                <h3 data-ro="Notificări push" data-en="Push notifications">Notificări push</h3>
+                <p data-ro="Ospătarii primesc notificare la fiecare comandă nouă și o alertă când o comandă e pe cale să le „scape”." data-en="Waiters get a notification on every new order and an alert when an order is about to slip away.">Ospătarii primesc notificare la fiecare comandă nouă și o alertă când o comandă e pe cale să le „scape”.</p>
+            </div>
+            <div class="feat-card reveal">
+                <span class="badge-new" data-ro="NOU" data-en="NEW">NOU</span>
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg></div>
+                <h3 data-ro="Asignare ospătar & escaladare" data-en="Waiter assignment & escalation">Asignare ospătar & escaladare</h3>
+                <p data-ro="Aloci un ospătar responsabil pentru o masă. Dacă nu preia comanda în intervalul setat, se deblochează automat pentru alt ospătar." data-en="Assign a waiter to a table. If they don't take the order within the set interval, it is automatically released to another waiter.">Aloci un ospătar responsabil pentru o masă. Dacă nu preia comanda în intervalul setat, se deblochează automat pentru alt ospătar.</p>
+            </div>
+            <div class="feat-card reveal">
+                <span class="badge-new" data-ro="NOU" data-en="NEW">NOU</span>
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></svg></div>
+                <h3 data-ro="Statistici per ospătar" data-en="Per-waiter statistics">Statistici per ospătar</h3>
+                <p data-ro="Număr de comenzi preluate și timp mediu de preluare, pentru fiecare ospătar — resetat zilnic." data-en="Number of orders taken and average pickup time, for each waiter — reset daily.">Număr de comenzi preluate și timp mediu de preluare, pentru fiecare ospătar — resetat zilnic.</p>
+            </div>
+            <div class="feat-card reveal">
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="12"/><line x1="10" y1="20" x2="10" y2="5"/><line x1="16" y1="20" x2="16" y2="9"/><line x1="3" y1="20" x2="21" y2="20"/></svg></div>
+                <h3 data-ro="Rapoarte zilnice" data-en="Daily reports">Rapoarte zilnice</h3>
+                <p data-ro="Vânzări totale, top produse și distribuție pe metode de plată — o imagine clară a zilei." data-en="Total sales, top products and payment-method breakdown — a clear picture of the day.">Vânzări totale, top produse și distribuție pe metode de plată — o imagine clară a zilei.</p>
+            </div>
+            <div class="feat-card reveal">
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".9" fill="currentColor" stroke="none"/><circle cx="17.5" cy="10.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8.5" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="6.5" cy="12.5" r=".9" fill="currentColor" stroke="none"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.7 1.7-1.7H18c2.2 0 4-1.8 4-4C22 6 17.5 2 12 2z"/></svg></div>
+                <h3 data-ro="Design personalizabil" data-en="Customizable design">Design personalizabil</h3>
+                <p data-ro="Logo, temă vizuală, imagine de fundal și mesaj de bun venit. Interfața arată exact ca brandul tău." data-en="Logo, visual theme, background image and welcome message. The interface looks exactly like your brand.">Logo, temă vizuală, imagine de fundal și mesaj de bun venit. Interfața arată exact ca brandul tău.</p>
+            </div>
+            <div class="feat-card reveal">
+                <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19"/><path d="M12 2.5c2.5 2.6 3.9 6 4 9.5-.1 3.5-1.5 6.9-4 9.5-2.5-2.6-3.9-6-4-9.5.1-3.5 1.5-6.9 4-9.5z"/></svg></div>
+                <h3 data-ro="Bilingv RO / EN" data-en="Bilingual RO / EN">Bilingv RO / EN</h3>
+                <p data-ro="Interfață completă în română și engleză, atât pentru echipă cât și pentru clienți." data-en="Complete interface in Romanian and English, for both your team and your guests.">Interfață completă în română și engleză, atât pentru echipă cât și pentru clienți.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- GALLERY -->
+<section class="gallery reveal">
+    <div class="gal-grid">
+        <div class="gal-item">
+            <img src="/uploads/landing-img2.jpg" alt="Restaurant cu clienți" loading="lazy">
+            <div class="gal-cap"><span data-ro="Experiențe autentice" data-en="Authentic experiences">Experiențe autentice</span></div>
+        </div>
+        <div class="gal-item">
+            <img src="/uploads/landing-img1.jpg" alt="Preparate servite" loading="lazy">
+            <div class="gal-cap"><span data-ro="Servire rapidă și precisă" data-en="Fast, precise service">Servire rapidă și precisă</span></div>
+        </div>
+        <div class="gal-item">
+            <img src="/uploads/landing-img3.jpg" alt="Atmosferă restaurant" loading="lazy">
+            <div class="gal-cap"><span data-ro="Atmosferă memorabilă" data-en="Memorable atmosphere">Atmosferă memorabilă</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="block how" id="how">
+    <div class="wrap">
+        <div class="sec-head reveal">
+            <span class="eyebrow" data-ro="Simplu de pornit" data-en="Easy to start">Simplu de pornit</span>
+            <h2 class="sec-title" data-ro="Pornești în <em>5 pași</em>" data-en="Get going in <em>5 steps</em>">Pornești în <em>5 pași</em></h2>
+            <p class="sec-sub" data-ro="De la configurare la primele comenzi — restaurantul tău e online în aceeași zi, fără echipamente scumpe." data-en="From setup to your first orders — your restaurant is online the same day, no expensive hardware.">De la configurare la primele comenzi — restaurantul tău e online în aceeași zi, fără echipamente scumpe.</p>
+        </div>
+        <div class="steps">
+            <div class="step reveal">
+                <div class="n">1</div>
+                <h4 data-ro="Primești accesul" data-en="Get access">Primești accesul</h4>
+                <p data-ro="Îți activăm contul și îți configurezi meniul cu poze, alergeni și prețuri." data-en="We activate your account and you set up your menu with photos, allergens and prices.">Îți activăm contul și îți configurezi meniul cu poze, alergeni și prețuri.</p>
+            </div>
+            <div class="step reveal">
+                <div class="n">2</div>
+                <h4 data-ro="Adaugi mesele" data-en="Add tables">Adaugi mesele</h4>
+                <p data-ro="Fiecare masă primește un cod QR unic, gata de pus pe masă." data-en="Each table gets a unique QR code, ready to place on the table.">Fiecare masă primește un cod QR unic, gata de pus pe masă.</p>
+            </div>
+            <div class="step reveal">
+                <div class="n">3</div>
+                <h4 data-ro="Clienții comandă" data-en="Guests order">Clienții comandă</h4>
+                <p data-ro="Comandă de la masă prin QR sau rezervă online, direct de pe telefon." data-en="They order from the table via QR or book online, straight from their phone.">Comandă de la masă prin QR sau rezervă online, direct de pe telefon.</p>
+            </div>
+            <div class="step reveal">
+                <div class="n">4</div>
+                <h4 data-ro="Ospătarii preiau" data-en="Waiters take orders">Ospătarii preiau</h4>
+                <p data-ro="Primesc notificare și preiau comenzile direct din aplicația de telefon." data-en="They get a notification and take orders straight from the phone app.">Primesc notificare și preiau comenzile direct din aplicația de telefon.</p>
+            </div>
+            <div class="step reveal">
+                <div class="n">5</div>
+                <h4 data-ro="Gestionezi & analizezi" data-en="Manage & analyze">Gestionezi & analizezi</h4>
+                <p data-ro="Marchezi servit, încasezi și vezi rapoarte și statistici per ospătar." data-en="Mark as served, collect payment and see reports and per-waiter stats.">Marchezi servit, încasezi și vezi rapoarte și statistici per ospătar.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- PRICING -->
+<section class="block pricing" id="pret">
+    <div class="wrap">
+        <div class="sec-head reveal">
+            <span class="eyebrow" data-ro="Preț simplu" data-en="Simple pricing">Preț simplu</span>
+            <h2 class="sec-title" data-ro="Un singur abonament, <em>toate funcțiile</em>" data-en="One subscription, <em>all features</em>">Un singur abonament, <em>toate funcțiile</em></h2>
+            <p class="sec-sub" data-ro="Fără costuri ascunse, fără comision pe comenzi. Un preț fix și tot ce-i util restaurantului tău." data-en="No hidden costs, no per-order commission. One fixed price and everything useful for your restaurant.">Fără costuri ascunse, fără comision pe comenzi. Un preț fix și tot ce-i util restaurantului tău.</p>
+        </div>
+        <div class="price-card reveal">
+            <div class="plan" data-ro="Abonament lunar" data-en="Monthly subscription">Abonament lunar</div>
+            <div class="big">€100<span data-ro="/lună" data-en="/month">/lună</span></div>
+            <div class="no-comm" data-ro="✦ Fără comision pe comenzi" data-en="✦ No per-order commission">✦ Fără comision pe comenzi</div>
+            <ul class="price-list">
+                <li data-ro="Comandă la masă prin QR, mese nelimitate" data-en="QR table ordering, unlimited tables">Comandă la masă prin QR, mese nelimitate</li>
+                <li data-ro="Dashboard în timp real & rapoarte zilnice" data-en="Real-time dashboard & daily reports">Dashboard în timp real & rapoarte zilnice</li>
+                <li data-ro="Aplicație Android pentru ospătari + notificări push" data-en="Android waiter app + push notifications">Aplicație Android pentru ospătari + notificări push</li>
+                <li data-ro="Rezervări, evenimente & săli, profil public & recenzii" data-en="Reservations, events & halls, public profile & reviews">Rezervări, evenimente & săli, profil public & recenzii</li>
+                <li data-ro="Statistici per ospătar & design personalizabil" data-en="Per-waiter stats & customizable design">Statistici per ospătar & design personalizabil</li>
+                <li data-ro="Interfață bilingvă RO / EN" data-en="Bilingual RO / EN interface">Interfață bilingvă RO / EN</li>
+            </ul>
+            <a href="#inregistrare" class="btn btn-primary" data-ro="Solicită acces" data-en="Request access">Solicită acces</a>
+        </div>
+    </div>
+</section>
+
+<!-- REGISTER -->
+<section class="block" id="inregistrare">
+    <div class="reg-wrap">
+        <div class="reg-left reveal">
+            <div class="sec-head">
+                <span class="eyebrow" data-ro="Începe acum" data-en="Get started">Începe acum</span>
+                <h2 class="sec-title" data-ro="Înregistrează-ți <em>restaurantul</em>" data-en="Register your <em>restaurant</em>">Înregistrează-ți <em>restaurantul</em></h2>
+                <p class="sec-sub" data-ro="Completează formularul și te contactăm în cel mai scurt timp pentru a-ți activa contul." data-en="Fill in the form and we'll contact you shortly to activate your account.">Completează formularul și te contactăm în cel mai scurt timp pentru a-ți activa contul.</p>
+            </div>
+            <ul class="reg-points">
+                <li>⚡ <span data-ro="<b>Activare rapidă</b> — pornești în aceeași zi" data-en="<b>Fast activation</b> — start the same day"><b>Activare rapidă</b> — pornești în aceeași zi</span></li>
+                <li>🧩 <span data-ro="<b>Fără echipamente scumpe</b> — orice telefon sau tabletă" data-en="<b>No expensive hardware</b> — any phone or tablet"><b>Fără echipamente scumpe</b> — orice telefon sau tabletă</span></li>
+                <li>🤝 <span data-ro="<b>Suport inclus</b> — te ajutăm la configurare" data-en="<b>Support included</b> — we help you set up"><b>Suport inclus</b> — te ajutăm la configurare</span></li>
+            </ul>
+        </div>
+        <div class="reg-right reveal">
+            <div class="reg-form" id="inregFormWrap">
+                <div class="field">
+                    <label data-ro="Nume restaurant *" data-en="Restaurant name *">Nume restaurant *</label>
+                    <input type="text" id="irNume" data-ro="Ex: La Mama" data-en="e.g. La Mama" placeholder="Ex: La Mama">
+                </div>
+                <div class="field">
+                    <label data-ro="Email *" data-en="Email *">Email *</label>
+                    <input type="email" id="irEmail" data-ro="contact@restaurant.ro" data-en="contact@restaurant.com" placeholder="contact@restaurant.ro">
+                </div>
+                <div class="field">
+                    <label data-ro="Telefon" data-en="Phone">Telefon</label>
+                    <input type="tel" id="irTelefon" data-ro="07XXXXXXXX" data-en="Phone number" placeholder="07XXXXXXXX">
+                </div>
+                <div class="field">
+                    <label data-ro="Parolă *" data-en="Password *">Parolă *</label>
+                    <input type="password" id="irParola" data-ro="Minim 6 caractere" data-en="At least 6 characters" placeholder="Minim 6 caractere">
+                </div>
+                <button class="btn btn-dark" id="irBtn" onclick="trimiteInregistrare()" data-ro="Trimite cererea" data-en="Submit request">Trimite cererea</button>
+                <p class="reg-note" data-ro="Contul va fi activat după confirmarea abonamentului." data-en="The account is activated after subscription confirmation.">Contul va fi activat după confirmarea abonamentului.</p>
+            </div>
+            <div class="reg-success" id="inregSuccess" style="display:none">
+                <div class="ic">✅</div>
+                <h3 data-ro="Cerere trimisă!" data-en="Request sent!">Cerere trimisă!</h3>
+                <p data-ro="Te vom contacta în curând pentru activarea contului." data-en="We'll contact you soon to activate your account.">Te vom contacta în curând pentru activarea contului.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA / CONTACT -->
+<section class="block cta" id="contact">
+    <div class="inner">
+        <h2 data-ro="Platforma de care are nevoie <em>restaurantul tău</em>" data-en="The platform <em>your restaurant</em> needs">Platforma de care are nevoie <em>restaurantul tău</em></h2>
+        <p data-ro="Comandă la masă, aplicație pentru ospătari, rezervări, evenimente și rapoarte — tot ce-ți face ziua mai ușoară, într-un singur abonament." data-en="Table ordering, a waiter app, reservations, events and reports — everything that makes your day easier, in one subscription.">Comandă la masă, aplicație pentru ospătari, rezervări, evenimente și rapoarte — tot ce-ți face ziua mai ușoară, într-un singur abonament.</p>
+        <div class="cta-btns">
+            <a href="#inregistrare" class="btn btn-primary" data-ro="Solicită acces" data-en="Request access">Solicită acces</a>
+            <a href="mailto:office@tablerino.ro" class="btn btn-ghost" data-ro="Contactează-ne" data-en="Contact us">Contactează-ne</a>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <div class="foot-top">
+        <div class="foot-brand-col">
+            <div class="foot-brand">Tablerino</div>
+            <p class="foot-tag" data-ro="Platforma utilă pentru restaurantul tău. Comandă la masă, unelte pentru echipă și date care contează — într-un singur loc." data-en="The useful platform for your restaurant. Table ordering, team tools and data that matters — all in one place.">Platforma utilă pentru restaurantul tău. Comandă la masă, unelte pentru echipă și date care contează — într-un singur loc.</p>
+            <div class="foot-social">
+                <a href="#" aria-label="Facebook" title="Facebook" data-social="facebook">
+                    <svg viewBox="0 0 24 24"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5 3.66 9.15 8.44 9.94v-7.03H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.9 3.78-3.9 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.87h2.78l-.44 2.9h-2.34V22c4.78-.79 8.44-4.94 8.44-9.94z"/></svg>
+                </a>
+                <a href="#" aria-label="Instagram" title="Instagram" data-social="instagram">
+                    <svg viewBox="0 0 24 24"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41 1.27-.06 1.65-.07 4.85-.07M12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63c-.79.3-1.46.72-2.12 1.38C1.35 2.68.94 3.35.63 4.14.33 4.9.13 5.78.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91.3.79.72 1.46 1.38 2.12.66.66 1.33 1.08 2.12 1.38.76.3 1.64.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56.79-.3 1.46-.72 2.12-1.38.66-.66 1.08-1.33 1.38-2.12.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91-.3-.79-.72-1.46-1.38-2.12-.66-.66-1.33-1.08-2.12-1.38-.76-.3-1.64-.5-2.91-.56C15.67.01 15.26 0 12 0zm0 5.84A6.16 6.16 0 1018.16 12 6.16 6.16 0 0012 5.84zm0 10.16A4 4 0 1116 12a4 4 0 01-4 4zm6.41-10.4a1.44 1.44 0 11-1.44-1.44 1.44 1.44 0 011.44 1.44z"/></svg>
+                </a>
+                <a href="#" aria-label="TikTok" title="TikTok" data-social="tiktok">
+                    <svg viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.89-4.49V9.4a6.33 6.33 0 00-5.72 10.43 6.33 6.33 0 0010.52-4.7V8.39a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-.04 0z"/></svg>
+                </a>
+                <a href="#" aria-label="LinkedIn" title="LinkedIn" data-social="linkedin">
+                    <svg viewBox="0 0 24 24"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.63-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.07 2.07 0 110-4.14 2.07 2.07 0 010 4.14zm1.78 13.02H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.22.79 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
+                </a>
+                <a href="#" aria-label="YouTube" title="YouTube" data-social="youtube">
+                    <svg viewBox="0 0 24 24"><path d="M23.5 6.2a3.02 3.02 0 00-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.51A3.02 3.02 0 00.5 6.2 31.6 31.6 0 000 12a31.6 31.6 0 00.5 5.8 3.02 3.02 0 002.12 2.14c1.88.51 9.38.51 9.38.51s7.5 0 9.38-.51a3.02 3.02 0 002.12-2.14A31.6 31.6 0 0024 12a31.6 31.6 0 00-.5-5.8zM9.6 15.57V8.43L15.82 12 9.6 15.57z"/></svg>
+                </a>
+            </div>
+        </div>
+        <div class="foot-col">
+            <h4 data-ro="Platformă" data-en="Platform">Platformă</h4>
+            <a href="/admin/login.html" data-ro="Autentificare" data-en="Login">Autentificare</a>
+            <a href="#inregistrare" data-ro="Înregistrare" data-en="Register">Înregistrare</a>
+            <a href="#features" data-ro="Funcționalități" data-en="Features">Funcționalități</a>
+            <a href="#how" data-ro="Cum funcționează" data-en="How it works">Cum funcționează</a>
+            <a href="#pret" data-ro="Preț" data-en="Pricing">Preț</a>
+        </div>
+        <div class="foot-col">
+            <h4 data-ro="Contact" data-en="Contact">Contact</h4>
+            <a href="mailto:office@tablerino.ro">office@tablerino.ro</a>
+            <a href="https://tablerino.ro">tablerino.ro</a>
+        </div>
+    </div>
+    <div class="foot-bottom">
+        <span>© 2026 Tablerino. <span data-ro="Toate drepturile rezervate." data-en="All rights reserved.">Toate drepturile rezervate.</span></span>
+        <span>Website created and designed by <a href="https://c-design.ro/" target="_blank" rel="noopener">C Design</a></span>
+    </div>
+</footer>
+
+</div><!-- /.page -->
+
+<!-- Feature detail modal -->
+<div class="fmodal-ov" id="fmodalOv" onclick="if(event.target===this)closeFeat()">
+    <div class="fmodal">
+        <div class="fmodal-head">
+            <div class="fmodal-ic" id="fmIcon">⭐</div>
+            <h3 id="fmTitlu">—</h3>
+            <button class="fmodal-x" onclick="closeFeat()" aria-label="Închide">✕</button>
+        </div>
+        <div class="fmodal-body">
+            <p class="fmodal-lead" id="fmLead"></p>
+            <div class="fmodal-gallery" id="fmGallery"></div>
+            <ul class="fmodal-points" id="fmPoints"></ul>
+        </div>
+    </div>
+</div>
+
+<!-- LIGHTBOX (zoom poze din prezentare) -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-x" onclick="event.stopPropagation();closeLightbox()" aria-label="Închide">✕</button>
+    <img id="lightboxImg" src="" alt="">
+</div>
+
+<script>
+async function trimiteInregistrare() {
+    const nume   = document.getElementById('irNume').value.trim();
+    const email  = document.getElementById('irEmail').value.trim();
+    const tel    = document.getElementById('irTelefon').value.trim();
+    const parola = document.getElementById('irParola').value;
+    const btn    = document.getElementById('irBtn');
+
+    if (!nume || !email || !parola) {
+        alert('Completează numele, emailul și parola.');
+        return;
+    }
+    if (parola.length < 6) {
+        alert('Parola trebuie să aibă minim 6 caractere.');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Se trimite...';
+
+    try {
+        const r = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nume, email, telefon: tel, parola })
+        });
+        const d = await r.json();
+        btn.disabled = false;
+        btn.textContent = btn.getAttribute('data-' + limbaActiva) || btn.getAttribute('data-ro') || 'Trimite cererea';
+
+        if (d.ok) {
+            document.getElementById('inregFormWrap').style.display = 'none';
+            document.getElementById('inregSuccess').style.display = 'block';
+        } else {
+            alert(d.msg || 'Eroare. Încearcă din nou.');
+        }
+    } catch (e) {
+        btn.disabled = false;
+        btn.textContent = btn.getAttribute('data-' + limbaActiva) || btn.getAttribute('data-ro') || 'Trimite cererea';
+        alert('Eroare. Încearcă din nou.');
+    }
+}
+
+// === MOBILE MENU ===
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobileMenu');
+    menu.classList.toggle('open');
+    document.getElementById('hamburger').textContent = menu.classList.contains('open') ? '✕' : '☰';
+}
+document.querySelectorAll('.mobile-menu a').forEach(a => {
+    a.addEventListener('click', () => {
+        document.getElementById('mobileMenu').classList.remove('open');
+        document.getElementById('hamburger').textContent = '☰';
+    });
+});
+
+// === NAVBAR SCROLL ===
+window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+});
+
+// === SCROLL REVEAL ===
+const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// === LIMBA / LANGUAGE ===
+let limbaActiva = 'ro';
+
+function setLang(lang) {
+    limbaActiva = lang;
+    ['btnRo','btnRoM'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('activ', lang === 'ro');
+    });
+    ['btnEn','btnEnM'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('activ', lang === 'en');
+    });
+    document.documentElement.lang = lang;
+
+    document.querySelectorAll('[data-ro]').forEach(el => {
+        const txt = el.getAttribute('data-' + lang);
+        if (txt === null) return;
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+            el.placeholder = txt;
+        } else {
+            el.innerHTML = txt;
+        }
+    });
+    localStorage.setItem('tablerino_lang', lang);
+}
+
+const saved = localStorage.getItem('tablerino_lang');
+const browser = navigator.language.startsWith('en') ? 'en' : 'ro';
+setLang(saved || browser);
+
+// === REZERVĂ O MASĂ — vizibil doar când portalul public e pornit (producție) ===
+fetch('/api/landing').then(r => r.json()).then(d => {
+    if (d && d.portal_activ == 1) {
+        ['navRezerva', 'mmRezerva'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = '';
+        });
+    }
+}).catch(() => {});
+
+// === FEATURE DETAIL MODALS ===
+const FEATURES = {
+    qr: { icon:'📲', tip:'phone', imgs:['/uploads/feat/qr-1.png','/uploads/feat/qr-2.png','/uploads/feat/qr-3.png'],
+        titlu:{ro:'Comandă la masă prin QR',en:'QR table ordering'},
+        lead:{ro:'Clientul scanează codul QR de pe masă și comandă singur, de pe telefon — fără să aștepte ospătarul.',en:'The guest scans the QR code on the table and orders from their phone — no waiting for a waiter.'},
+        puncte:{ro:['Meniu digital cu poze, alergeni și preț','Adaugă în coș, ajustează cantitățile și trimite','Vede statusul comenzii în timp real, produs cu produs'],en:['Digital menu with photos, allergens and price','Add to cart, adjust quantities and send','See the order status live, product by product']} },
+    evenimente: { icon:'🎉', tip:'phone', imgs:['/uploads/feat/ev-1.png','/uploads/feat/ev-2.png'],
+        titlu:{ro:'Evenimente & săli',en:'Events & halls'},
+        lead:{ro:'Primești cereri pentru nunți, botezuri, aniversări și evenimente corporate — direct de pe pagina ta publică.',en:'Receive requests for weddings, baptisms, parties and corporate events — right from your public page.'},
+        puncte:{ro:['Catalog de săli cu poze și capacitate','Clientul alege sala dorită din formular','Cererea ajunge la tine, cu notificare instant'],en:['Hall catalog with photos and capacity','The guest picks the hall from the form','The request reaches you, with an instant notification']} },
+    dashboard: { icon:'⚡', tip:'web', imgs:['/uploads/feat/dashboard.png'],
+        titlu:{ro:'Dashboard în timp real',en:'Real-time dashboard'},
+        lead:{ro:'Toate comenzile apar instant pe panou, cu status live pentru fiecare masă.',en:'All orders appear instantly on the dashboard, with live status for each table.'},
+        puncte:{ro:['Comenzi gestionate per produs','Status: nouă → în pregătire → servită','Vânzări și metode de plată, la zi'],en:['Orders managed per product','Status: new → preparing → served','Sales and payment methods, up to date']} },
+    push: { icon:'🔔', tip:'none', imgs:[],
+        titlu:{ro:'Notificări push',en:'Push notifications'},
+        lead:{ro:'Ospătarii primesc notificare la fiecare comandă nouă, direct pe telefon.',en:'Waiters get a notification on every new order, right on their phone.'},
+        puncte:{ro:['Alertă la fiecare comandă nouă','Avertizare când o comandă e pe cale să „scape”','Funcționează și în aplicația Android'],en:['Alert on every new order','Warning when an order is about to slip away','Works in the Android app too']} },
+    asignare: { icon:'🎯', tip:'web', imgs:['/uploads/feat/dashboard.png'],
+        titlu:{ro:'Asignare ospătar & escaladare',en:'Waiter assignment & escalation'},
+        lead:{ro:'Aloci un ospătar responsabil pentru o masă, cu rezervă automată dacă nu preia la timp.',en:'Assign a responsible waiter to a table, with an automatic fallback if they do not take it in time.'},
+        puncte:{ro:['Atribui comanda unui ospătar anume','Dacă nu o preia în intervalul setat, se deblochează','Alt ospătar o poate prelua — fără comenzi uitate'],en:['Assign the order to a specific waiter','If not taken within the interval, it unlocks','Another waiter can take it — no forgotten orders']} },
+    statistici: { icon:'📈', tip:'web', imgs:['/uploads/feat/statistici.png'],
+        titlu:{ro:'Statistici per ospătar',en:'Per-waiter statistics'},
+        lead:{ro:'Vezi câte comenzi a preluat fiecare ospătar și cât de repede.',en:'See how many orders each waiter took and how fast.'},
+        puncte:{ro:['Număr de comenzi preluate','Timp mediu de preluare','Resetat zilnic, pentru fiecare ospătar'],en:['Number of orders taken','Average pickup time','Reset daily, for each waiter']} },
+    rapoarte: { icon:'📊', tip:'web', imgs:['/uploads/feat/rapoarte.png'],
+        titlu:{ro:'Rapoarte zilnice',en:'Daily reports'},
+        lead:{ro:'O imagine clară a zilei: vânzări, top produse și metode de plată.',en:'A clear picture of the day: sales, top products and payment methods.'},
+        puncte:{ro:['Vânzări totale pe zi','Cele mai vândute produse','Distribuție cash / card'],en:['Total sales per day','Best-selling products','Cash / card breakdown']} },
+    design: { icon:'🎨', tip:'web', imgs:['/uploads/feat/design.png'],
+        titlu:{ro:'Design personalizabil',en:'Customizable design'},
+        lead:{ro:'Interfața arată exact ca brandul tău — logo, culori, fundal.',en:'The interface looks exactly like your brand — logo, colors, background.'},
+        puncte:{ro:['Logo și temă vizuală','Imagine de fundal și mesaj de bun venit','Aspect unitar pe toate paginile'],en:['Logo and visual theme','Background image and welcome message','Consistent look across all pages']} },
+    bilingv: { icon:'🌐', tip:'none', imgs:[],
+        titlu:{ro:'Bilingv RO / EN',en:'Bilingual RO / EN'},
+        lead:{ro:'Toată platforma funcționează în română și engleză, pentru echipă și pentru clienți.',en:'The whole platform works in Romanian and English, for your team and your guests.'},
+        puncte:{ro:['Comută limba dintr-un clic','Meniul și comanda, în ambele limbi','Potrivit pentru clienți străini'],en:['Switch language in one click','Menu and ordering in both languages','Great for foreign guests']} },
+};
+const FEAT_ORDER = ['qr','evenimente','dashboard','push','asignare','statistici','rapoarte','design','bilingv'];
+
+function openFeat(key) {
+    const f = FEATURES[key]; if (!f) return;
+    const L = (typeof limbaActiva !== 'undefined' && limbaActiva === 'en') ? 'en' : 'ro';
+    document.getElementById('fmIcon').textContent = f.icon;
+    document.getElementById('fmTitlu').textContent = f.titlu[L];
+    document.getElementById('fmLead').textContent = f.lead[L];
+    const g = document.getElementById('fmGallery');
+    g.className = 'fmodal-gallery ' + (f.tip === 'phone' ? 'phone' : 'web');
+    g.innerHTML = f.imgs.map(src => '<img src="' + src + '" alt="" loading="lazy">').join('');
+    g.style.display = f.imgs.length ? 'flex' : 'none';
+    document.getElementById('fmPoints').innerHTML = f.puncte[L].map(p => '<li>' + escapeFeat(p) + '</li>').join('');
+    document.getElementById('fmodalOv').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closeFeat() {
+    document.getElementById('fmodalOv').classList.remove('open');
+    document.body.style.overflow = '';
+}
+function escapeFeat(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Lightbox: click pe o poză din prezentare → fullscreen
+function openLightbox(src) {
+    const img = document.getElementById('lightboxImg');
+    img.src = src;
+    document.getElementById('lightbox').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+    document.getElementById('lightboxImg').src = '';
+    // dacă modalul de funcție e încă deschis, păstrează scroll-ul blocat
+    if (!document.getElementById('fmodalOv').classList.contains('open')) {
+        document.body.style.overflow = '';
+    }
+}
+document.getElementById('fmGallery').addEventListener('click', e => {
+    const img = e.target.closest('img');
+    if (img && img.src) openLightbox(img.src);
+});
+
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (document.getElementById('lightbox').classList.contains('open')) { closeLightbox(); return; }
+    closeFeat();
+});
+
+// Inject a "Vezi detalii" button into each feature card.
+document.querySelectorAll('.feat-grid .feat-card').forEach((card, i) => {
+    const key = FEAT_ORDER[i]; if (!key) return;
+    const btn = document.createElement('button');
+    btn.className = 'feat-btn';
+    btn.innerHTML = '<span data-ro="Vezi detalii" data-en="See details">' + (limbaActiva === 'en' ? 'See details' : 'Vezi detalii') + '</span>' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>';
+    btn.addEventListener('click', () => openFeat(key));
+    card.appendChild(btn);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16.png">
+<link rel="apple-touch-icon" href="/uploads/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablerino - Bucătărie</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #0f1117; color: #e8e8ef; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #1a1a2e; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+.sidebar .logo { margin-bottom: 20px; padding: 4px; display: flex; align-items: center; justify-content: center; }
+.sidebar .logo img { height: 64px; width: auto; object-fit: contain; background: #fff; border-radius: 10px; padding: 6px; }
+.sidebar a { color: #aaa; text-decoration: none; padding: 10px 12px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; transition: background .15s, color .15s; }
+.sidebar a:hover, .sidebar a.activ { background: #6c47ff; color: #fff; }
+.sidebar .logout { margin-top: auto; }
+
+.main { margin-left: 220px; padding: 20px 24px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+.topbar h2 { font-size: 22px; }
+.topbar .meta { font-size: 13px; color: #8a8a9a; display: flex; align-items: center; gap: 14px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 5px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.col h3 { font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: #8a8a9a; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.col h3 .n { background: #2a2a3e; color: #cfcfe0; border-radius: 20px; padding: 1px 9px; font-size: 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+
+.tk { background: #1b1e27; border: 1px solid #2a2e3a; border-radius: 14px; padding: 14px; border-left: 5px solid #3b82f6; }
+.tk.gata { border-left-color: #22c55e; opacity: .92; }
+.tk-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.tk-masa { font-size: 18px; font-weight: 800; }
+.tk-nr { font-size: 12px; color: #8a8a9a; }
+.tk-age { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.age-ok { color: #22c55e; } .age-mid { color: #f59e0b; } .age-late { color: #ef4444; }
+.tk-obs { font-size: 12px; color: #c7a23b; background: #2a2410; border-radius: 6px; padding: 5px 8px; margin-bottom: 10px; }
+.tk-prod { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-radius: 8px; cursor: pointer; user-select: none; transition: background .12s; }
+.tk-prod:hover { background: #232733; }
+.tk-prod .chk { width: 24px; height: 24px; border-radius: 6px; border: 2px solid #4a5060; display: grid; place-items: center; flex-shrink: 0; font-size: 15px; color: transparent; }
+.tk-prod.done .chk { background: #22c55e; border-color: #22c55e; color: #0f1117; }
+.tk-prod .qty { font-weight: 800; color: #6c9bff; min-width: 26px; }
+.tk-prod .nm { flex: 1; font-size: 15px; }
+.tk-prod.done .nm { text-decoration: line-through; color: #6a6a7a; }
+.tk-foot { margin-top: 10px; }
+.btn-gata { width: 100%; background: #22c55e; color: #0b2e18; border: none; padding: 10px; border-radius: 9px; font-size: 13px; font-weight: 800; cursor: pointer; }
+.btn-undo { width: 100%; background: #2a2e3a; color: #cfcfe0; border: none; padding: 9px; border-radius: 9px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.gol { color: #6a6a7a; font-size: 14px; padding: 30px 10px; text-align: center; }
+
+@media (max-width: 820px) {
+    .sidebar { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: 100%; height: 60px; flex-direction: row; padding: 0 4px; justify-content: flex-start; align-items: center; border-top: 1px solid #2a2a3e; z-index: 100; overflow-x: auto; overflow-y: hidden; gap: 0; }
+    .sidebar .logo { display: none; }
+    .sidebar .logout { margin-top: 0; }
+    .sidebar a { flex-direction: column; gap: 2px; font-size: 10px; padding: 6px 10px; border-radius: 6px; justify-content: center; text-align: center; flex: 0 0 auto; white-space: nowrap; }
+    .main { margin-left: 0; padding: 14px 12px 80px; }
+    .cols { grid-template-columns: 1fr; gap: 24px; }
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="logo"><img src="/uploads/logo-tablerino.png" alt="Tablerino" style="height:190px;width:auto;object-fit:contain;display:block;"></div>
+    <a href="/admin/index.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg> Comenzi</a>
+    <a href="/admin/bucatarie.html" class="activ"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 3a4 4 0 0 1 4 4c1.7 0 3 1.3 3 3s-1.3 3-3 3H8c-1.7 0-3-1.3-3-3s1.3-3 3-3a4 4 0 0 1 4-4z"/><path d="M7 16h10v3a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z"/></svg> Bucătărie</a>
+    <a href="/admin/meniu.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 7v14"/><path d="M4 5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2 2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v12a1 1 0 0 1-1 1h-6a2 2 0 0 0-2 2 2 2 0 0 0-2-2H5a1 1 0 0 1-1-1z"/></svg> Meniu</a>
+    <a href="/admin/meniu-evenimente.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M5.8 11.3 2 22l10.7-3.8"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.2.7a2 2 0 0 0-1.3 1.3L18 6l1 1 2-1 1-1z"/><path d="M11 13c1.9 1.9 2.8 4.2 2 5-.8.8-3.1-.1-5-2-1.9-1.9-2.8-4.2-2-5 .8-.8 3.1.1 5 2z"/></svg> Meniu evenimente</a>
+    <a href="/admin/depozit.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M3 9 12 4l9 5v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 9h18"/><path d="M9 22V12h6v10"/></svg> Depozit</a>
+    <a href="/admin/mese.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M3 10h18"/><path d="M5 10V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M6 10v9"/><path d="M18 10v9"/></svg> Mese</a>
+    <a href="/admin/istoric.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg> Istoric</a>
+    <a href="/admin/rezervari.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg> Rezervări</a>
+    <a href="/admin/recenzii.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 2.5l2.9 6 6.6.6-5 4.3 1.5 6.5L12 16.9 6 19.9l1.5-6.5-5-4.3 6.6-.6z"/></svg> Recenzii</a>
+    <a href="/admin/raport.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><line x1="4" y1="20" x2="4" y2="12"/><line x1="10" y1="20" x2="10" y2="5"/><line x1="16" y1="20" x2="16" y2="9"/><line x1="3" y1="20" x2="21" y2="20"/></svg> Rapoarte</a>
+    <a href="/admin/setari.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><circle cx="13.5" cy="6.5" r=".9" fill="currentColor" stroke="none"/><circle cx="17.5" cy="10.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8.5" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="6.5" cy="12.5" r=".9" fill="currentColor" stroke="none"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.7 1.7-1.7H18c2.2 0 4-1.8 4-4C22 6 17.5 2 12 2z"/></svg> Design</a>
+    <a href="/admin/abonament.html" class="owner-only"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Abonament</a>
+    <a href="/admin/reclame.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="m3 11 18-5v12L3 14z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg> Reclame</a>
+    <a href="/admin/audit.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> Audit</a>
+    <a href="/admin/ospatari.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></svg> Ospătari</a>
+    <div style="margin-top:auto;padding:8px 4px;display:flex;gap:6px;justify-content:center">
+        <a href="?lang=ro" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;background:#6c47ff;color:#fff">🇷🇴 RO</a>
+        <a href="?lang=en" style="padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#aaa">🇬🇧 EN</a>
+    </div>
+    <a href="#" class="logout" onclick="logout(event)">🚪 Ieșire</a>
+</div>
+
+<div class="main">
+    <div class="topbar">
+        <h2>🍳 Bucătărie — comenzi live</h2>
+        <div class="meta">
+            <span><span class="dot"></span>actualizare automată</span>
+            <span id="ultima"></span>
+        </div>
+    </div>
+    <div class="cols">
+        <div class="col">
+            <h3>De preparat <span class="n" id="nPrep">0</span></h3>
+            <div class="grid" id="gridPrep"><div class="gol">Se încarcă...</div></div>
+        </div>
+        <div class="col">
+            <h3>Gata de servit <span class="n" id="nGata">0</span></h3>
+            <div class="grid" id="gridGata"><div class="gol">—</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function logout(e) { if (e) e.preventDefault(); fetch('/api/admin/logout', { method: 'POST' }).finally(function () { location.href = '/admin/login.html'; }); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function ageClass(sec) { return sec < 300 ? 'age-ok' : (sec < 600 ? 'age-mid' : 'age-late'); }
+function ageText(sec) { const m = Math.floor(sec / 60), s = sec % 60; return m > 0 ? (m + ' min ' + s + 's') : (s + 's'); }
+
+let BUSY = false;
+async function incarca() {
+    if (BUSY) return;
+    let d;
+    try { d = await (await fetch('/api/admin/comenzi')).json(); } catch (e) { return; }
+    const comenzi = (d.comenzi || []).filter(c => c.status !== 'servita');
+    const prep = [], gata = [];
+    comenzi.forEach(c => {
+        const prod = c.produse || [];
+        const allReady = prod.length > 0 && prod.every(p => p.pregatit == 1);
+        (allReady ? gata : prep).push(c);
+    });
+    document.getElementById('gridPrep').innerHTML = prep.length ? prep.map(cardHtml).join('') : '<div class="gol">Nicio comandă de preparat 🎉</div>';
+    document.getElementById('gridGata').innerHTML = gata.length ? gata.map(c => cardHtml(c, true)).join('') : '<div class="gol">—</div>';
+    document.getElementById('nPrep').textContent = prep.length;
+    document.getElementById('nGata').textContent = gata.length;
+    document.getElementById('ultima').textContent = 'ultima: ' + new Date().toLocaleTimeString('ro-RO');
+}
+
+function cardHtml(c, gata) {
+    const prod = c.produse || [];
+    const items = prod.map(p =>
+        '<div class="tk-prod ' + (p.pregatit == 1 ? 'done' : '') + '" onclick="toggleProd(' + p.id + ',' + (p.pregatit == 1 ? 0 : 1) + ')">' +
+            '<span class="chk">✓</span>' +
+            '<span class="qty">' + (p.cantitate || 1) + '×</span>' +
+            '<span class="nm">' + esc(p.nume_produs) + '</span>' +
+        '</div>'
+    ).join('');
+    const foot = gata
+        ? '<div class="tk-foot"><button class="btn-undo" onclick="comandaGata(' + c.id + ',0)">↩ Înapoi la preparare</button></div>'
+        : '<div class="tk-foot"><button class="btn-gata" onclick="comandaGata(' + c.id + ',1)">✓ Toate gata</button></div>';
+    return '<div class="tk ' + (gata ? 'gata' : '') + '">' +
+        '<div class="tk-head"><span class="tk-masa">' + esc(c.masa_nume || 'Masă') + '</span><span class="tk-nr">#' + (c.nr_ordine_zi || c.id) + '</span></div>' +
+        '<div class="tk-age ' + ageClass(c.varsta_sec || 0) + '">⏱ ' + ageText(Number(c.varsta_sec) || 0) + '</div>' +
+        (c.observatii ? '<div class="tk-obs">📝 ' + esc(c.observatii) + '</div>' : '') +
+        items + foot +
+    '</div>';
+}
+
+async function toggleProd(id, val) {
+    BUSY = true;
+    try { await fetch('/api/admin/bucatarie_produs_gata', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ comanda_produs_id: id, pregatit: val }) }); }
+    finally { BUSY = false; }
+    incarca();
+}
+async function comandaGata(id, val) {
+    BUSY = true;
+    try { await fetch('/api/admin/bucatarie_comanda_gata', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ comanda_id: id, pregatit: val }) }); }
+    finally { BUSY = false; }
+    incarca();
+}
+
+fetch('/api/admin/me').then(function (r) {
+    if (!r.ok) { location.href = '/admin/login.html'; return; }
+    return r.json();
+}).then(function (me) {
+    if (!me) return;
+    incarca();
+    setInterval(incarca, 6000);
+});
+</script>
+<script src="/admin/master-banner.js"></script>
+  <script src="/admin/admin-roles.js"></script>
+</body>
+</html>

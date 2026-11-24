@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="apple-touch-icon" href="/uploads/icon-192.png">
+<title>Rezervare masă</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+    --primar: #6c47ff;
+    --bg: #f5f5fa;
+    --card-bg: #fff;
+    --header-bg: #1a1a2e;
+    --header-text: #fff;
+    --border-r: 14px;
+    --text: #111;
+    --text-sub: #666;
+}
+html, body { min-height: 100%; }
+body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 0 0 40px; min-height: 100vh; }
+.header { width: 100%; background: var(--header-bg); color: var(--header-text); padding: 22px 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.header-logo { width: 72px; height: 72px; border-radius: 16px; object-fit: contain; background: #fff; padding: 6px; display: none; }
+.header h1 { font-size: 22px; font-weight: 800; color: var(--header-text); line-height: 1.2; }
+.header .sub { font-size: 13px; opacity: .8; display: flex; align-items: center; gap: 6px; }
+.bun-venit { width: 100%; max-width: 460px; margin: 16px 16px 0; padding: 0 16px; }
+.bun-venit-box { background: var(--card-bg); border-radius: var(--border-r); padding: 14px 16px; font-size: 14px; color: var(--text-sub); box-shadow: 0 2px 10px rgba(0,0,0,0.06); text-align: center; }
+.wrap { width: 100%; max-width: 460px; padding: 16px; }
+.card { background: var(--card-bg); border-radius: var(--border-r); padding: 22px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+.card-titlu { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+.card-titlu-sub { font-size: 13px; color: var(--text-sub); margin-bottom: 18px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+.field label .opt { font-weight: 500; color: #aaa; font-size: 12px; }
+.field input, .field select, .field textarea {
+    width: 100%; padding: 13px 14px; border: 1.5px solid #e2e2ec; border-radius: 12px;
+    font-size: 15px; outline: none; background: #fff; color: #111; font-family: inherit; transition: border-color .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--primar); }
+.field textarea { resize: none; }
+.row2 { display: flex; gap: 12px; }
+.row2 .field { flex: 1; }
+.sloturi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-top: 2px; }
+.slot-chip {
+    padding: 11px 6px; border: 1.5px solid #e2e2ec; border-radius: 12px; background: #fff; color: #111;
+    font-size: 15px; font-weight: 700; cursor: pointer; text-align: center; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 2px; transition: border-color .15s, background .15s;
+}
+.slot-chip:active { transform: scale(0.98); }
+.slot-chip.ales { border-color: var(--primar); background: rgba(108,71,255,0.10); color: var(--primar); }
+.slot-chip.complet { opacity: .55; cursor: default; background: #f5f5fa; color: var(--text-sub); }
+.slot-ramase { font-size: 11px; font-weight: 600; color: var(--text-sub); }
+.slot-chip.ales .slot-ramase { color: var(--primar); }
+.slot-complet-lbl { font-size: 11px; font-weight: 600; }
+.sloturi-hint { font-size: 13px; color: var(--text-sub); padding: 8px 0 2px; line-height: 1.4; }
+.eroare { background: #fee2e2; color: #c62828; border-radius: 12px; padding: 11px 14px; font-size: 13.5px; font-weight: 600; margin-bottom: 14px; display: none; }
+.eroare.vizibil { display: block; }
+.btn-trimite {
+    width: 100%; padding: 15px; background: var(--primar); color: #fff; border: none; border-radius: 12px;
+    font-size: 16px; font-weight: 800; cursor: pointer; margin-top: 4px; box-shadow: 0 4px 14px rgba(108,71,255,0.35);
+    transition: opacity .15s, transform .1s;
+}
+.btn-trimite:active { transform: scale(0.99); }
+.btn-trimite:disabled { opacity: .55; cursor: default; box-shadow: none; }
+.nota { text-align: center; font-size: 12px; color: #aaa; margin-top: 16px; }
+.confirmare { display: none; text-align: center; padding: 20px 10px; }
+.confirmare.vizibil { display: block; }
+.confirmare .icon { font-size: 56px; margin-bottom: 14px; }
+.confirmare h2 { font-size: 21px; font-weight: 800; margin-bottom: 10px; }
+.confirmare p { font-size: 15px; color: var(--text-sub); line-height: 1.5; }
+.confirmare .detalii { background: #f5f5fa; border-radius: 12px; padding: 14px; margin-top: 18px; font-size: 14px; color: #444; text-align: left; }
+.confirmare .detalii div { padding: 3px 0; }
+.stare-rea { text-align: center; padding: 60px 24px; color: #c62828; }
+.stare-rea .icon { font-size: 48px; margin-bottom: 14px; }
+.stare-rea h2 { font-size: 20px; font-weight: 800; margin-bottom: 8px; color: #111; }
+.stare-rea p { font-size: 14px; color: #888; }
+.tabbar { display: flex; gap: 8px; margin-bottom: 14px; }
+.tab { flex: 1; padding: 12px 8px; border: 1.5px solid #e2e2ec; border-radius: 12px; background: #fff; color: var(--text-sub); font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: border-color .15s, background .15s, color .15s; }
+.tab.ales { border-color: var(--primar); background: rgba(108,71,255,0.10); color: var(--primar); }
+.ev-hint { background: var(--card-bg); border-radius: var(--border-r); padding: 13px 15px; font-size: 13.5px; color: var(--text-sub); box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 14px; line-height: 1.5; }
+.ev-hint .cap { display: inline-block; margin-top: 7px; font-weight: 700; color: var(--primar); }
+.sali-grid { display: flex; flex-direction: column; gap: 10px; }
+.sala-card { display: flex; gap: 12px; align-items: stretch; text-align: left; width: 100%; border: 1.5px solid #e2e2ec; border-radius: 12px; background: #fff; padding: 8px; cursor: pointer; font-family: inherit; transition: border-color .15s, background .15s; }
+.sala-card.ales { border-color: var(--primar); background: rgba(108,71,255,0.07); }
+.sala-img { width: 72px; height: 72px; border-radius: 9px; background-size: cover; background-position: center; flex-shrink: 0; background-color: #eee; }
+.sala-img-ph { display: flex; align-items: center; justify-content: center; font-size: 30px; background: #f0f0f5; }
+.sala-info { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.sala-nume { font-weight: 700; font-size: 14.5px; color: var(--text); }
+.sala-cap { font-size: 12px; color: var(--primar); font-weight: 600; margin-top: 1px; }
+.sala-desc { font-size: 12px; color: var(--text-sub); margin-top: 3px; }
+.mc-wrap { display: flex; flex-direction: column; gap: 12px; }
+.mc-cat-t { font-size: 12px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+.mc-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.mc-chip { border: 1.5px solid #e2e2ec; background: #fff; color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 13.5px; font-family: inherit; cursor: pointer; transition: border-color .15s, background .15s, color .15s; }
+.mc-chip.ales { border-color: var(--primar); background: var(--primar); color: #fff; }
+</style>
+</head>
+<body>
+
+<div id="continut" style="width:100%;display:flex;flex-direction:column;align-items:center;flex:1">
+    <div class="stare-rea" style="padding-top:80px">
+        <div class="icon">⏳</div>
+        <h2>Se încarcă...</h2>
+    </div>
+</div>
+
+<script>
+const token = new URLSearchParams(window.location.search).get('token');
+const continut = document.getElementById('continut');
+
+function linkInvalid(msg) {
+    continut.innerHTML =
+        '<div class="stare-rea">' +
+        '<div class="icon">🔗</div>' +
+        '<h2>Link invalid</h2>' +
+        '<p>' + (msg || 'Linkul de rezervare nu este valid sau restaurantul este indisponibil.') + '</p>' +
+        '</div>';
+}
+
+function aplicaTema(t) {
+    if (!t) return;
+    const root = document.documentElement;
+    if (t.primar) root.style.setProperty('--primar', t.primar);
+    if (t.bg) root.style.setProperty('--bg', t.bg);
+    if (t.card_bg) root.style.setProperty('--card-bg', t.card_bg);
+    if (t.header_bg) root.style.setProperty('--header-bg', t.header_bg);
+    if (t.header_text) root.style.setProperty('--header-text', t.header_text);
+    if (t.border_r) root.style.setProperty('--border-r', t.border_r);
+    root.style.setProperty('--text', t.dark ? '#e0e0e0' : '#111');
+    root.style.setProperty('--text-sub', t.dark ? '#aaa' : '#666');
+    if (t.font) document.body.style.fontFamily = t.font;
+}
+
+function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+let maxPersoane = null;
+
+function optiuniPersoane() {
+    const max = (typeof maxPersoane === 'number' && maxPersoane > 0) ? maxPersoane : 20;
+    const def = Math.min(2, max);
+    let html = '';
+    for (let i = 1; i <= max; i++) {
+        html += '<option value="' + i + '"' + (i === def ? ' selected' : '') + '>' + i + (i === 1 ? ' persoană' : ' persoane') + '</option>';
+    }
+    return html;
+}
+
+let numeRestaurant = '';
+
+function cardMasaHtml(azi) {
+    return '<div class="card" id="cardForm">' +
+        '<div class="card-titlu">Rezervare masă</div>' +
+        '<div class="card-titlu-sub">Completează datele, iar noi te contactăm pentru confirmare.</div>' +
+        '<div class="eroare" id="eroare"></div>' +
+        '<div class="field">' +
+            '<label>Nume</label>' +
+            '<input type="text" id="nume" placeholder="Numele tău" autocomplete="name">' +
+        '</div>' +
+        '<div class="field">' +
+            '<label>Telefon</label>' +
+            '<input type="tel" id="telefon" placeholder="07xx xxx xxx" autocomplete="tel">' +
+        '</div>' +
+        '<div class="field">' +
+            '<label>Email <span class="opt">(opțional)</span></label>' +
+            '<input type="email" id="email" placeholder="email@exemplu.ro" autocomplete="email">' +
+        '</div>' +
+        '<div class="row2">' +
+            '<div class="field">' +
+                '<label>Data</label>' +
+                '<input type="date" id="data" min="' + azi + '" value="' + azi + '" oninput="incarcaDisponibilitate()">' +
+            '</div>' +
+            '<div class="field">' +
+                '<label>Număr persoane</label>' +
+                '<select id="nrPersoane" onchange="incarcaDisponibilitate()">' + optiuniPersoane() + '</select>' +
+            '</div>' +
+        '</div>' +
+        (typeof maxPersoane === 'number' && maxPersoane > 0
+            ? '<div style="font-size:12px;color:var(--text-sub);margin:-8px 0 14px">Pentru grupuri mai mari, sună restaurantul.</div>'
+            : '') +
+        '<div class="field">' +
+            '<label>Ora</label>' +
+            '<input type="hidden" id="ora" value="">' +
+            '<div class="sloturi-grid" id="sloturiGrid" style="display:none"></div>' +
+            '<div class="sloturi-hint" id="sloturiHint">Alege data și numărul de persoane ca să vezi orele disponibile.</div>' +
+        '</div>' +
+        '<div class="field">' +
+            '<label>Observații <span class="opt">(opțional)</span></label>' +
+            '<textarea id="observatii" rows="2" placeholder="Preferințe, ocazie specială, alergii..."></textarea>' +
+        '</div>' +
+        '<button class="btn-trimite" id="btnTrimite" onclick="trimite()">Trimite rezervarea</button>' +
+        '<div class="nota">Vei fi contactat telefonic pentru confirmare.</div>' +
+    '</div>';
+}
+
+const TIPURI_EV = [
+    ['nunta', 'Nuntă'], ['botez', 'Botez'], ['aniversare', 'Aniversare / petrecere'],
+    ['corporate', 'Eveniment corporate'], ['altul', 'Alt eveniment'],
+];
+
+let saliRest = [];
+let salaAleasa = '';
+function jsStr(s) { return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+function saliGalerieHtml() {
+    if (!saliRest.length) return '';
+    const cards = saliRest.map(function (s) {
+        const poza = s.poza
+            ? '<div class="sala-img" style="background-image:url(/' + escapeHtml(s.poza) + ')"></div>'
+            : '<div class="sala-img sala-img-ph">🏛️</div>';
+        const cap = s.capacitate ? '<div class="sala-cap">până la ' + escapeHtml(s.capacitate) + ' invitați</div>' : '';
+        const desc = s.descriere ? '<div class="sala-desc">' + escapeHtml(s.descriere) + '</div>' : '';
+        return '<button type="button" class="sala-card" onclick="alegeSala(this, \'' + jsStr(s.nume) + '\')">' +
+            poza +
+            '<div class="sala-info"><div class="sala-nume">' + escapeHtml(s.nume) + '</div>' + cap + desc + '</div>' +
+        '</button>';
+    }).join('');
+    return '<div class="field"><label>Sala dorită <span class="opt">(opțional)</span></label>' +
+        '<div class="sali-grid">' + cards + '</div></div>';
+}
+
+function alegeSala(el, nume) {
+    const deja = el.classList.contains('ales');
+    document.querySelectorAll('.sala-card').forEach(c => c.classList.remove('ales'));
+    if (deja) { salaAleasa = ''; return; }
+    el.classList.add('ales');
+    salaAleasa = nume;
+}
+
+let preparateRest = [];
+function meniuConfigHtml() {
+    if (!preparateRest.length) return '';
+    const cats = {};
+    preparateRest.forEach(function (p) { (cats[p.categorie] = cats[p.categorie] || []).push(p); });
+    const blocks = Object.keys(cats).map(function (cat) {
+        const chips = cats[cat].map(function (p) {
+            return '<button type="button" class="mc-chip" data-nume="' + escapeHtml(p.nume) + '" data-cat="' + escapeHtml(cat) +
+                '" onclick="this.classList.toggle(\'ales\')">' + escapeHtml(p.nume) + '</button>';
+        }).join('');
+        return '<div class="mc-cat"><div class="mc-cat-t">' + escapeHtml(cat) + '</div><div class="mc-chips">' + chips + '</div></div>';
+    }).join('');
+    return '<div class="field"><label>Alege felurile din meniu <span class="opt">(opțional)</span></label>' +
+        '<div class="mc-wrap">' + blocks + '</div></div>';
+}
+function colecteazaMeniuClient() {
+    const out = [];
+    document.querySelectorAll('#cardEveniment .mc-chip.ales').forEach(function (ch) {
+        out.push({ nume: ch.getAttribute('data-nume'), categorie: ch.getAttribute('data-cat') });
+    });
+    return out;
+}
+
+function cardEvenimentHtml(azi, rest) {
+    const optTip = TIPURI_EV.map(t => '<option value="' + t[0] + '">' + t[1] + '</option>').join('');
+    let hint = '';
+    if (rest.evenimente_descriere || rest.evenimente_capacitate) {
+        hint = '<div class="ev-hint">' +
+            (rest.evenimente_descriere ? escapeHtml(rest.evenimente_descriere) : 'Organizăm evenimente private — spune-ne ce ai în plan și te contactăm cu o ofertă.') +
+            (rest.evenimente_capacitate ? '<span class="cap">Capacitate până la ' + escapeHtml(rest.evenimente_capacitate) + ' invitați</span>' : '') +
+        '</div>';
+    }
+    return hint +
+        '<div class="card" id="cardEveniment">' +
+            '<div class="card-titlu">Cerere pentru eveniment</div>' +
+            '<div class="card-titlu-sub">Nuntă, botez, aniversare sau eveniment corporate — trimite-ne detaliile și revenim cu o ofertă.</div>' +
+            '<div class="eroare" id="eroareEv"></div>' +
+            '<div class="field">' +
+                '<label>Tip eveniment</label>' +
+                '<select id="evTip">' + optTip + '</select>' +
+            '</div>' +
+            saliGalerieHtml() +
+            meniuConfigHtml() +
+            '<div class="row2">' +
+                '<div class="field">' +
+                    '<label>Data <span class="opt">(opțional)</span></label>' +
+                    '<input type="date" id="evData" min="' + azi + '">' +
+                '</div>' +
+                '<div class="field">' +
+                    '<label>Nr. invitați <span class="opt">(aprox.)</span></label>' +
+                    '<input type="number" id="evInvitati" min="1" max="5000" placeholder="Ex: 120">' +
+                '</div>' +
+            '</div>' +
+            '<div class="field">' +
+                '<label>Nume</label>' +
+                '<input type="text" id="evNume" placeholder="Numele tău" autocomplete="name">' +
+            '</div>' +
+            '<div class="field">' +
+                '<label>Telefon</label>' +
+                '<input type="tel" id="evTelefon" placeholder="07xx xxx xxx" autocomplete="tel">' +
+            '</div>' +
+            '<div class="field">' +
+                '<label>Email <span class="opt">(opțional)</span></label>' +
+                '<input type="email" id="evEmail" placeholder="email@exemplu.ro" autocomplete="email">' +
+            '</div>' +
+            '<div class="field">' +
+                '<label>Detalii <span class="opt">(opțional)</span></label>' +
+                '<textarea id="evMesaj" rows="3" placeholder="Ex: Nuntă ~120 invitați, meniu + candy bar, muzică live..."></textarea>' +
+            '</div>' +
+            '<button class="btn-trimite" id="btnTrimiteEv" onclick="trimiteEveniment()">Trimite cererea</button>' +
+            '<div class="nota">Te contactăm pentru detalii și ofertă.</div>' +
+        '</div>';
+}
+
+function switchTab(care) {
+    const masa = document.getElementById('cardForm');
+    const ev = document.getElementById('cardEveniment');
+    const tMasa = document.getElementById('tabMasa');
+    const tEv = document.getElementById('tabEv');
+    const peMasa = care === 'masa';
+    if (masa) masa.style.display = peMasa ? '' : 'none';
+    if (ev) ev.style.display = peMasa ? 'none' : '';
+    if (tMasa) tMasa.classList.toggle('ales', peMasa);
+    if (tEv) tEv.classList.toggle('ales', !peMasa);
+}
+
+function randeazaForm(rest) {
+    numeRestaurant = rest.nume || 'Restaurant';
+    const azi = new Date().toISOString().slice(0, 10);
+    const logoHtml = rest.logo
+        ? '<img class="header-logo" src="/' + escapeHtml(rest.logo) + '" alt="Logo" style="display:block" onerror="this.style.display=\'none\'">'
+        : '';
+    const descParts = [];
+    if (rest.descriere) descParts.push(escapeHtml(rest.descriere));
+    if (rest.text_bun_venit) descParts.push(escapeHtml(rest.text_bun_venit));
+    const bunVenitHtml = descParts.length
+        ? '<div class="bun-venit"><div class="bun-venit-box">' + descParts.join('<br>') + '</div></div>'
+        : '';
+    const catHtml = rest.categorie
+        ? '<div class="sub" style="opacity:.85">' + escapeHtml(rest.categorie) + '</div>'
+        : '';
+
+    const showEveniment = Number(rest.evenimente_publice) === 1;
+    const showMasa = Number(rest.rezervari_publice) === 1 || !showEveniment;
+    const ambele = showMasa && showEveniment;
+
+    const subLabel = ambele ? '📅 Rezervări & evenimente'
+        : (showEveniment ? '🎉 Organizează un eveniment' : '📅 Rezervă o masă');
+
+    const tabBar = ambele
+        ? '<div class="tabbar">' +
+            '<button class="tab ales" id="tabMasa" onclick="switchTab(\'masa\')">📅 Masă</button>' +
+            '<button class="tab" id="tabEv" onclick="switchTab(\'eveniment\')">🎉 Eveniment</button>' +
+          '</div>'
+        : '';
+
+    continut.innerHTML =
+        '<div class="header">' +
+            logoHtml +
+            '<h1>' + escapeHtml(numeRestaurant) + '</h1>' +
+            catHtml +
+            '<div class="sub">' + subLabel + '</div>' +
+        '</div>' +
+        bunVenitHtml +
+        '<div class="wrap">' +
+            tabBar +
+            (showMasa ? cardMasaHtml(azi) : '') +
+            (showEveniment ? cardEvenimentHtml(azi, rest) : '') +
+        '</div>';
+
+    if (ambele) switchTab('masa');
+    if (showMasa) incarcaDisponibilitate();
+}
+
+let sloturiCerere = 0;
+
+function incarcaDisponibilitate() {
+    const oraInput = document.getElementById('ora');
+    if (oraInput) oraInput.value = '';
+    const grid = document.getElementById('sloturiGrid');
+    const hint = document.getElementById('sloturiHint');
+    if (!grid || !hint) return;
+    const data = document.getElementById('data').value;
+    const nr = Number(document.getElementById('nrPersoane').value) || 0;
+    const azi = new Date().toISOString().slice(0, 10);
+
+    function aratHint(txt) {
+        grid.style.display = 'none';
+        grid.innerHTML = '';
+        hint.style.display = 'block';
+        hint.textContent = txt;
+    }
+
+    if (!data || !nr || data < azi) {
+        aratHint('Alege data și numărul de persoane ca să vezi orele disponibile.');
+        return;
+    }
+
+    aratHint('Se încarcă orele disponibile...');
+    const cerere = ++sloturiCerere;
+    fetch('/api/rezervare/disponibilitate?token=' + encodeURIComponent(token) + '&data=' + encodeURIComponent(data) + '&nr=' + encodeURIComponent(nr))
+        .then(r => r.json().catch(() => ({})))
+        .then(d => {
+            if (cerere !== sloturiCerere) return; // răspuns învechit
+            if (!d || !d.ok || !Array.isArray(d.sloturi) || !d.sloturi.length) {
+                aratHint('Nu există ore disponibile pentru această zi.');
+                return;
+            }
+            randeazaSloturi(d.sloturi, d.total);
+        })
+        .catch(() => {
+            if (cerere !== sloturiCerere) return;
+            aratHint('Eroare la încărcarea orelor. Te rugăm încearcă din nou.');
+        });
+}
+
+function randeazaSloturi(sloturi, total) {
+    const grid = document.getElementById('sloturiGrid');
+    const hint = document.getElementById('sloturiHint');
+    const totalNull = (total === null || total === undefined);
+    grid.innerHTML = sloturi.map(s => {
+        const ora = escapeHtml(s.ora);
+        const liber = totalNull ? true : !!s.liber;
+        if (!liber) {
+            return '<div class="slot-chip complet"><span>' + ora + '</span><span class="slot-complet-lbl">complet</span></div>';
+        }
+        const ramaseHtml = (!totalNull && typeof s.ramase === 'number')
+            ? '<span class="slot-ramase">' + s.ramase + ' locuri</span>'
+            : '';
+        return '<button type="button" class="slot-chip" onclick="alegeOra(this, \'' + ora + '\')"><span>' + ora + '</span>' + ramaseHtml + '</button>';
+    }).join('');
+    grid.style.display = 'grid';
+    hint.style.display = 'none';
+}
+
+function alegeOra(el, ora) {
+    document.getElementById('ora').value = ora;
+    document.querySelectorAll('#sloturiGrid .slot-chip').forEach(c => c.classList.remove('ales'));
+    el.classList.add('ales');
+    const eroare = document.getElementById('eroare');
+    if (eroare) eroare.classList.remove('vizibil');
+}
+
+async function trimite() {
+    const eroare = document.getElementById('eroare');
+    eroare.classList.remove('vizibil');
+
+    const nume = document.getElementById('nume').value.trim();
+    const telefon = document.getElementById('telefon').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const data = document.getElementById('data').value;
+    const ora = document.getElementById('ora').value;
+    const nr_persoane = Number(document.getElementById('nrPersoane').value) || 2;
+    const observatii = document.getElementById('observatii').value.trim();
+
+    function aratEroare(msg) {
+        eroare.textContent = msg;
+        eroare.classList.add('vizibil');
+    }
+
+    if (!nume) return aratEroare('Te rugăm introdu numele.');
+    if (!telefon) return aratEroare('Te rugăm introdu numărul de telefon.');
+    if (!data) return aratEroare('Te rugăm alege data.');
+    if (!ora) return aratEroare('Alege o oră disponibilă.');
+
+    const btn = document.getElementById('btnTrimite');
+    btn.disabled = true;
+    btn.textContent = 'Se trimite...';
+
+    try {
+        const r = await fetch('/api/rezervare', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, nume, telefon, email, data, ora, nr_persoane, observatii })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (d && d.ok) {
+            randeazaConfirmare({ nume, data, ora, nr_persoane });
+            return;
+        }
+        if (r.status === 409) {
+            aratEroare((d && d.msg) || 'Această oră tocmai s-a ocupat. Te rugăm alege alta.');
+            incarcaDisponibilitate();
+        } else {
+            aratEroare((d && d.msg) || 'A apărut o eroare. Te rugăm încearcă din nou.');
+        }
+    } catch (e) {
+        aratEroare('Eroare de conexiune. Te rugăm încearcă din nou.');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Trimite rezervarea';
+}
+
+function formatData(d) {
+    try {
+        return new Date(d + 'T00:00:00').toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long' });
+    } catch (e) { return d; }
+}
+
+function randeazaConfirmare(info) {
+    const card = document.getElementById('cardForm');
+    card.innerHTML =
+        '<div class="confirmare vizibil">' +
+            '<div class="icon">✅</div>' +
+            '<h2>Rezervare trimisă!</h2>' +
+            '<p>Te așteptăm la <strong>' + escapeHtml(numeRestaurant) + '</strong>.<br>Vei fi contactat pentru confirmare.</p>' +
+            '<div class="detalii">' +
+                '<div><strong>Nume:</strong> ' + escapeHtml(info.nume) + '</div>' +
+                '<div><strong>Data:</strong> ' + escapeHtml(formatData(info.data)) + '</div>' +
+                '<div><strong>Ora:</strong> ' + escapeHtml(info.ora) + '</div>' +
+                '<div><strong>Persoane:</strong> ' + escapeHtml(info.nr_persoane) + '</div>' +
+            '</div>' +
+        '</div>';
+}
+
+const LABEL_TIP = { nunta: 'Nuntă', botez: 'Botez', aniversare: 'Aniversare', corporate: 'Eveniment corporate', altul: 'Eveniment' };
+
+async function trimiteEveniment() {
+    const eroare = document.getElementById('eroareEv');
+    eroare.classList.remove('vizibil');
+    function aratEroare(msg) { eroare.textContent = msg; eroare.classList.add('vizibil'); }
+
+    const tip = document.getElementById('evTip').value;
+    const data = document.getElementById('evData').value;
+    const nr_invitati = Number(document.getElementById('evInvitati').value) || 0;
+    const nume = document.getElementById('evNume').value.trim();
+    const telefon = document.getElementById('evTelefon').value.trim();
+    const email = document.getElementById('evEmail').value.trim();
+    const mesaj = document.getElementById('evMesaj').value.trim();
+    const sala = salaAleasa || '';
+    const meniu_client = colecteazaMeniuClient();
+
+    if (!nume) return aratEroare('Te rugăm introdu numele.');
+    if (!telefon) return aratEroare('Te rugăm introdu numărul de telefon.');
+
+    const btn = document.getElementById('btnTrimiteEv');
+    btn.disabled = true;
+    btn.textContent = 'Se trimite...';
+
+    try {
+        const r = await fetch('/api/rezervare/eveniment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, tip, data, nr_invitati, nume, telefon, email, mesaj, sala, meniu_client })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (d && d.ok) { randeazaConfirmareEveniment({ tip, data, nr_invitati, nume, sala }); return; }
+        aratEroare((d && d.msg) || 'A apărut o eroare. Te rugăm încearcă din nou.');
+    } catch (e) {
+        aratEroare('Eroare de conexiune. Te rugăm încearcă din nou.');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Trimite cererea';
+}
+
+function randeazaConfirmareEveniment(info) {
+    const card = document.getElementById('cardEveniment');
+    const detData = info.data ? '<div><strong>Data:</strong> ' + escapeHtml(formatData(info.data)) + '</div>' : '';
+    const detInv = info.nr_invitati ? '<div><strong>Invitați:</strong> ' + escapeHtml(info.nr_invitati) + '</div>' : '';
+    const detSala = info.sala ? '<div><strong>Sala:</strong> ' + escapeHtml(info.sala) + '</div>' : '';
+    card.innerHTML =
+        '<div class="confirmare vizibil">' +
+            '<div class="icon">🎉</div>' +
+            '<h2>Cerere trimisă!</h2>' +
+            '<p>Mulțumim, <strong>' + escapeHtml(info.nume) + '</strong>.<br>Te contactăm în curând pentru detalii și ofertă.</p>' +
+            '<div class="detalii">' +
+                '<div><strong>Eveniment:</strong> ' + escapeHtml(LABEL_TIP[info.tip] || 'Eveniment') + '</div>' +
+                detData + detInv + detSala +
+            '</div>' +
+        '</div>';
+}
+
+async function init() {
+    if (!token) { linkInvalid(); return; }
+    try {
+        const r = await fetch('/api/rezervare/info?token=' + encodeURIComponent(token));
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || !d || !d.ok || !d.restaurant) { linkInvalid(); return; }
+        maxPersoane = (typeof d.max_persoane === 'number' && d.max_persoane > 0) ? d.max_persoane : null;
+        saliRest = Array.isArray(d.sali) ? d.sali : [];
+        preparateRest = Array.isArray(d.preparate) ? d.preparate : [];
+        aplicaTema(d.restaurant.tema_cfg);
+        randeazaForm(d.restaurant);
+    } catch (e) {
+        linkInvalid('Restaurant indisponibil. Te rugăm încearcă mai târziu.');
+    }
+}
+
+init();
+</script>
+</body>
+</html>
