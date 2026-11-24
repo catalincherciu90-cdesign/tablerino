@@ -1529,6 +1529,42 @@ admin.post('/salveaza_eveniment_meniu', requireOwner, async (c) => {
 // ── Kitchen screen (KDS / organizare bucătărie) — any logged-in staff ──
 // Reuses GET /comenzi for the live list (produse include the `pregatit` flag).
 
+/** When an order is fully prepared, push "ready to serve" to its waiter (once). */
+function notificaComandaGata(c: import('../types').AppContext, comandaId: number): void {
+  const restaurantId = rid(c);
+  c.executionCtx.waitUntil((async () => {
+    try {
+      const row = await one<{ preluat_de: number | null; status: string; push_gata_trimis: number; masa_nume: string; ospatar_id: number | null; total: number; gata: number }>(
+        c.env.DB,
+        `SELECT c.preluat_de, c.status, c.push_gata_trimis, m.nume AS masa_nume, m.ospatar_id,
+                (SELECT COUNT(*) FROM comanda_produse WHERE comanda_id = c.id) AS total,
+                (SELECT COUNT(*) FROM comanda_produse WHERE comanda_id = c.id AND pregatit = 1) AS gata
+         FROM comenzi c JOIN mese m ON m.id = c.masa_id
+         WHERE c.id = ? AND c.restaurant_id = ?`,
+        comandaId, restaurantId
+      );
+      if (!row || row.status === 'servita' || row.push_gata_trimis === 1) return;
+      if (!row.total || row.gata < row.total) return; // not fully ready yet
+      const ospId = row.preluat_de || row.ospatar_id;
+      // Mark as sent even if no waiter is assigned, so we don't re-check endlessly.
+      await run(c.env.DB, 'UPDATE comenzi SET push_gata_trimis = 1 WHERE id = ? AND restaurant_id = ?', comandaId, restaurantId);
+      if (!ospId) return;
+      const payload = {
+        type: 'gata',
+        title: '🍽️ Comandă gata de servit',
+        body: `${row.masa_nume} — comanda e gata, poți servi.`,
+        url: '/ospatar/',
+        tag: `gata-${comandaId}`,
+      };
+      const { getVapidConfig, pushToOspatari } = await import('../webpush');
+      const { pushFcmToOspatari } = await import('../fcm');
+      const cfg = await getVapidConfig(c.env.DB);
+      if (cfg) await pushToOspatari(c.env.DB, cfg, [ospId], payload);
+      await pushFcmToOspatari(c.env.DB, [ospId], payload);
+    } catch (e) { /* best-effort */ }
+  })());
+}
+
 admin.post('/bucatarie_produs_gata', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const prodId = Number(body.comanda_produs_id ?? 0);
@@ -1540,10 +1576,14 @@ admin.post('/bucatarie_produs_gata', async (c) => {
      WHERE id = ? AND comanda_id IN (SELECT id FROM comenzi WHERE restaurant_id = ?)`,
     val, prodId, rid(c)
   );
-  // When the kitchen starts on an order, move it out of 'noua'.
-  if (val === 1) {
-    const row = await one<{ comanda_id: number }>(c.env.DB, 'SELECT comanda_id FROM comanda_produse WHERE id = ?', prodId);
-    if (row) await run(c.env.DB, "UPDATE comenzi SET status = 'in_pregatire' WHERE id = ? AND restaurant_id = ? AND status = 'noua'", row.comanda_id, rid(c));
+  const row = await one<{ comanda_id: number }>(c.env.DB, 'SELECT comanda_id FROM comanda_produse WHERE id = ?', prodId);
+  if (row) {
+    if (val === 1) {
+      await run(c.env.DB, "UPDATE comenzi SET status = 'in_pregatire' WHERE id = ? AND restaurant_id = ? AND status = 'noua'", row.comanda_id, rid(c));
+      notificaComandaGata(c, row.comanda_id); // fires only if the whole order is now ready
+    } else {
+      await run(c.env.DB, 'UPDATE comenzi SET push_gata_trimis = 0 WHERE id = ? AND restaurant_id = ?', row.comanda_id, rid(c));
+    }
   }
   return c.json({ ok: true });
 });
@@ -1560,6 +1600,9 @@ admin.post('/bucatarie_comanda_gata', async (c) => {
   );
   if (val === 1) {
     await run(c.env.DB, "UPDATE comenzi SET status = 'in_pregatire' WHERE id = ? AND restaurant_id = ? AND status = 'noua'", comandaId, rid(c));
+    notificaComandaGata(c, comandaId);
+  } else {
+    await run(c.env.DB, 'UPDATE comenzi SET push_gata_trimis = 0 WHERE id = ? AND restaurant_id = ?', comandaId, rid(c));
   }
   return c.json({ ok: true });
 });

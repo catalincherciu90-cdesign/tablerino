@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS comenzi (
     preluat_la    TEXT,                    -- when it was claimed (for time-to-claim stats)
     push_nou_trimis     INTEGER DEFAULT 0, -- new-order push already sent
     push_escalare_trimis INTEGER DEFAULT 0,-- escalation-warning push already sent
+    push_gata_trimis    INTEGER DEFAULT 0, -- "ready to serve" push already sent to the waiter
     created_at    TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at    TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (masa_id) REFERENCES mese(id) ON DELETE CASCADE,
