@@ -167,6 +167,40 @@ export async function pushToOwner(
   }
 }
 
+/** Cron job: once per day (~09:00 Europe/Bucharest), push a digest of the
+ *  ingredients currently below their minimum threshold, to the owner + șef de sală. */
+export async function dailyStockDigest(db: D1Database): Promise<void> {
+  const now = new Date();
+  // Fire from ~09:00 RO (UTC+2/+3). The first cron tick at/after 07:00 UTC sends it.
+  if (now.getUTCHours() < 7) return;
+  const today = now.toISOString().slice(0, 10);
+  const row = await one<{ valoare: string }>(db, "SELECT valoare FROM app_config WHERE cheie = 'stoc_digest_date'");
+  if (row && row.valoare === today) return; // already sent today
+  // Claim the day up-front so overlapping ticks don't double-send.
+  await db.prepare(
+    "INSERT INTO app_config (cheie, valoare) VALUES ('stoc_digest_date', ?) ON CONFLICT(cheie) DO UPDATE SET valoare = excluded.valoare"
+  ).bind(today).run();
+
+  const cfg = await getVapidConfig(db);
+  if (!cfg) return;
+  const rests = await all<{ restaurant_id: number }>(db, 'SELECT DISTINCT restaurant_id FROM owner_push_subscriptions');
+  for (const r of rests) {
+    const low = await all<{ nume: string }>(
+      db,
+      'SELECT nume FROM depozit_ingrediente WHERE restaurant_id = ? AND prag_minim > 0 AND stoc <= prag_minim ORDER BY nume COLLATE NOCASE',
+      r.restaurant_id
+    );
+    if (!low.length) continue;
+    await pushToOwner(db, cfg, r.restaurant_id, {
+      type: 'stoc_digest',
+      title: '📋 Rezumat depozit',
+      body: `${low.length} ingrediente sub prag: ${low.map((i) => i.nume).join(', ')}`,
+      url: '/admin/depozit.html',
+      tag: 'stoc-digest-' + today,
+    });
+  }
+}
+
 /** Cron job: warn each responsible waiter when their unclaimed order is ~30-45s
  *  from escalating to other waiters. Runs every minute. */
 export async function notifyEscalations(db: D1Database): Promise<void> {

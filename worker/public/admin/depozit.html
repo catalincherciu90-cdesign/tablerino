@@ -112,7 +112,11 @@ body { font-family: system-ui, sans-serif; background: #f0f0f5; color: #111; }
 
     <div class="alert-low" id="alertLow"></div>
 
-    <button id="btnNotifOwner" class="btn-primary" style="margin-bottom:18px;background:#6c47ff" onclick="toggleNotificariOwner()">🔔 Activează notificările de stoc</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px" id="notifBar">
+        <button id="btnNotifOwner" class="btn-primary" style="background:#6c47ff" onclick="toggleNotificariOwner()">🔔 Activează notificările de stoc</button>
+        <button id="btnRezumatAcum" class="btn-primary" style="background:#0a7a52" onclick="trimiteRezumatAcum()">📋 Trimite rezumat acum</button>
+    </div>
+    <p class="sub" style="margin-top:-10px;margin-bottom:16px;font-size:12px">Rezumatul cu ingredientele sub prag se trimite automat zilnic (~09:00) către admin și șeful de sală.</p>
 
     <div class="form-card">
         <h3>+ Adaugă ingredient</h3>
@@ -246,6 +250,13 @@ async function stergeIng(id) {
     incarca();
 }
 
+async function trimiteRezumatAcum() {
+    const d = await (await fetch('/api/admin/stoc_digest_now', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).json();
+    if (!d.ok) { showToast(d.msg || 'Eroare', false); return; }
+    if (d.nr > 0) showToast('Rezumat trimis: ' + d.nr + ' ingrediente sub prag.');
+    else showToast('Niciun ingredient sub prag acum. 🎉');
+}
+
 /* ---------- Notificări de stoc (web push, owner + șef de sală) ---------- */
 function urlB64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -299,7 +310,7 @@ fetch('/api/admin/me').then(function (r) {
     if (me.role === 'ospatar') { location.href = '/admin/index.html'; return; }
     incarca();
     // Stock alerts go to the owner + șef de sală only.
-    if (me.role === 'bucatarie') { var bn = document.getElementById('btnNotifOwner'); if (bn) bn.style.display = 'none'; return; }
+    if (me.role === 'bucatarie') { var nb = document.getElementById('notifBar'); if (nb) nb.style.display = 'none'; return; }
     actualizeazaButonNotif(notifActiv());
     if (notifActiv()) activeazaNotificariOwner(true);
 });

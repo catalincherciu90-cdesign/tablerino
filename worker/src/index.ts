@@ -79,7 +79,8 @@ export default {
   fetch: app.fetch,
   // Cron: every minute, warn waiters about orders about to escalate.
   async scheduled(_event: ScheduledEvent, env: HonoEnv['Bindings'], ctx: ExecutionContext) {
-    const { notifyEscalations } = await import('./webpush');
+    const { notifyEscalations, dailyStockDigest } = await import('./webpush');
     ctx.waitUntil(notifyEscalations(env.DB));
+    ctx.waitUntil(dailyStockDigest(env.DB));
   },
 };

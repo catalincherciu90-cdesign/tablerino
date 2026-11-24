@@ -1813,6 +1813,33 @@ admin.post('/sterge_preparat', requireOwner, async (c) => {
   return c.json({ ok: true });
 });
 
+// Send the "stock below threshold" digest now (owner + șef de sală).
+admin.post('/stoc_digest_now', requireRoles('sef_sala'), async (c) => {
+  const low = await all<{ nume: string }>(
+    c.env.DB,
+    'SELECT nume FROM depozit_ingrediente WHERE restaurant_id = ? AND prag_minim > 0 AND stoc <= prag_minim ORDER BY nume COLLATE NOCASE',
+    rid(c)
+  );
+  const restaurantId = rid(c);
+  if (low.length) {
+    c.executionCtx.waitUntil((async () => {
+      try {
+        const { getVapidConfig, pushToOwner } = await import('../webpush');
+        const cfg = await getVapidConfig(c.env.DB);
+        if (!cfg) return;
+        await pushToOwner(c.env.DB, cfg, restaurantId, {
+          type: 'stoc_digest',
+          title: '📋 Rezumat depozit',
+          body: `${low.length} ingrediente sub prag: ${low.map((i) => i.nume).join(', ')}`,
+          url: '/admin/depozit.html',
+          tag: 'stoc-digest-manual',
+        });
+      } catch (e) { /* best-effort */ }
+    })());
+  }
+  return c.json({ ok: true, nr: low.length, ingrediente: low.map((i) => i.nume) });
+});
+
 // How many portions of each dish can still be made from current stock.
 admin.get('/capacitate_preparate', requireRoles('bucatarie'), async (c) => {
   const preparate = await all<{ id: number; nume: string; categorie: string; reteta: string | null; activ: number }>(
