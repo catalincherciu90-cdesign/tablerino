@@ -58,7 +58,7 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 .header-btns { display: flex; gap: 6px; flex-shrink: 0; }
 .lang-btns { display: flex; gap: 4px; flex-shrink: 0; }
-.lang-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 6px 8px; font-size: 16px; cursor: pointer; transition: background .15s; }
+.lang-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: 700; color: #fff; letter-spacing: .03em; cursor: pointer; transition: background .15s; }
 .lang-btn:hover, .lang-btn.activ { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.5); }
 .btn-meniu { background: var(--primar); color: #fff; border: none; padding: clamp(9px,2vw,12px) clamp(14px,3vw,22px); border-radius: 20px; font-size: clamp(13px,2.5vw,16px); font-weight: 800; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 8px rgba(108,71,255,0.4); }
 .btn-cos-mic { background: rgba(255,255,255,0.15); color: var(--header-text); border: 2px solid rgba(255,255,255,0.3); padding: clamp(9px,2vw,12px) clamp(12px,2.5vw,18px); border-radius: 20px; font-size: clamp(13px,2.5vw,16px); font-weight: 700; cursor: pointer; position: relative; white-space: nowrap; }
@@ -220,8 +220,8 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
         </button>
         <button class="btn-meniu" onclick="deschideMeniu()">🍕 Meniu</button>
         <div class="lang-btns">
-            <button class="lang-btn" id="langRo" onclick="schimbaLimba('ro')">🇷🇴</button>
-            <button class="lang-btn" id="langEn" onclick="schimbaLimba('en')">🇬🇧</button>
+            <button class="lang-btn" id="langRo" onclick="schimbaLimba('ro')">RO</button>
+            <button class="lang-btn" id="langEn" onclick="schimbaLimba('en')">EN</button>
         </div>
     </div>
 </div>
@@ -367,7 +367,7 @@ const translations = {
         statusAllServed: 'Toate servite!', statusAllServedS: 'Poți solicita nota când ești gata.',
         statusBill: 'Notă solicitată', statusBillS: 'Chelnerul vine în curând.',
         payTitle: '💳 Achitați nota', payChoose: 'Alegeți metoda de plată',
-        cash: 'Cash', card: 'Card', inPrep: '⏳ în pregătire', served: '✓ servit',
+        cash: 'Cash', card: 'Card', waiting: '⏳ în așteptare', inPrep: '👨‍🍳 în pregătire', served: '✓ servit',
         live: 'live', viewOrder: '🛒 Vezi comanda', total: 'Total', sending: 'Se trimite...',
         noProducts: 'Niciun produs adăugat.', pieces: 'buc', unavailable: 'Indisponibil',
         ratingTitle: '⭐ Cum a fost la noi?', ratingComment: 'Spune-ne mai multe (opțional)',
@@ -385,7 +385,7 @@ const translations = {
         statusAllServed: 'All served!', statusAllServedS: 'You can request the bill when ready.',
         statusBill: 'Bill requested', statusBillS: 'The waiter will be right with you.',
         payTitle: '💳 Pay the bill', payChoose: 'Choose payment method',
-        cash: 'Cash', card: 'Card', inPrep: '⏳ preparing', served: '✓ served',
+        cash: 'Cash', card: 'Card', waiting: '⏳ waiting', inPrep: '👨‍🍳 preparing', served: '✓ served',
         live: 'live', viewOrder: '🛒 View order', total: 'Total', sending: 'Sending...',
         noProducts: 'No products added.', pieces: 'pcs', unavailable: 'Unavailable',
         ratingTitle: '⭐ How was it?', ratingComment: 'Tell us more (optional)',
@@ -494,6 +494,11 @@ async function incarcaSumar() {
 
         document.getElementById('listaProduse').innerHTML = d.produse.map(p => {
             const eNou = p.status === 'nou' || !p.status;
+            // Product label follows the order's real state: waiting -> preparing -> served.
+            let eticheta, stil;
+            if (!eNou) { eticheta = _t.served; stil = 'background:#d1fae5;color:#065f46'; }
+            else if (d.status === 'in_pregatire') { eticheta = _t.inPrep; stil = 'background:#dbeafe;color:#1e40af'; }
+            else { eticheta = _t.waiting; stil = 'background:#fef3c7;color:#92400e'; }
             return `
             <div class="produs-comandat ${eNou ? '' : 'livrat'}">
                 <span class="pc-qty">${p.cantitate}×</span>
@@ -503,7 +508,7 @@ async function incarcaSumar() {
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
                     <span class="pc-total">${parseFloat(p.total).toFixed(2)} lei</span>
-                    <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;${eNou ? 'background:#fef3c7;color:#92400e' : 'background:#d1fae5;color:#065f46'}">${eNou ? _t.inPrep : _t.served}</span>
+                    <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;${stil}">${eticheta}</span>
                 </div>
             </div>`;
         }).join('');
